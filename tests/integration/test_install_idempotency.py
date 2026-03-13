@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from openclaw_enhance.install import install, uninstall
+from openclaw_enhance.install.main_skill_sync import MAIN_SKILL_IDS
 from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
 
@@ -98,6 +99,8 @@ class TestInstallIdempotency:
 
         # Should have same components after reinstall
         assert components1 == components2
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in components2
 
     def test_double_install_updates_timestamp(
         self,
@@ -105,8 +108,6 @@ class TestInstallIdempotency:
         isolated_user_home: Path,
     ) -> None:
         """Double install should update the last_updated timestamp."""
-        from datetime import datetime
-
         install(mock_openclaw_home, user_home=isolated_user_home)
 
         target_root = managed_root(isolated_user_home)
@@ -247,6 +248,8 @@ class TestInstallUninstallInstall:
             user_home=isolated_user_home,
         )
         assert result2.success
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in result2.components_removed
 
         # Verify clean state
         assert not load_manifest(target_root)
@@ -321,7 +324,7 @@ class TestConcurrentSafety:
         try:
             # Try to install while locked - should detect but may proceed
             # depending on lock implementation (may wait or fail)
-            result = install(mock_openclaw_home, user_home=isolated_user_home)
+            install(mock_openclaw_home, user_home=isolated_user_home)
             # Result may succeed if lock was acquired after waiting,
             # or fail if timeout - both are valid behaviors
         finally:

@@ -15,6 +15,7 @@ from openclaw_enhance.install import (
     is_installed,
     uninstall,
 )
+from openclaw_enhance.install.main_skill_sync import MAIN_SKILL_IDS
 from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
 
@@ -117,6 +118,8 @@ class TestInstallUninstallSymmetry:
         assert status["installed"] is True
         assert status["version"] is not None
         assert len(status["components"]) > 0
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in status["components"]
 
     def test_uninstall_removes_components(
         self,
@@ -135,6 +138,36 @@ class TestInstallUninstallSymmetry:
         assert uninstall_result.success
         # Should have removed components
         assert len(uninstall_result.components_removed) > 0
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in uninstall_result.components_removed
+
+    def test_uninstall_removes_only_manifest_owned_main_skills(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        """Uninstall should remove enhancement-owned main skills only."""
+        user_skill_file = (
+            mock_openclaw_home / "workspace" / "skills" / "user-custom-skill" / "SKILL.md"
+        )
+        user_skill_file.parent.mkdir(parents=True, exist_ok=True)
+        user_skill_file.write_text("user skill\n", encoding="utf-8")
+
+        install_result = install(mock_openclaw_home, user_home=isolated_user_home)
+        assert install_result.success
+
+        for skill_id in MAIN_SKILL_IDS:
+            assert (mock_openclaw_home / "workspace" / "skills" / skill_id / "SKILL.md").exists()
+
+        uninstall_result = uninstall(
+            openclaw_home=mock_openclaw_home,
+            user_home=isolated_user_home,
+        )
+
+        assert uninstall_result.success
+        assert user_skill_file.exists()
+        for skill_id in MAIN_SKILL_IDS:
+            assert not (mock_openclaw_home / "workspace" / "skills" / skill_id).exists()
 
     def test_uninstall_removes_manifest(
         self,

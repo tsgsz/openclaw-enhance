@@ -9,11 +9,11 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from click.testing import CliRunner
 
 from openclaw_enhance.cli import cli
 from openclaw_enhance.install import get_install_status, install, uninstall
+from openclaw_enhance.install.main_skill_sync import MAIN_SKILL_IDS
 
 
 class TestStatusCommandCLI:
@@ -161,6 +161,8 @@ class TestStatusWithInstall:
         assert status["installed"] is True
         assert status["version"] is not None
         assert len(status["components"]) > 0
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in status["components"]
 
     def test_status_after_uninstall_shows_not_installed(
         self,
@@ -190,6 +192,25 @@ class TestStatusWithInstall:
 
         assert status["installed"] is True
         assert len(status["components"]) == len(install_result.components_installed)
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in status["components"]
+
+    def test_status_json_lists_main_skill_components(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ):
+        """Status --json should expose installed main-skill components."""
+        install_result = install(mock_openclaw_home, user_home=isolated_user_home)
+        assert install_result.success
+
+        runner = CliRunner(env={"HOME": str(isolated_user_home)})
+        result = runner.invoke(cli, ["status", "--json"])
+        assert result.exit_code == 0
+
+        status = json.loads(result.output)
+        for skill_id in MAIN_SKILL_IDS:
+            assert f"main-skill:{skill_id}" in status["components"]
 
     def test_status_version_matches_install(
         self,
@@ -211,8 +232,8 @@ class TestStatusEdgeCases:
 
     def test_status_with_corrupted_manifest(self, tmp_path: Path):
         """Status should handle corrupted manifest gracefully."""
-        from openclaw_enhance.paths import managed_root
         from openclaw_enhance.install.manifest import MANIFEST_FILENAME
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "user_home"
         target_root = managed_root(user_home)
@@ -230,8 +251,8 @@ class TestStatusEdgeCases:
 
     def test_status_with_empty_manifest(self, tmp_path: Path):
         """Status should handle empty manifest gracefully."""
-        from openclaw_enhance.paths import managed_root
         from openclaw_enhance.install.manifest import MANIFEST_FILENAME
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "user_home"
         target_root = managed_root(user_home)
@@ -264,8 +285,8 @@ class TestStatusLockDetection:
         tmp_path: Path,
     ):
         """Status should show locked when install lock is held."""
-        from openclaw_enhance.paths import managed_root
         from openclaw_enhance.install.lock import InstallLock
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "user_home"
         target_root = managed_root(user_home)
@@ -308,15 +329,15 @@ class TestStatusInstallTime:
         tmp_path: Path,
     ):
         """Status should show install time after installation."""
-        from openclaw_enhance.paths import managed_root
+        from datetime import datetime
+
+        from openclaw_enhance.constants import VERSION
         from openclaw_enhance.install.manifest import (
-            MANIFEST_FILENAME,
             ComponentInstall,
             InstallManifest,
             save_manifest,
         )
-        from openclaw_enhance.constants import VERSION
-        from datetime import datetime
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "user_home"
         target_root = managed_root(user_home)
@@ -380,15 +401,15 @@ class TestStatusConsistency:
         tmp_path: Path,
     ):
         """CLI and programmatic status should return consistent results."""
-        from openclaw_enhance.paths import managed_root
+        from datetime import datetime
+
+        from openclaw_enhance.constants import VERSION
         from openclaw_enhance.install.manifest import (
-            MANIFEST_FILENAME,
             ComponentInstall,
             InstallManifest,
             save_manifest,
         )
-        from openclaw_enhance.constants import VERSION
-        from datetime import datetime
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "user_home"
         target_root = managed_root(user_home)

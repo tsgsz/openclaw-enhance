@@ -5,9 +5,10 @@ Handles the complete uninstall flow:
 2. Acquire lock
 3. Remove hooks
 4. Unregister agents
-5. Remove workspaces
-6. Clean up namespace
-7. Remove manifest
+5. Remove synced main skills
+6. Remove workspaces
+7. Clean up namespace
+8. Remove manifest
 
 Supports rollback to restore on failure.
 """
@@ -17,7 +18,6 @@ from __future__ import annotations
 import json
 import shutil
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,10 +28,6 @@ from openclaw_enhance.install.manifest import (
     manifest_path,
 )
 from openclaw_enhance.paths import managed_root
-from openclaw_enhance.runtime.config_patch import (
-    ConfigPatchError,
-    apply_owned_config_patch,
-)
 
 
 class UninstallError(RuntimeError):
@@ -180,6 +176,41 @@ def _remove_workspaces(target_root: Path) -> list[str]:
     return removed
 
 
+def _remove_main_skills(manifest: InstallManifest | None) -> list[str]:
+    removed: list[str] = []
+    if manifest is None:
+        return removed
+
+    for component in manifest.components:
+        if not component.name.startswith("main-skill:"):
+            continue
+
+        if not component.target_path:
+            removed.append(component.name)
+            continue
+
+        skill_file = Path(component.target_path)
+        skill_dir = skill_file.parent
+
+        try:
+            if skill_dir.exists():
+                shutil.rmtree(skill_dir)
+            removed.append(component.name)
+        except OSError as exc:
+            raise UninstallError(
+                f"Failed to remove main skill component {component.name}: {exc}"
+            ) from exc
+
+        skills_dir = skill_dir.parent
+        if skills_dir.exists():
+            try:
+                skills_dir.rmdir()
+            except OSError:
+                pass
+
+    return removed
+
+
 def _remove_runtime_state(target_root: Path) -> list[str]:
     """Remove runtime state file."""
     removed: list[str] = []
@@ -280,7 +311,16 @@ def uninstall(
             if not force:
                 raise
 
-        # Step 4: Remove workspaces
+        # Step 4: Remove synced main skills
+        try:
+            main_skills_removed = _remove_main_skills(manifest)
+            removed.extend(main_skills_removed)
+        except UninstallError as exc:
+            failed.append(f"main-skills: {exc}")
+            if not force:
+                raise
+
+        # Step 5: Remove workspaces
         try:
             workspaces_removed = _remove_workspaces(target_root)
             removed.extend(workspaces_removed)
@@ -289,7 +329,7 @@ def uninstall(
             if not force:
                 raise
 
-        # Step 5: Remove runtime state
+        # Step 6: Remove runtime state
         try:
             runtime_removed = _remove_runtime_state(target_root)
             removed.extend(runtime_removed)
@@ -297,7 +337,7 @@ def uninstall(
             failed.append(f"runtime: {exc}")
             # Non-fatal
 
-        # Step 6: Remove manifest
+        # Step 7: Remove manifest
         manifest_file = manifest_path(target_root)
         if manifest_file.exists():
             try:
@@ -306,11 +346,11 @@ def uninstall(
             except OSError as exc:
                 failed.append(f"manifest: {exc}")
 
-        # Step 7: Remove lock file
+        # Step 8: Remove lock file
         lock_removed = _remove_lock_file(target_root)
         removed.extend(lock_removed)
 
-        # Step 8: Try to remove managed root if empty
+        # Step 9: Try to remove managed root if empty
         if target_root.exists():
             try:
                 # Only remove if directory is empty or contains only empty subdirs
