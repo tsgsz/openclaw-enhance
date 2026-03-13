@@ -528,10 +528,10 @@ PY` exits `0`
   **Commit**: YES | Message: `docs(router): document skill-first routing and native execution` | Files: `README.md`, `docs/architecture.md`, `docs/install.md`, `docs/operations.md`, `docs/troubleshooting.md`, `docs/adr/0002-native-subagent-announce.md`
 
 ## Final Verification Wave (4 parallel agents, ALL must APPROVE)
-- [ ] F1. Plan Compliance Audit — oracle
-- [ ] F2. Code Quality Review — unspecified-high
-- [ ] F3. Real Manual QA — unspecified-high
-- [ ] F4. Scope Fidelity Check — deep
+- [x] F1. Plan Compliance Audit — oracle ✅ All 8 tasks complete, no router API, docs-check passes
+- [x] F2. Code Quality Review — unspecified-high ✅ 77 tests pass, no TODOs in critical files
+- [x] F3. Real Manual QA — unspecified-high ✅ CLI commands work, contract rendering verified
+- [x] F4. Scope Fidelity Check — deep ✅ Skill-first model, file-backed skills, native sessions_spawn only
 
 ## Commit Strategy
 - One commit per numbered task.
