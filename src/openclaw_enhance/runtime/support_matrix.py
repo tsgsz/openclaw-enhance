@@ -4,10 +4,20 @@ from pathlib import Path
 
 SUPPORTED_VERSION_PATTERN = re.compile(r"^2026\.3\.\d+$")
 SUPPORTED_PLATFORMS = {"darwin", "linux"}
+MIN_PYTHON_VERSION = (3, 10)
 
 
 class SupportError(RuntimeError):
     pass
+
+
+def validate_python_version() -> None:
+    current = (sys.version_info.major, sys.version_info.minor)
+    if current < MIN_PYTHON_VERSION:
+        raise SupportError(
+            f"Unsupported Python version '{sys.version_info.major}.{sys.version_info.minor}'. "
+            f"Supported: >={MIN_PYTHON_VERSION[0]}.{MIN_PYTHON_VERSION[1]}"
+        )
 
 
 def validate_support_matrix(openclaw_version: str, platform_name: str | None = None) -> None:
@@ -31,6 +41,7 @@ def read_openclaw_version(openclaw_home: Path) -> str:
 
 
 def validate_environment(openclaw_home: Path, platform_name: str | None = None) -> None:
+    validate_python_version()
     if not openclaw_home.exists() or not openclaw_home.is_dir():
         raise SupportError(f"unsupported/missing-home: {openclaw_home}")
     version = read_openclaw_version(openclaw_home)
