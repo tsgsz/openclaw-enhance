@@ -291,14 +291,19 @@ class TestTimeoutFlow:
             ),
         )
 
-        # Start multiple sessions
+        # Start multiple sessions with explicit expected_duration=0
         sessions = ["session_a", "session_b", "session_c"]
         for sid in sessions:
-            detector.start_monitoring(sid)
+            detector.start_monitoring(sid, expected_duration=timedelta(seconds=0))
+
+        # Small delay to ensure elapsed time > 0 for all sessions
+        import time
+
+        time.sleep(0.001)
 
         # Check all timeouts
         events = detector.check_timeouts()
-        assert len(events) == 3
+        assert len(events) == 3, f"Expected 3 timeout events, got {len(events)}"
 
         # Verify all are tracked
         pending = state_sync.get_pending_suspected_events()

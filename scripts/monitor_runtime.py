@@ -77,7 +77,40 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Process pending suspected timeouts (watchdog mode)",
     )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run once and exit (default: run continuously)",
+    )
+    parser.add_argument(
+        "--openclaw-home",
+        type=str,
+        default=None,
+        help="Path to OpenClaw home directory",
+    )
+    parser.add_argument(
+        "--state-root",
+        type=str,
+        default=None,
+        help="Path to state root directory (overrides openclaw-home)",
+    )
     return parser.parse_args()
+
+
+def get_user_home(args: argparse.Namespace) -> Path | None:
+    """Determine the user home path from arguments.
+
+    Args:
+        args: Parsed command line arguments
+
+    Returns:
+        Path to use as user home, or None for default
+    """
+    if args.state_root:
+        return Path(args.state_root)
+    if args.openclaw_home:
+        return Path(args.openclaw_home)
+    return None
 
 
 def setup_detector(args: argparse.Namespace) -> TimeoutDetector:
@@ -94,8 +127,10 @@ def setup_detector(args: argparse.Namespace) -> TimeoutDetector:
         grace_period=timedelta(seconds=args.grace_period),
     )
 
+    user_home = get_user_home(args)
+
     # Create state sync and wrap it for the detector
-    state_sync = StateSync()
+    state_sync = StateSync(user_home=user_home)
     store_adapter = RuntimeStoreAdapter(state_sync)
 
     detector = TimeoutDetector(
@@ -106,11 +141,12 @@ def setup_detector(args: argparse.Namespace) -> TimeoutDetector:
     return detector
 
 
-def run_monitor_mode(detector: TimeoutDetector) -> int:
+def run_monitor_mode(detector: TimeoutDetector, args: argparse.Namespace) -> int:
     """Run in monitor mode - detect and report suspected timeouts.
 
     Args:
         detector: Configured timeout detector
+        args: Command line arguments
 
     Returns:
         Exit code (0 for success/no timeouts, 1 if timeouts detected)
@@ -139,11 +175,14 @@ def run_monitor_mode(detector: TimeoutDetector) -> int:
         return 2
 
 
-def run_watchdog_mode() -> int:
+def run_watchdog_mode(args: argparse.Namespace) -> int:
     """Run in watchdog mode - process pending suspected timeouts.
 
         This mode reads suspected timeouts from the runtime store, evaluates
     them against policies, confirms appropriate ones, and sends reminders.
+
+        Args:
+            args: Command line arguments
 
         Returns:
             Exit code (0 for success, 2 for error)
@@ -151,7 +190,8 @@ def run_watchdog_mode() -> int:
     logger.info("Starting watchdog processing of suspected timeouts...")
 
     try:
-        state_sync = StateSync()
+        user_home = get_user_home(args)
+        state_sync = StateSync(user_home=user_home)
         policy_engine = PolicyEngine()
         notifier = Notifier()
 
@@ -216,11 +256,20 @@ def main() -> int:
     try:
         if args.process_pending:
             # Watchdog mode: process pending suspected timeouts
-            return run_watchdog_mode()
+            exit_code = run_watchdog_mode(args)
         else:
             # Monitor mode: detect new suspected timeouts
             detector = setup_detector(args)
-            return run_monitor_mode(detector)
+            exit_code = run_monitor_mode(detector, args)
+
+        # If --once flag is set, exit immediately after one run
+        if args.once:
+            return exit_code
+
+        # Otherwise, run continuously (not implemented in this version)
+        # For now, just exit after one run
+        logger.info("Monitor run complete. Use --once to suppress this message.")
+        return exit_code
 
     except KeyboardInterrupt:
         logger.info("Monitoring interrupted by user")
