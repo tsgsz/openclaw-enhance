@@ -58,33 +58,86 @@ Orchestrator ← synthesize results
 
 ## Workflow
 
-### Standard Task Flow
-1. **Receive Task**: Task arrives from main session or user
-2. **Assess**: Use `oe-eta-estimator` to gauge complexity
-3. **Plan**: Use `planning-with-files` if task > 2 toolcalls
-4. **Dispatch**: Use `oe-worker-dispatch` to assign subagents
-5. **Monitor**: Track progress via `watchdog` if needed
-6. **Synthesize**: Aggregate results from all workers
-7. **Deliver**: Return synthesized result to caller
+### Bounded Round-Based Orchestration Loop
 
-### Escalation Path
+The Orchestrator uses a **bounded multi-round loop** to handle complex tasks that require iterative refinement. This replaces the previous one-shot fan-out/fan-in model with an event-driven approach using `sessions_yield` as the round-boundary synchronization primitive.
+
+#### Round Lifecycle
+
+Each orchestration proceeds through bounded rounds:
+
 ```
-Complex Task
-    ↓
-[Assess with oe-eta-estimator]
-    ↓
-[Plan with planning-with-files]
-    ↓
-[Split into subtasks]
-    ↓
-[Dispatch via oe-worker-dispatch]
-    ↓
-[Monitor with watchdog]
-    ↓
-[Synthesize results]
-    ↓
-Return to main
+Assess → PlanRound → DispatchRound → YieldForResults → CollectResults → EvaluateProgress
+                                                                     ↓
+                                     Complete ←── No more work needed
+                                     Blocked ←── Needs main decision
+                                     Re-dispatch ←── More rounds needed
 ```
+
+**Round States:**
+
+1. **Assess**: Evaluate incoming task complexity using `oe-eta-estimator`
+2. **PlanRound**: Create execution plan for the current round
+3. **DispatchRound**: Spawn worker subagents via native `sessions_spawn`
+4. **YieldForResults**: Call `sessions_yield` to end current turn cleanly
+5. **CollectResults**: Receive auto-announced worker results on next turn
+6. **EvaluateProgress**: Analyze results, update state, decide next action
+
+**Decision outcomes from EvaluateProgress:**
+- **Complete**: Sufficient results gathered, synthesize and return to main
+- **Blocked**: External decision needed, yield checkpoint to main
+- **Re-dispatch**: Schedule next round with refined tasks
+
+#### Orchestrator-Owned Loop State
+
+Each orchestration maintains explicit state:
+
+| Field | Purpose |
+|-------|---------|
+| `task_id` | Unique identifier for this orchestration |
+| `round_index` | Current round number (0-indexed) |
+| `max_rounds` | Maximum allowed rounds (default: 3, hard cap: 5) |
+| `pending_dispatches` | Workers dispatched in current round awaiting results |
+| `received_results` | Results collected from completed workers |
+| `blocked_items` | Issues requiring external intervention |
+| `dedupe_keys` | Identifiers to prevent duplicate dispatches |
+| `termination_state` | One of: `active`, `completed`, `blocked`, `exhausted`, `escalated` |
+| `termination_reason` | Human-readable explanation of termination |
+
+#### Loop Controls (Mandatory)
+
+- **Max rounds**: Default 3, hard cap 5. Orchestration must terminate if limit reached.
+- **Max dispatches per round**: Default 3, hard cap 5 concurrent workers.
+- **Incrementality rule**: New round only if it narrows uncertainty or adds new evidence.
+- **Duplicate dispatch guard**: Same worker + objective + context cannot be resent without new evidence.
+- **Blocker escalation**: If two consecutive evaluations show no progress, terminate as `blocked`.
+
+#### Native Primitive Usage
+
+- **`sessions_spawn`**: Create worker subagents (only execution path for workers)
+- **`sessions_yield`**: End orchestrator turn to await auto-announced results
+- **`announce`**: Workers return results via native mechanism
+
+**Important**: `sessions_yield` is used ONLY by the orchestrator at round boundaries. Workers remain single-round executors and do not use yield.
+
+### Checkpoint Visibility (Semi-Visible Model)
+
+Main session receives checkpoints only at milestone events:
+
+**Main sees:**
+- `started`: Orchestration begins
+- `meaningful_progress`: Significant phase completed (optional, suppress routine rounds)
+- `blocked`: Requires main decision or intervention
+- `terminal`: Completion or exhaustion
+
+**Main does NOT see:**
+- Individual worker results within a round
+- Routine round boundaries
+- Internal re-dispatch decisions
+
+### Deprecated: One-Shot Escalation Path
+
+The previous linear escalation path has been replaced by the bounded loop above. Complex tasks now proceed through iterative rounds rather than single-pass dispatch.
 
 ## Collaboration
 
