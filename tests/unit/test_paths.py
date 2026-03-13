@@ -31,3 +31,64 @@ def test_ensure_managed_directories_creates_root(tmp_path: Path) -> None:
     assert created == root
     assert root.exists()
     assert root.is_dir()
+
+
+def test_resolve_main_workspace_prefers_agent_workspace() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {
+        "agent": {"workspace": "~/custom-agent-workspace"},
+        "agents": {"defaults": {"workspace": "~/default-workspace"}},
+    }
+
+    resolved = paths.resolve_main_workspace(
+        openclaw_home, config=config, env={"OPENCLAW_PROFILE": "dev"}
+    )
+
+    assert resolved == Path.home() / "custom-agent-workspace"
+
+
+def test_resolve_main_workspace_uses_agents_defaults_workspace() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {"agents": {"defaults": {"workspace": "~/agents-default-workspace"}}}
+
+    resolved = paths.resolve_main_workspace(openclaw_home, config=config, env={})
+
+    assert resolved == Path.home() / "agents-default-workspace"
+
+
+def test_resolve_main_workspace_uses_profile_fallback() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+
+    resolved = paths.resolve_main_workspace(
+        openclaw_home, config={}, env={"OPENCLAW_PROFILE": "staging"}
+    )
+
+    assert resolved == openclaw_home / "workspace-staging"
+
+
+def test_resolve_main_workspace_uses_plain_fallback_for_default_profile() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+
+    resolved = paths.resolve_main_workspace(
+        openclaw_home, config={}, env={"OPENCLAW_PROFILE": "default"}
+    )
+
+    assert resolved == openclaw_home / "workspace"
+
+
+def test_resolve_main_workspace_uses_plain_fallback_without_profile() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+
+    resolved = paths.resolve_main_workspace(openclaw_home, config={}, env={})
+
+    assert resolved == openclaw_home / "workspace"
+
+
+def test_main_workspace_skills_dir_does_not_create_directories(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace-does-not-exist"
+
+    skills_dir = paths.main_workspace_skills_dir(workspace)
+
+    assert skills_dir == workspace / "skills"
+    assert not workspace.exists()
+    assert not skills_dir.exists()
