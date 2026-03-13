@@ -228,3 +228,11 @@ workspaces/*/
 !workspaces/.gitkeep
 !workspaces/oe-orchestrator/
 !workspaces/oe-orchestrator/**
+!workspaces/oe-searcher/
+!workspaces/oe-searcher/**
+!workspaces/oe-syshelper/
+!workspaces/oe-syshelper/**
+!workspaces/oe-script_coder/
+!workspaces/oe-script_coder/**
+!workspaces/oe-watchdog/
+!workspaces/oe-watchdog/**
