@@ -310,27 +310,19 @@ class TestHarnessEndToEndWorkflow:
     def test_skill_catalog_available_in_harness(self):
         """Verify skill catalog is functional in harness."""
         from openclaw_enhance.skills_catalog import (
-            SkillRouter,
-            TaskAssessment,
-            SKILL_CONTRACTS,
+            render_skill_contract,
+            estimate_task_duration,
         )
 
-        router = SkillRouter()
-        assessment = TaskAssessment(
-            description="Test task",
-            estimated_toolcalls=3,
-            requires_parallel=False,
-            complexity_score=2,
-        )
+        # Test contract-based skill rendering (file-backed)
+        router_contract = render_skill_contract("oe-toolcall-router")
+        assert "sessions_spawn" in router_contract or "TOOLCALL" in router_contract
+        assert "oe-orchestrator" in router_contract
 
-        decision = router.route_task(assessment)
-
-        assert decision.action == "escalate"
-        assert decision.target == "oe-orchestrator"
-
-        # Verify contracts exist
-        assert "oe-eta-estimator" in SKILL_CONTRACTS
-        assert "oe-toolcall-router" in SKILL_CONTRACTS
+        # Test ETA estimator helper
+        duration = estimate_task_duration("Refactor authentication module")
+        assert duration.minutes > 0
+        assert duration.toolcall_estimate >= 0
 
 
 class TestHarnessErrorHandling:
@@ -413,8 +405,12 @@ class TestHarnessEnvironmentValidation:
         """All skill modules should be importable."""
         from openclaw_enhance import skills_catalog
 
-        assert hasattr(skills_catalog, "SkillRouter")
-        assert hasattr(skills_catalog, "TaskAssessment")
+        # Verify contract-based API (file-backed skills)
+        assert hasattr(skills_catalog, "render_skill_contract")
+        assert hasattr(skills_catalog, "estimate_task_duration")
+        # Removed router classes per skill-first architecture
+        assert not hasattr(skills_catalog, "SkillRouter")
+        assert not hasattr(skills_catalog, "TaskAssessment")
 
     def test_install_module_importable(self):
         """Install module should be importable."""
