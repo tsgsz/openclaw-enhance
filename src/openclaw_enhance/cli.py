@@ -48,6 +48,23 @@ def status() -> None:
     click.echo("Status command not yet implemented.")
 
 
+@cli.command("render-skill")
+@click.argument("skill_name")
+def render_skill(skill_name: str) -> None:
+    """Render a skill contract by name.
+
+    SKILL_NAME: Name of the skill to render (e.g., oe-toolcall-router)
+    """
+    from openclaw_enhance.skills_catalog import render_skill_contract, SKILL_CONTRACTS
+
+    try:
+        contract = render_skill_contract(skill_name)
+        click.echo(contract)
+    except ValueError as e:
+        available = ", ".join(SKILL_CONTRACTS.keys())
+        raise click.ClickException(f"{e}. Available skills: {available}") from e
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     try:
