@@ -1,16 +1,17 @@
 """CLI entry point for openclaw_enhance."""
 
 import sys
+from pathlib import Path
 
 import click
 
 from openclaw_enhance.constants import PACKAGE_NAME, VERSION
+from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
 
 
 @click.group()
 @click.version_option(version=VERSION, prog_name=PACKAGE_NAME)
 def cli() -> None:
-    """OpenClaw Enhance - Hybrid Python/TypeScript toolchain for OpenClaw-native hooks and extensions."""
     pass
 
 
@@ -27,9 +28,18 @@ def uninstall() -> None:
 
 
 @cli.command()
-def doctor() -> None:
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=Path.home() / ".openclaw",
+)
+def doctor(openclaw_home: Path) -> None:
     """Check system health and diagnose issues."""
-    click.echo("Doctor command not yet implemented.")
+    try:
+        validate_environment(openclaw_home)
+    except SupportError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("Doctor checks passed.")
 
 
 @cli.command()
