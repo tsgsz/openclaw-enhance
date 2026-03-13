@@ -42,6 +42,16 @@
      b. 为watchdog创建一个skill，学会如何判断session的状态。
 5. acp：opencode 用于开发，无需新建专门的Agents，但是要在 Orchestrator 的分发skill体现出来。
 
+## Quick Start
+
+See [Installation Guide](docs/install.md) for quick start instructions.
+
+## Support Matrix
+
+- **OS**: macOS, Linux
+- **Python**: >= 3.10
+- **OpenClaw**: >= 2026.3.11
+
 ## hooks
 
 1. 监听subagent_spawning, 当 spawn 之后写入额外task信息，包括所属 project，以及 ETA。

@@ -8,7 +8,7 @@ This guide covers installing, verifying, and uninstalling `openclaw-enhance`.
 
 - **Operating System**: macOS or Linux (Windows/WSL not supported in v1)
 - **OpenClaw**: Version 2026.3.x (specifically >= 2026.3.11, < 2026.4.0)
-- **Python**: 3.10 or higher
+- **Python**: 3.10 or higher (current environment)
 - **Node.js**: 18.x or higher (for hook/extension bridge)
 - **Git**: For cloning the repository
 
@@ -19,10 +19,13 @@ This guide covers installing, verifying, and uninstalling `openclaw-enhance`.
 git clone https://github.com/your-org/openclaw-enhance.git
 cd openclaw-enhance
 
-# Install Python dependencies
+# Verify Python version (>=3.10 required)
+python --version
+
+# Install in current Python environment
 pip install -e ".[dev]"
 
-# Run preflight checks
+# Run preflight checks (essential)
 python -m openclaw_enhance.cli doctor --openclaw-home "$HOME/.openclaw"
 
 # Install (dry-run first to preview)
@@ -37,11 +40,14 @@ python -m openclaw_enhance.cli status
 
 ## Detailed Installation
 
-### Step 1: Verify OpenClaw Installation
+### Step 1: Verify Environment
 
-Before installing the enhancement, ensure OpenClaw is properly installed:
+Before installing the enhancement, ensure your environment meets the requirements:
 
 ```bash
+# Check Python version (must be 3.10 or higher)
+python --version
+
 # Check OpenClaw version
 cat "$HOME/.openclaw/VERSION"
 # Expected: 2026.3.x (where x >= 11)
@@ -57,17 +63,16 @@ ls -la "$HOME/.openclaw"
 git clone https://github.com/your-org/openclaw-enhance.git
 cd openclaw-enhance
 
-# Create virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate  # On macOS/Linux
-
-# Install package
+# Install package in current interpreter
 pip install -e ".[dev]"
+
+# Note: If you prefer isolation, you can use a venv:
+# python -m venv venv && source venv/bin/activate
 ```
 
-### Step 3: Run Health Check
+### Step 3: Run Health Check (Doctor)
 
-The `doctor` command verifies your environment meets all requirements:
+The `doctor` command is the primary tool for validating your setup. It verifies your environment meets all requirements:
 
 ```bash
 python -m openclaw_enhance.cli doctor --openclaw-home "$HOME/.openclaw"
