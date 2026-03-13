@@ -26,46 +26,38 @@ We will use **OpenClaw's native subagent announce chain** as the ONLY communicat
 
 ### Mechanism
 
-OpenClaw provides a `subagent.announce()` mechanism for worker execution and a `sessions_yield` primitive for orchestrator turn management.
+OpenClaw provides native primitives for worker execution and orchestrator turn management:
 
-#### Worker Execution (sessions_spawn + announce)
+- **`sessions_spawn`**: Creates worker subagent sessions
+- **`announce`**: Returns worker results to parent
+- **`sessions_yield`**: Ends orchestrator turn to await results
 
-```typescript
-// Orchestrator dispatches work
-const result = await subagent.announce({
-  agent: "oe-searcher",
-  task: "Research Python async frameworks",
-  context: {
-    project: "my-project",
-    parent_session: current_session_id,
-    estimated_duration: 10
-  }
-});
+#### Worker Execution
 
-// Worker processes and returns structured result
-return {
-  summary: "Found 3 major frameworks...",
-  artifacts: ["/path/to/research.md"],
-  recommendations: ["Use asyncio for..."]
-};
-```
+The orchestrator dispatches work to workers via native `sessions_spawn`. Workers complete their task and return results through the native `announce` mechanism. No custom transport or wrapper code is used.
 
-#### Orchestrator Round Boundary (sessions_yield)
+**Input fields passed to workers**:
 
-The orchestrator uses `sessions_yield` to end its current turn after dispatching workers, allowing OpenClaw to collect results and re-activate the orchestrator in the next turn.
+| Field | Type | Description |
+|-------|------|-------------|
+| `task` | string | Task description |
+| `context.project` | string | Project context |
+| `context.parent_session` | string | Originating session ID |
+| `context.artifacts` | string[] | Relevant file paths |
 
-```typescript
-// Orchestrator dispatches multiple workers
-await Promise.all([
-  subagent.announce({ agent: "oe-searcher", task: task1 }),
-  subagent.announce({ agent: "oe-syshelper", task: task2 })
-]);
+**Output fields returned by workers**:
 
-// Orchestrator yields turn to await results
-await sessions_yield();
+| Field | Type | Description |
+|-------|------|-------------|
+| `summary` | string | Brief result summary |
+| `details` | string | Detailed output |
+| `artifacts` | string[] | Created/modified files |
+| `recommendations` | string[] | Suggested next steps |
+| `errors` | string[] | Any errors encountered |
 
-// Next turn: Orchestrator receives auto-announced results
-```
+#### Orchestrator Round Boundary
+
+After dispatching one or more workers, the orchestrator calls `sessions_yield` to end its current turn. OpenClaw collects worker results via the native announce chain and re-activates the orchestrator in the next turn with auto-announced results. Workers do not use `sessions_yield`; they remain single-round executors.
 
 ### Architecture: Bounded Orchestration Loop
 
@@ -78,31 +70,6 @@ Dispatch (sessions_spawn) ──► Yield (sessions_yield) ──┐
 Evaluate Progress ◄── Collect Results (auto-announce) ──┘
       │
       └──► Terminal (Complete/Blocked/Exhausted)
-```
-
-### Protocol Contract
-
-**Input to worker**:
-```typescript
-interface WorkerTask {
-  task: string;                    // Task description
-  context: {
-    project?: string;             // Project context
-    parent_session: string;       // Originating session ID
-    artifacts?: string[];         // Relevant file paths
-  };
-}
-```
-
-**Output from worker**:
-```typescript
-interface WorkerResult {
-  summary: string;                // Brief result summary
-  details?: string;               // Detailed output
-  artifacts: string[];            // Created/modified files
-  recommendations?: string[];     // Suggested next steps
-  errors?: string[];              // Any errors encountered
-}
 ```
 
 ### Timeout Handling
@@ -172,42 +139,27 @@ The `oe-worker-dispatch` skill in the orchestrator workspace encapsulates announ
 ```markdown
 ## Dispatch Rules
 
-1. Research tasks → oe-searcher
-2. System introspection → oe-syshelper
-3. Script development → oe-script_coder
-4. Monitoring/diagnostics → oe-watchdog
+| Task Type | Worker |
+|-----------|--------|
+| Research | oe-searcher |
+| System introspection | oe-syshelper |
+| Script development | oe-script_coder |
+| Monitoring/diagnostics | oe-watchdog |
 
 ## Context Passing
 
-Always include:
-- project: Current project context
-- parent_session: Originating session ID
-- artifacts: Relevant file paths
-```
+All dispatches must include:
+- `project`: Current project context
+- `parent_session`: Originating session ID
+- `artifacts`: Relevant file paths
 
 ### Error Handling
 
-Workers must return structured errors:
-
-```typescript
-{
-  summary: "Task failed",
-  errors: ["File not found: /path/to/file"],
-  artifacts: [],
-  recommendations: ["Check file path and retry"]
-}
-```
+Workers must return structured error information including: failure summary, error list, affected artifacts, and recommended recovery actions. See skill documentation for complete error contract.
 
 ### Parallel Dispatch
 
-Orchestrator can dispatch multiple workers in parallel:
-
-```typescript
-const [researchResult, systemResult] = await Promise.all([
-  subagent.announce({ agent: "oe-searcher", task: researchTask }),
-  subagent.announce({ agent: "oe-syshelper", task: systemTask })
-]);
-```
+Orchestrator may dispatch multiple workers within a single round. Each dispatch creates an independent worker session. Results are collected via auto-announce after `sessions_yield`. Parallel dispatch is subject to the same deduplication guards and bounded round limits as sequential dispatch.
 
 ## Related Decisions
 
