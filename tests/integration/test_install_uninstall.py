@@ -97,6 +97,9 @@ class TestInstallUninstallSymmetry:
 
         # Should have runtime state component
         assert any("runtime" in name for name in component_names)
+        assert "main-skill:oe-eta-estimator" in component_names
+        assert "main-skill:oe-toolcall-router" in component_names
+        assert "main-skill:oe-timeout-state-sync" in component_names
 
     def test_status_reports_installed(
         self,
@@ -176,9 +179,6 @@ class TestInstallUninstallSymmetry:
         """Install→uninstall should leave system in clean state."""
         target_root = managed_root(isolated_user_home)
 
-        # Record pre-install state
-        pre_install_exists = target_root.exists()
-
         # Install
         install_result = install(mock_openclaw_home, user_home=isolated_user_home)
         assert install_result.success
@@ -208,6 +208,7 @@ class TestInstallUninstallSymmetry:
     ) -> None:
         """Simulate CLI-style complete lifecycle: install→status→uninstall→status."""
         from click.testing import CliRunner
+
         from openclaw_enhance.cli import cli
 
         runner = CliRunner(env={"HOME": str(isolated_user_home)})

@@ -12,6 +12,7 @@ Handles the complete install flow:
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -21,6 +22,7 @@ from typing import Any
 
 from openclaw_enhance.constants import VERSION
 from openclaw_enhance.install.lock import InstallLock, InstallLockError
+from openclaw_enhance.install.main_skill_sync import sync_main_skills
 from openclaw_enhance.install.manifest import (
     ComponentInstall,
     InstallManifest,
@@ -79,7 +81,7 @@ def _run_openclaw_cli(args: list[str], check: bool = True) -> subprocess.Complet
             )
         return result
     except FileNotFoundError as exc:
-        raise InstallError(f"OpenClaw CLI not found. Ensure 'openclaw' is in PATH.") from exc
+        raise InstallError("OpenClaw CLI not found. Ensure 'openclaw' is in PATH.") from exc
 
 
 def _get_openclaw_config_path(openclaw_home: Path) -> Path:
@@ -95,6 +97,26 @@ def _get_openclaw_config_path(openclaw_home: Path) -> Path:
             return path
     # Default to the first option if none exist
     return config_paths[0]
+
+
+def _load_openclaw_config(config_path: Path) -> dict[str, Any]:
+    if not config_path.exists():
+        return {}
+
+    try:
+        content = config_path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    if not content.strip():
+        return {}
+
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        return {}
+
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def preflight_checks(
@@ -401,6 +423,19 @@ def install(
             errors.append(f"Workspace sync failed: {exc}")
             raise InstallError(f"Workspace sync failed: {exc}") from exc
 
+        try:
+            config_path = _get_openclaw_config_path(openclaw_home)
+            config = _load_openclaw_config(config_path)
+            main_skill_components = sync_main_skills(
+                openclaw_home=openclaw_home,
+                config=config,
+                env=os.environ,
+            )
+            all_components.extend(main_skill_components)
+        except Exception as exc:
+            errors.append(f"Main skill sync failed: {exc}")
+            raise InstallError(f"Main skill sync failed: {exc}") from exc
+
         # Step 5: Register agents
         try:
             agent_components = _register_agents(manifest, openclaw_home, target_root)
@@ -482,7 +517,6 @@ def get_install_status(
         Dictionary with installation status information.
     """
     from openclaw_enhance.install.lock import get_lock_info, is_locked
-    from openclaw_enhance.install.manifest import is_installed as manifest_is_installed
 
     target_root = managed_root(user_home)
 
