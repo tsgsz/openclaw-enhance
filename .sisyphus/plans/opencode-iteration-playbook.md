@@ -365,7 +365,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `test(docs): enforce opencode playbook docs` | Files: `src/openclaw_enhance/cli.py`, `tests/unit/test_docs_examples.py`
 
-- [ ] 6. Run final drift review and polish the new guidance against existing canonical docs
+- [x] 6. Run final drift review and polish the new guidance against existing canonical docs
 
   **What to do**: Perform a final pass across `AGENTS.md`, the handbook, README, and the canonical docs they reference. Fix any incorrect precedence, stale terminology, or duplicated content that slipped in. Confirm the guidance tells future agents exactly what to read for: (a) planning a new feature, (b) implementing code, (c) touching orchestrator/worker workspaces, and (d) understanding permanent progress. Make sure the handbook clearly points to the latest completed milestone and that `AGENTS.md` points to the correct handbook sections.
   **Must NOT do**: Do not widen scope into runtime changes, doc redesign, or workspace content rewrites unless drift makes a reference plainly wrong.
@@ -420,10 +420,10 @@ PY` exits `0`
   **Commit**: YES | Message: `docs(playbook): finalize opencode iteration guidance` | Files: `AGENTS.md`, `docs/opencode-iteration-handbook.md`, `README.md`, `docs/architecture.md` or `docs/operations.md`, `src/openclaw_enhance/cli.py`, `tests/unit/test_docs_examples.py`
 
 ## Final Verification Wave (4 parallel agents, ALL must APPROVE)
-- [ ] F1. Plan Compliance Audit — oracle
-- [ ] F2. Code Quality Review — unspecified-high
-- [ ] F3. Real Manual QA — unspecified-high
-- [ ] F4. Scope Fidelity Check — deep
+- [x] F1. Plan Compliance Audit — oracle ✅ All 6 tasks complete, all deliverables present
+- [x] F2. Code Quality Review — unspecified-high ✅ 5 new tests pass, docs-check passes, no TODOs
+- [x] F3. Real Manual QA — unspecified-high ✅ CLI works, AGENTS.md 80 lines (under budget)
+- [x] F4. Scope Fidelity Check — deep ✅ Skill-first architecture documented, session state demoted, no duplication
 
 ## Commit Strategy
 - One commit per numbered task.

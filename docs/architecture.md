@@ -56,9 +56,57 @@ This document describes the architecture of `openclaw-enhance`, a non-invasive c
 
 ## Control Flow
 
-### 1. Task Routing
+### 1. Task Routing & Bounded Orchestration Loop
 
 ```
+User Request
+    │
+    ▼
+┌──────────────────────────────────────┐
+│ Main Session with Enhancement Skills │
+└──────────────────────────────────────┘
+    │
+    ├── Simple task (TOOLCALL ≤ 2) ────► Handle locally
+    │
+    └── Complex task (TOOLCALL > 2) ───► oe-orchestrator
+                                              │
+                                              ▼
+                                    ┌──────────────────┐
+                                    │ Assess complexity│
+                                    │ Create Plan      │
+                                    └────────┬─────────┘
+                                             │
+                                             ▼
+                                    ┌──────────────────┐
+                         ┌──────────┤  Dispatch Round  │◄─────────┐
+                         │          │ (sessions_spawn) │          │
+                         │          └────────┬─────────┘          │
+                         │                   │                    │
+                         │                   ▼                    │
+                         │          ┌──────────────────┐          │
+                         │          │   Yield Turn     │          │
+                         │          │ (sessions_yield) │          │
+                         │          └────────┬─────────┘          │
+                         │                   │                    │
+                         │                   ▼                    │
+                         │          ┌──────────────────┐          │
+                         │          │ Collect Results  │          │
+                         │          │ (auto-announce)  │          │
+                         │          └────────┬─────────┘          │
+                         │                   │                    │
+                         │                   ▼                    │
+                         │          ┌──────────────────┐          │
+                         │          │ Evaluate Progress│──────────┘
+                         │          └────────┬─────────┘
+                         │                   │
+                         └───────────────────┼────────────────────┐
+                                             ▼                    ▼
+                                    ┌──────────────────┐   ┌──────────────┐
+                                    │ Synthesize       │   │ Blocked/     │
+                                    │ Return to main   │   │ Exhausted    │
+                                    └──────────────────┘   └──────────────┘
+```
+
 User Request
     │
     ▼
@@ -135,10 +183,12 @@ Located in `skills/` and installed into main workspace:
 
 Location: `workspaces/oe-orchestrator/`
 
-The orchestrator is a full-capability agent that:
+The orchestrator is a high-capability agent that:
 - Uses the same model class as main
 - Always plans before acting (planning-with-files)
-- Dispatches to specialized workers via native sessions_spawn and announce
+- Operates in a **bounded multi-round loop** (max 3-5 rounds)
+- Dispatches to specialized workers via native `sessions_spawn` and `announce`
+- Uses `sessions_yield` as a turn-boundary synchronization primitive
 - Synthesizes results from all workers
 
 Skills are markdown contracts stored in `skills/` directories. The router skill (`oe-toolcall-router/SKILL.md`) guides decisions, while native `sessions_spawn` carries out execution.
@@ -218,19 +268,26 @@ All enhancement-owned assets live under:
 
 ## Communication Protocol
 
-### Native Subagent Announce Chain
+### Native Primitives (Spawn & Yield)
 
-The ONLY approved communication protocol between Orchestrator and workers:
+The ONLY approved communication and synchronization protocol between Orchestrator and workers:
+
+1. **`sessions_spawn`**: The sole mechanism for creating worker subagents.
+2. **`sessions_yield`**: Orchestrator-only primitive to end a turn and await worker results.
+3. **`announce`**: Native mechanism for workers to return results to the orchestrator.
 
 ```typescript
 // Orchestrator dispatches
-const result = await subagent.announce({
+await subagent.announce({
   agent: "oe-searcher",
   task: "Research React 19 features",
   context: { project: "my-app", parent_session: "sess_001" }
 });
 
-// Worker processes and returns
+// Orchestrator yields turn
+await sessions_yield();
+
+// Worker processes and returns (auto-announced on next turn)
 return {
   summary: "Found 5 key features...",
   artifacts: ["/path/to/research.md"],
@@ -238,7 +295,7 @@ return {
 };
 ```
 
-**Why native announce only:**
+**Why native primitives only:**
 - Aligns with OpenClaw's design
 - Provides automatic lifecycle management
 - Built-in timeout and error handling

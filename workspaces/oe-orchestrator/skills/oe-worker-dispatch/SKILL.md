@@ -84,7 +84,68 @@ Use this skill when:
 
 ## Dispatch Patterns
 
-### Sequential Dispatch
+### Iterative Round-Based Dispatch (v2)
+
+For complex tasks requiring multiple refinement rounds, use the bounded iterative pattern:
+
+```
+Round N: Plan → Dispatch → Yield → Collect → Evaluate
+                                              ↓
+                    Complete ←── No more work
+                    Blocked  ←── Needs decision
+                    Next Round ←── Refine and continue
+```
+
+**Round Structure:**
+
+1. **Plan Round**: Define specific objectives for this round
+2. **Dispatch Workers**: Spawn agents via `sessions_spawn` with unique dispatch identities
+3. **Yield for Results**: Call `sessions_yield` to cleanly end turn
+4. **Collect via Announce**: Receive results on next turn via auto-announce
+5. **Evaluate Progress**: Classify results, update state, decide next action
+
+**Important**: After calling `sessions_yield`, wait for auto-announced results. Do not poll or query session state while waiting.
+
+#### Dispatch Identity & Deduplication
+
+Each dispatch within a round must have:
+- **Unique dispatch_id**: `round-{N}-{worker}-{objective}` format
+- **Dedupe key**: Hash of (task_context, worker_type, objective)
+- **Expected result schema**: What constitutes completion for this dispatch
+
+**Duplicate Dispatch Guard:**
+- Same dedupe key cannot be resent without new evidence
+- If result is late/missing, check `pending_dispatches` before re-dispatching
+- Document reason for any re-dispatch in round state
+
+#### Failure Classification
+
+Worker results are classified into three categories:
+
+| Category | Signal | Action |
+|----------|--------|--------|
+| **Retriable** | Transient failure, incomplete context | Limit 1 retry with clarified instructions |
+| **Reroutable** | Wrong worker chosen, task too large | Change worker or decompose into subtasks |
+| **Escalated** | Design conflict, needs main decision | Yield `blocked` checkpoint to main |
+
+#### Checkpoint Visibility to Main
+
+Orchestrator reports to main only at milestones:
+
+**Always report:**
+- `started`: Orchestration begins
+- `blocked`: External decision required
+- `terminal`: Complete, exhausted, or escalated
+
+**Conditionally report:**
+- `meaningful_progress`: After round N if significant new findings/artifacts
+
+**Never report:**
+- Individual worker success within a round
+- Routine round boundaries
+- Internal re-dispatch decisions
+
+### Sequential Dispatch (Legacy Pattern)
 ```
 Task A → Agent 1 → Result 1
               ↓
@@ -110,20 +171,13 @@ Use when:
 - Speed is important
 - No dependencies between tasks
 
-### Hierarchical Dispatch
-```
-Orchestrator
-    ↓
-Agent A (coordinator)
-    ├──→ Agent A1
-    ├──→ Agent A2
-    └──→ Agent A3
-```
+### Hierarchical Dispatch (v1 NOT Supported)
 
-Use when:
-- Task needs coordination
-- Sub-tasks have sub-tasks
-- Complex decomposition required
+**⚠️ Worker-Level Orchestration Disabled in v1**
+
+Workers remain **single-round executors** and cannot spawn or orchestrate other workers. All multi-level coordination must be handled by the orchestrator within the bounded loop.
+
+**v1 Constraint**: Only the orchestrator may dispatch workers. Workers complete their task and return results directly.
 
 ## Native Subagent Dispatch
 

@@ -1,0 +1,4 @@
+Task 3: Rewrite install/operator docs so current Python is the default deployment model.
+Outcome: docs/install.md updated, venv made optional, Python >=3.10 documented, doctor command emphasized.
+Verification: All acceptance criteria passed.
+Commit: docs(install): default to current python environment

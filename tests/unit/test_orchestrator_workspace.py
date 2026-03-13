@@ -89,7 +89,7 @@ class TestAgentsMdContent:
     def test_describes_workflow(self, agents_content):
         """Should describe workflow."""
         assert "## Workflow" in agents_content
-        assert "Standard Task Flow" in agents_content
+        assert "Bounded Round-Based Orchestration Loop" in agents_content
 
     def test_lists_available_skills(self, agents_content):
         """Should list available skills."""
@@ -293,6 +293,82 @@ class TestWorkspaceRenderingLogic:
 
         with pytest.raises(ValueError, match="Unknown workspace"):
             render_workspace("nonexistent-workspace")
+
+
+class TestCheckpointBehaviorDocumentation:
+    """Tests for checkpoint visibility and behavior documentation."""
+
+    @pytest.fixture
+    def agents_content(self):
+        """Load AGENTS.md content."""
+        return Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
+
+    @pytest.fixture
+    def dispatch_skill_content(self):
+        """Load worker dispatch SKILL.md content."""
+        return Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
+
+    def test_agents_md_documents_checkpoint_semi_visible_model(self, agents_content):
+        """AGENTS.md should document semi-visible checkpoint model for main."""
+        assert "Semi-Visible" in agents_content or "semi-visible" in agents_content.lower()
+        assert "Main sees:" in agents_content or "Main session receives" in agents_content
+        assert "Main does NOT see:" in agents_content
+
+    def test_agents_md_documents_meaningful_progress_checkpoint(self, agents_content):
+        """AGENTS.md should document meaningful_progress checkpoint."""
+        assert "meaningful_progress" in agents_content
+        # Should describe it as optional/suppress routine
+        assert (
+            "optional" in agents_content.lower()
+            or "suppress" in agents_content.lower()
+            or "Significant" in agents_content
+        )
+
+    def test_agents_md_documents_blocked_checkpoint(self, agents_content):
+        """AGENTS.md should document blocked checkpoint for escalation."""
+        assert "blocked" in agents_content
+        # Should describe it as requiring main decision
+        assert "decision" in agents_content.lower() or "intervention" in agents_content.lower()
+
+    def test_agents_md_documents_terminal_checkpoint(self, agents_content):
+        """AGENTS.md should document terminal checkpoint states."""
+        assert (
+            "terminal" in agents_content
+            or "exhausted" in agents_content
+            or "escalated" in agents_content
+        )
+
+    def test_agents_md_no_polling_patterns(self, agents_content):
+        """AGENTS.md should not document polling patterns using sessions_history."""
+        assert "sessions_history" not in agents_content
+        # Should emphasize yield-based waiting
+        assert "sessions_yield" in agents_content
+
+    def test_dispatch_skill_documents_checkpoint_visibility(self, dispatch_skill_content):
+        """Worker dispatch skill should document checkpoint visibility to main."""
+        assert "Checkpoint Visibility" in dispatch_skill_content
+        assert (
+            "Always report:" in dispatch_skill_content or "main" in dispatch_skill_content.lower()
+        )
+
+    def test_dispatch_skill_documents_meaningful_progress(self, dispatch_skill_content):
+        """Worker dispatch skill should document meaningful_progress as conditional report."""
+        assert "meaningful_progress" in dispatch_skill_content
+        # Should describe as conditional
+        assert (
+            "Conditionally" in dispatch_skill_content
+            or "optional" in dispatch_skill_content.lower()
+        )
+
+    def test_dispatch_skill_no_routine_round_boundaries(self, dispatch_skill_content):
+        """Worker dispatch skill should document that routine round boundaries are hidden."""
+        assert (
+            "Never report:" in dispatch_skill_content or "routine" in dispatch_skill_content.lower()
+        )
+        assert (
+            "round boundaries" in dispatch_skill_content.lower()
+            or "Individual worker" in dispatch_skill_content
+        )
 
 
 class TestWorkspaceRegistry:

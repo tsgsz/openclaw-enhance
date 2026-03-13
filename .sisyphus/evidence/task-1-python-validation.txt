@@ -1,0 +1,26 @@
+TASK 1: Python Version Validation in Support Matrix
+=====================================================
+
+Completed: 2026-03-13
+
+Summary:
+--------
+Extended support-matrix validation to check the current Python interpreter version.
+
+Changes Made:
+-------------
+1. Added MIN_PYTHON_VERSION = (3, 10) constant in support_matrix.py
+2. Added validate_python_version() function that uses sys.version_info
+3. Updated validate_environment() to call validate_python_version()
+4. Added tests for both pass (>= 3.10) and fail (< 3.10) cases
+
+Verification Results:
+---------------------
+- All 6 tests pass (including 2 new Python version tests)
+- validate_environment works correctly with temp home directory
+- SupportError message includes "python" and "3.10" as required
+
+Files Modified:
+---------------
+- src/openclaw_enhance/runtime/support_matrix.py
+- tests/unit/test_support_matrix.py

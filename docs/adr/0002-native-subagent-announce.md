@@ -18,13 +18,17 @@ Several communication patterns were considered: custom HTTP API, message queue, 
 
 **Skill-First Boundary**: Skills (markdown contracts) define *when* and *why* to spawn subagents, but never wrap the native primitive. The `sessions_spawn` tool is the ONLY execution mechanism—skills guide decisions, native primitives execute.
 
+**Turn-Yield Synchronization**: The `sessions_yield` primitive is used EXCLUSIVELY by the orchestrator to mark round boundaries in its bounded orchestration loop. It is a synchronization primitive, not a result transport mechanism. Workers remain single-round executors and never use yield.
+
 ## Decision
 
 We will use **OpenClaw's native subagent announce chain** as the ONLY communication protocol between orchestrator and workers.
 
 ### Mechanism
 
-OpenClaw provides a `subagent.announce()` mechanism:
+OpenClaw provides a `subagent.announce()` mechanism for worker execution and a `sessions_yield` primitive for orchestrator turn management.
+
+#### Worker Execution (sessions_spawn + announce)
 
 ```typescript
 // Orchestrator dispatches work
@@ -46,21 +50,34 @@ return {
 };
 ```
 
-### Architecture
+#### Orchestrator Round Boundary (sessions_yield)
+
+The orchestrator uses `sessions_yield` to end its current turn after dispatching workers, allowing OpenClaw to collect results and re-activate the orchestrator in the next turn.
+
+```typescript
+// Orchestrator dispatches multiple workers
+await Promise.all([
+  subagent.announce({ agent: "oe-searcher", task: task1 }),
+  subagent.announce({ agent: "oe-syshelper", task: task2 })
+]);
+
+// Orchestrator yields turn to await results
+await sessions_yield();
+
+// Next turn: Orchestrator receives auto-announced results
+```
+
+### Architecture: Bounded Orchestration Loop
+
+The orchestrator operates in a bounded loop (max 3-5 rounds) rather than a linear flow:
 
 ```
-Orchestrator Session
-        │
-        │ subagent.announce({ agent: "oe-searcher", ... })
-        ▼
-Worker Session (oe-searcher)
-        │
-        │ Processes task
-        ▼
-Returns result to Orchestrator
-        │
-        ▼
-Orchestrator synthesizes with other worker results
+Dispatch (sessions_spawn) ──► Yield (sessions_yield) ──┐
+      ▲                                                │
+      │                                                ▼
+Evaluate Progress ◄── Collect Results (auto-announce) ──┘
+      │
+      └──► Terminal (Complete/Blocked/Exhausted)
 ```
 
 ### Protocol Contract
@@ -144,6 +161,7 @@ We enhance this with:
 1. **Non-invasive**: Uses OpenClaw's official API
 2. **No custom infrastructure**: Leverages existing capabilities
 3. **Symmetric lifecycle**: Workers are proper OpenClaw subagents with full lifecycle
+4. **Native Primitives**: `sessions_spawn` remains the sole worker execution path; `sessions_yield` provides native turn synchronization.
 
 ## Implementation Notes
 

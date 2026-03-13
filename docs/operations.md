@@ -12,7 +12,7 @@ Once installed, `openclaw-enhance` operates transparently:
 
 You interact with OpenClaw normally—the enhancement layer handles complexity behind the scenes.
 
-**How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`, which then dispatches workers through the native announce chain.
+**How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`. The orchestrator then manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
 
 ## Using the Orchestrator
 
@@ -24,23 +24,50 @@ The orchestrator is invoked when:
 3. Task expected duration > 5 minutes
 4. Explicit user request: "Use orchestrator for this"
 
-### Task Flow
+### Task Flow: Bounded Orchestration Loop
+
+The orchestrator handles complex tasks using an iterative, round-based approach:
 
 ```
 User Request → Main Session → oe-toolcall-router → oe-orchestrator
                                                       │
-                      ┌───────────────────────────────┼───────────────────────────────┐
-                      ▼                               ▼                               ▼
-                oe-searcher                    oe-syshelper                  oe-script_coder
-                (Research)                     (System info)                 (Scripts)
-                      │                               │                               │
-                      └───────────────────────────────┴───────────────────────────────┘
-                                                      │
                                                       ▼
-                                               Result Synthesis
-                                                      │
-                                               Return to Main
+                                            ┌──────────────────┐
+                                 ┌──────────┤  Dispatch Round  │◄─────────┐
+                                 │          │ (sessions_spawn) │          │
+                                 │          └────────┬─────────┘          │
+                                 │                   │                    │
+                                 │                   ▼                    │
+                                 │          ┌──────────────────┐          │
+                                 │          │   Yield Turn     │          │
+                                 │          │ (sessions_yield) │          │
+                                 │          └────────┬─────────┘          │
+                                 │                   │                    │
+                                 │                   ▼                    │
+                                 │          ┌──────────────────┐          │
+                                 │          │ Collect Results  │          │
+                                 │          │ (auto-announce)  │          │
+                                 │          └────────┬─────────┘          │
+                                 │                   │                    │
+                                 │                   ▼                    │
+                                 │          ┌──────────────────┐          │
+                                 │          │ Evaluate Progress│──────────┘
+                                 │          └────────┬─────────┘
+                                 │                   │
+                                 └───────────────────┼────────────────────┐
+                                                     ▼                    ▼
+                                            ┌──────────────────┐   ┌──────────────┐
+                                            │ Synthesize       │   │ Blocked/     │
+                                            │ Return to Main   │   │ Exhausted    │
+                                            └──────────────────┘   └──────────────┘
 ```
+
+### Round Lifecycle
+
+1. **Dispatch**: Orchestrator spawns specialized workers (`oe-searcher`, `oe-syshelper`, etc.) via `sessions_spawn`.
+2. **Yield**: Orchestrator calls `sessions_yield` to end its current turn and wait for worker results.
+3. **Collect**: Worker results are automatically announced to the orchestrator on its next turn.
+4. **Evaluate**: Orchestrator analyzes results and decides whether to complete, re-dispatch for another round, or mark as blocked.
 
 ### Orchestrator Output Format
 

@@ -305,6 +305,123 @@ class TestOrchestratorEndToEndWorkflow:
         assert "searcher" in dispatch
 
 
+class TestBoundedLoopContract:
+    """Tests for bounded loop controls and round-state behavior."""
+
+    @pytest.fixture
+    def agents_content(self):
+        """Load AGENTS.md content."""
+        return Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
+
+    @pytest.fixture
+    def dispatch_skill_content(self):
+        """Load worker dispatch SKILL.md content."""
+        return Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
+
+    def test_agents_md_references_sessions_yield(self, agents_content):
+        """AGENTS.md should reference sessions_yield as round-boundary primitive."""
+        assert "sessions_yield" in agents_content
+
+    def test_agents_md_defines_round_states(self, agents_content):
+        """AGENTS.md should define all round-state phases."""
+        round_states = [
+            "Assess",
+            "PlanRound",
+            "DispatchRound",
+            "YieldForResults",
+            "CollectResults",
+            "EvaluateProgress",
+        ]
+        for state in round_states:
+            assert state in agents_content, f"Missing round state: {state}"
+
+    def test_agents_md_defines_max_rounds(self, agents_content):
+        """AGENTS.md should define max_rounds terminology with default and hard cap."""
+        assert "max_rounds" in agents_content
+        assert "default: 3" in agents_content or "default 3" in agents_content
+        assert "hard cap: 5" in agents_content or "hard cap 5" in agents_content
+
+    def test_agents_md_defines_checkpoint_types(self, agents_content):
+        """AGENTS.md should define checkpoint visibility types."""
+        checkpoint_types = [
+            "started",
+            "meaningful_progress",
+            "blocked",
+            "terminal",
+        ]
+        for checkpoint in checkpoint_types:
+            assert checkpoint in agents_content, f"Missing checkpoint type: {checkpoint}"
+
+    def test_agents_md_defines_duplicate_dispatch_guard(self, agents_content):
+        """AGENTS.md should define duplicate-dispatch guard terms."""
+        assert "dedupe_keys" in agents_content or "deduplicate" in agents_content.lower()
+        assert (
+            "duplicate dispatch" in agents_content.lower() or "Duplicate dispatch" in agents_content
+        )
+
+    def test_agents_md_no_sessions_history_polling(self, agents_content):
+        """AGENTS.md should NOT reference sessions_history for polling patterns."""
+        # Should not suggest polling via sessions_history
+        assert "sessions_history" not in agents_content, (
+            "Should not reference sessions_history for polling"
+        )
+        # Should emphasize yield-based waiting
+        assert "auto-announced" in agents_content or "sessions_yield" in agents_content
+
+    def test_dispatch_skill_references_sessions_yield(self, dispatch_skill_content):
+        """Worker dispatch skill should reference sessions_yield for round boundaries."""
+        assert "sessions_yield" in dispatch_skill_content
+
+    def test_dispatch_skill_defines_iterative_round_pattern(self, dispatch_skill_content):
+        """Worker dispatch skill should define iterative round-based dispatch."""
+        assert (
+            "Iterative Round-Based Dispatch" in dispatch_skill_content
+            or "round" in dispatch_skill_content.lower()
+        )
+        assert "Plan" in dispatch_skill_content and "Dispatch" in dispatch_skill_content
+        assert "Yield" in dispatch_skill_content or "yield" in dispatch_skill_content.lower()
+
+    def test_dispatch_skill_defines_dispatch_identity(self, dispatch_skill_content):
+        """Worker dispatch skill should define dispatch identity for deduplication."""
+        assert (
+            "dispatch_id" in dispatch_skill_content or "Dispatch Identity" in dispatch_skill_content
+        )
+        assert "Dedupe" in dispatch_skill_content or "dedupe" in dispatch_skill_content
+
+    def test_dispatch_skill_no_polling_guidance(self, dispatch_skill_content):
+        """Worker dispatch skill should NOT include polling guidance."""
+        assert "sessions_history" not in dispatch_skill_content, (
+            "Should not reference sessions_history"
+        )
+        # Should emphasize waiting for auto-announce
+        assert (
+            "auto-announced" in dispatch_skill_content
+            or "wait for" in dispatch_skill_content.lower()
+        )
+
+    def test_dispatch_skill_defines_failure_classification(self, dispatch_skill_content):
+        """Worker dispatch skill should define failure classification categories."""
+        failure_types = ["Retriable", "Reroutable", "Escalated"]
+        for failure_type in failure_types:
+            assert failure_type in dispatch_skill_content, f"Missing failure type: {failure_type}"
+
+    def test_render_workspace_includes_bounded_loop_docs(self):
+        """Rendered workspace should include bounded loop documentation."""
+        result = subprocess.run(
+            [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", "oe-orchestrator"],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
+
+        # Should include round-state terminology
+        assert "sessions_yield" in output
+        assert "max_rounds" in output or "round" in output.lower()
+
+        # Should include checkpoint terminology
+        assert "meaningful_progress" in output or "blocked" in output
+
+
 class TestCliIntegration:
     """Integration tests for CLI commands."""
 

@@ -75,6 +75,6 @@ Before implementing any code:
 
 ## Current Architecture Milestone
 
-**Completed**: `router-skill-first-alignment` — skill-first routing, native `sessions_spawn` execution, main-skill sync, symmetric uninstall, docs-check validation.
+**Completed**: `session-yield-orchestrator-loop` — bounded multi-round orchestration loop using native `sessions_yield`.
 
-**See handbook for full current state and invariants.**
+**See handbook for full current state, orchestration loop rules, and invariants.**

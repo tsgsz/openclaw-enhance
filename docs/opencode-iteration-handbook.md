@@ -6,19 +6,19 @@
 
 ## Current Design Status
 
-### Implemented Architecture (Milestone: router-skill-first-alignment)
+### Implemented Architecture (Milestone: session-yield-orchestrator-loop)
 
-The repository is now a **skill-first, file-backed routing system** with native OpenClaw execution:
+The repository uses a **bounded, semi-visible orchestration loop** with native `sessions_yield` synchronization:
 
-**Core Model**: Markdown skills define routing behavior → Router skill decides → Native `sessions_spawn` / announce executes.
+**Core Model**: `oe-orchestrator` runs a multi-round loop (Assess → Plan → Dispatch → Yield → Collect → Evaluate) instead of one-shot execution.
 
 **Key Components**:
-- **Skill-first routing**: `oe-toolcall-router/SKILL.md` defines escalation criteria (toolcalls > 2 → orchestrator)
-- **Native execution ONLY**: `sessions_spawn` is the sole subagent spawning mechanism — no wrapper runtime
-- **File-backed skills**: Source of truth is `skills/*/SKILL.md` on disk, rendered via `skills_catalog.render_skill_contract()`
-- **Main-skill sync**: Installer syncs `oe-eta-estimator`, `oe-toolcall-router`, `oe-timeout-state-sync` to active workspace
-- **Symmetric uninstall**: Uninstaller removes only enhancement-owned components tracked in manifest
-- **Validation**: `docs-check` CLI enforces `sessions_spawn` presence and bans stale router-runtime language
+- **Bounded Loop**: Orchestrator owns loop state (`round_index`, `max_rounds`, `pending_dispatches`). Default `max_rounds=3`, hard cap `5`.
+- **Native Synchronization**: `sessions_yield` is the turn-ending primitive for the orchestrator to wait for auto-announced worker results.
+- **Semi-Visible Checkpoints**: Only `started`, `meaningful_progress`, `blocked`, and terminal states are reported to the main session.
+- **Worker Boundaries**: Workers remain single-round executors; they do NOT use `sessions_yield` or own loop state.
+- **Guardrails**: Explicit duplicate-dispatch guards (dedupe keys) and blocker escalation rules.
+- **No Polling**: Querying session history or polling for results is strictly forbidden; results arrive via native announce on the next turn.
 
 **Routing Thresholds**:
 - Toolcalls: ≤ 2 stays in main, > 2 escalates to orchestrator
@@ -32,8 +32,13 @@ User Request
 Main Session + Skills (η estimator, router, timeout-sync)
     ↓ (TOOLCALL > 2 or complex)
 sessions_spawn → oe-orchestrator
-    ↓ (native announce)
-Workers: oe-searcher / oe-syshelper / oe-script_coder / oe-watchdog
+    ↓
+[ Orchestrator Loop (max 5 rounds) ]
+    ↓ 1. Plan & Dispatch (sessions_spawn)
+    ↓ 2. Yield turn (sessions_yield)
+    ↓ 3. Collect results (auto-announce)
+    ↓ 4. Evaluate & Checkpoint (semi-visible)
+    ↓ (Repeat or Terminate)
     ↓
 Results → Orchestrator synthesis → Return to main
 ```
@@ -143,6 +148,17 @@ Results → Orchestrator synthesis → Return to main
 
 ### Completed Milestones
 
+**session-yield-orchestrator-loop** — COMPLETE
+- Date: 2026-03-13
+- Scope: Redesigned orchestrator as a bounded multi-round loop using `sessions_yield`.
+- Deliverables:
+  - Round-based orchestrator workflow in `oe-orchestrator/AGENTS.md`.
+  - Iterative dispatch contract with `sessions_yield` in `oe-worker-dispatch/SKILL.md`.
+  - Semi-visible checkpoint policy (milestones only).
+  - Bounded loop controls (max_rounds, dedupe, blocker escalation).
+  - Native transport docs updated for `sessions_yield` semantics.
+- Success criteria: Integration tests pass, no polling in contracts, docs aligned.
+
 **router-skill-first-alignment** — COMPLETE
 - Date: 2026-03-13
 - Scope: Refactored routing from Python API to skill-first model
@@ -157,12 +173,13 @@ Results → Orchestrator synthesis → Return to main
 
 ### Current Durable Status
 
-The repository is in **stable maintenance mode** for the skill-first architecture:
-- Core routing: skill contracts + native `sessions_spawn`
-- Installer: syncs main skills, symmetric uninstall
-- Validation: `docs-check` enforces alignment
-- Workers: 4 specialized agents with strict boundaries
-- No planned breaking changes to architecture
+The repository is in **stable maintenance mode** for the bounded-loop orchestration architecture:
+- Core orchestration: Bounded multi-round loop + `sessions_yield`.
+- Core routing: skill contracts + native `sessions_spawn`.
+- Installer: syncs main skills, symmetric uninstall.
+- Validation: `docs-check` enforces alignment.
+- Workers: 4 specialized agents with strict boundaries.
+- No planned breaking changes to architecture.
 
 ### Where to Record Future Progress
 
@@ -248,6 +265,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 1.1.0  
 **Last Updated**: 2026-03-13  
-**Milestone**: router-skill-first-alignment COMPLETE
+**Milestone**: session-yield-orchestrator-loop COMPLETE
