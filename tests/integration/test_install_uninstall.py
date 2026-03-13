@@ -6,6 +6,7 @@ uninstalling should leave the system in a clean state.
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -337,3 +338,64 @@ class TestUninstallEdgeCases:
         )
 
         assert result.success
+
+
+class TestInstallPreflightPythonValidation:
+    """Tests for install preflight Python version validation."""
+
+    def test_preflight_validates_python_version_via_validate_environment(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        """Preflight should validate Python version via validate_environment."""
+        from openclaw_enhance.install.installer import preflight_checks
+
+        result = preflight_checks(mock_openclaw_home, user_home=isolated_user_home)
+
+        assert result.passed
+        assert "Environment validation failed" not in str(result.errors)
+
+    def test_preflight_fails_on_unsupported_python_version(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        """Preflight should hard-fail on unsupported Python version."""
+        from types import SimpleNamespace
+
+        from openclaw_enhance.install.installer import preflight_checks
+
+        old_version_info = SimpleNamespace(
+            major=3, minor=9, micro=0, releaselevel="final", serial=0
+        )
+
+        with patch("sys.version_info", old_version_info):
+            result = preflight_checks(mock_openclaw_home, user_home=isolated_user_home)
+
+            assert not result.passed
+            assert any(
+                "python" in str(err).lower() or "unsupported" in str(err).lower()
+                for err in result.errors
+            )
+
+    def test_preflight_error_message_is_actionable(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        """Preflight error should mention supported Python version."""
+        from types import SimpleNamespace
+
+        from openclaw_enhance.install.installer import preflight_checks
+
+        old_version_info = SimpleNamespace(
+            major=3, minor=9, micro=0, releaselevel="final", serial=0
+        )
+
+        with patch("sys.version_info", old_version_info):
+            result = preflight_checks(mock_openclaw_home, user_home=isolated_user_home)
+
+            assert not result.passed
+            error_str = " ".join(str(err) for err in result.errors).lower()
+            assert "3.10" in error_str or "python" in error_str
