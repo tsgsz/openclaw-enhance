@@ -154,18 +154,6 @@ def sample_spawn_event() -> dict:
 
 
 @pytest.fixture
-def skill_router():
-    """Provide a configured SkillRouter instance.
-
-    Returns:
-        SkillRouter instance.
-    """
-    from openclaw_enhance.skills_catalog import SkillRouter
-
-    return SkillRouter()
-
-
-@pytest.fixture
 def runtime_bridge():
     """Provide a RuntimeBridge instance if available.
 

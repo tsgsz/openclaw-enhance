@@ -28,27 +28,6 @@ class SkillMetadata:
     routing_heuristics: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class RoutingDecision:
-    """Decision on where to route a task."""
-
-    action: str  # "route" or "escalate"
-    target: str  # "main" or "oe-orchestrator"
-    reason: str
-    estimated_duration: timedelta | None = None
-
-
-@dataclass
-class TaskAssessment:
-    """Assessment of a task for routing decisions."""
-
-    description: str
-    estimated_toolcalls: int
-    requires_parallel: bool
-    complexity_score: int  # 1-10 scale
-    estimated_duration_override: timedelta | None = None
-
-
 # Registry of main-session enhancement skills
 SKILLS_REGISTRY: list[SkillMetadata] = [
     SkillMetadata(
@@ -150,83 +129,30 @@ def _skill_contract_path(skill_name: str) -> Path:
     return _active_skills_dir() / skill_name / "SKILL.md"
 
 
-class SkillRouter:
-    """Router for deciding where to execute tasks."""
-
-    def __init__(self) -> None:
-        """Initialize the skill router."""
-        self._escalation_threshold = 2  # toolcalls > 2 escalates
-        self._long_running_threshold = timedelta(minutes=30)
-
-    def route_task(self, assessment: TaskAssessment) -> RoutingDecision:
-        """Route a task based on assessment.
-
-        Args:
-            assessment: Task assessment with toolcall estimate, etc.
-
-        Returns:
-            RoutingDecision with action, target, and reason.
-        """
-        estimated_duration = estimate_task_duration(assessment)
-
-        # Check escalation conditions
-        if assessment.estimated_toolcalls > self._escalation_threshold:
-            return RoutingDecision(
-                action="escalate",
-                target="oe-orchestrator",
-                reason=(
-                    f"High toolcall count ({assessment.estimated_toolcalls} > "
-                    f"{self._escalation_threshold})"
-                ),
-                estimated_duration=estimated_duration,
-            )
-
-        if assessment.requires_parallel:
-            return RoutingDecision(
-                action="escalate",
-                target="oe-orchestrator",
-                reason="Task requires parallel execution",
-                estimated_duration=estimated_duration,
-            )
-
-        if estimated_duration > self._long_running_threshold:
-            return RoutingDecision(
-                action="escalate",
-                target="oe-orchestrator",
-                reason=(
-                    f"Long-running task ({estimated_duration.total_seconds() // 60} min > 30 min)"
-                ),
-                estimated_duration=estimated_duration,
-            )
-
-        # Stay local
-        return RoutingDecision(
-            action="route",
-            target="main",
-            reason="Simple task suitable for main session",
-            estimated_duration=estimated_duration,
-        )
-
-
-def estimate_task_duration(assessment: TaskAssessment) -> timedelta:
-    """Estimate task duration based on assessment.
+def estimate_task_duration(
+    estimated_toolcalls: int,
+    requires_parallel: bool = False,
+    estimated_duration_override: timedelta | None = None,
+) -> timedelta:
+    """Estimate task duration based on toolcall count and parallelism.
 
     Args:
-        assessment: Task assessment.
+        estimated_toolcalls: Estimated number of toolcalls needed.
+        requires_parallel: Whether the task requires parallel execution.
+        estimated_duration_override: Optional duration override.
 
     Returns:
         Estimated duration as timedelta.
     """
     # Use override if provided
-    if assessment.estimated_duration_override is not None:
-        return max(assessment.estimated_duration_override, timedelta(minutes=1))
+    if estimated_duration_override is not None:
+        return max(estimated_duration_override, timedelta(minutes=1))
 
     # Handle edge cases
-    if assessment.estimated_toolcalls <= 0:
+    if estimated_toolcalls <= 0:
         return timedelta(minutes=1)
 
-    toolcalls = assessment.estimated_toolcalls
-    requires_parallel = assessment.requires_parallel
+    toolcalls = estimated_toolcalls
 
     # Estimation formula based on toolcalls and parallelism
     # These heuristics are calibrated for realistic development tasks
@@ -247,31 +173,6 @@ def estimate_task_duration(assessment: TaskAssessment) -> timedelta:
         minutes = int(minutes * 1.5)
 
     return timedelta(minutes=max(minutes, 1))
-
-
-def should_escalate_to_orchestrator(assessment: TaskAssessment) -> bool:
-    """Determine if task should escalate to orchestrator.
-
-    Args:
-        assessment: Task assessment.
-
-    Returns:
-        True if should escalate, False to stay in main.
-    """
-    # Escalate if toolcalls > 2
-    if assessment.estimated_toolcalls > 2:
-        return True
-
-    # Escalate if requires parallel
-    if assessment.requires_parallel:
-        return True
-
-    # Escalate if long duration
-    estimated = estimate_task_duration(assessment)
-    if estimated > timedelta(minutes=30):
-        return True
-
-    return False
 
 
 def render_skill_contract(skill_name: str) -> str:
