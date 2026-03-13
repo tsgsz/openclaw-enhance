@@ -1,0 +1,253 @@
+# OpenCode Iteration Handbook
+
+> **Purpose**: Durable project memory for future OpenCode sessions. Records current architecture state, permanent progress rules, and required reading paths.
+> 
+> **When to update**: After architecture changes, new workflow constraints, completed milestones, or new permanent doc locations. Do NOT update for small code-only changes.
+
+## Current Design Status
+
+### Implemented Architecture (Milestone: router-skill-first-alignment)
+
+The repository is now a **skill-first, file-backed routing system** with native OpenClaw execution:
+
+**Core Model**: Markdown skills define routing behavior → Router skill decides → Native `sessions_spawn` / announce executes.
+
+**Key Components**:
+- **Skill-first routing**: `oe-toolcall-router/SKILL.md` defines escalation criteria (toolcalls > 2 → orchestrator)
+- **Native execution ONLY**: `sessions_spawn` is the sole subagent spawning mechanism — no wrapper runtime
+- **File-backed skills**: Source of truth is `skills/*/SKILL.md` on disk, rendered via `skills_catalog.render_skill_contract()`
+- **Main-skill sync**: Installer syncs `oe-eta-estimator`, `oe-toolcall-router`, `oe-timeout-state-sync` to active workspace
+- **Symmetric uninstall**: Uninstaller removes only enhancement-owned components tracked in manifest
+- **Validation**: `docs-check` CLI enforces `sessions_spawn` presence and bans stale router-runtime language
+
+**Routing Thresholds**:
+- Toolcalls: ≤ 2 stays in main, > 2 escalates to orchestrator
+- Duration: ≤ 15 min short, 15-30 min medium, > 30 min long
+- Parallelism: Required → orchestrator
+
+**Execution Flow**:
+```
+User Request
+    ↓
+Main Session + Skills (η estimator, router, timeout-sync)
+    ↓ (TOOLCALL > 2 or complex)
+sessions_spawn → oe-orchestrator
+    ↓ (native announce)
+Workers: oe-searcher / oe-syshelper / oe-script_coder / oe-watchdog
+    ↓
+Results → Orchestrator synthesis → Return to main
+```
+
+**Worker Boundaries** (each workspace has `AGENTS.md`):
+- `oe-searcher`: Web search, research — cheap model, sandbox read/write
+- `oe-syshelper`: Session introspection, grep, LSP — cheap model, strictly read-only
+- `oe-script_coder`: Code development, testing — codex-class model, requires tests
+- `oe-watchdog`: Session monitoring, timeout detection — narrow authority, runtime state only
+
+### What This Means for Future Work
+
+**When adding features:**
+- Router decisions must stay in skill contracts (`skills/*/SKILL.md`)
+- Execution must use native `sessions_spawn` / announce — no custom dispatch runtime
+- Worker capabilities must respect workspace `AGENTS.md` boundaries
+- Installer changes must maintain symmetric uninstall
+
+**When modifying skills:**
+- Update `SKILL.md` file directly — this is the source of truth
+- Run `python -m openclaw_enhance.cli render-skill {name}` to verify
+- Skills are synced to workspace on install — consider sync implications
+
+## Source of Truth Map
+
+| Topic | Canonical Doc | What It Contains |
+|-------|--------------|------------------|
+| **Project intent** | `README.md` | Original goals, multi-task solution, non-invasive constraints (Chinese) |
+| **System architecture** | `docs/architecture.md` | Component diagrams, control flow, namespace design |
+| **Runtime behavior** | `docs/operations.md` | Orchestrator workflow, routing logic, timeout monitoring |
+| **Installation** | `docs/install.md` | Install/uninstall flow, main-skill sync behavior |
+| **Troubleshooting** | `docs/troubleshooting.md` | Diagnostics, recovery procedures |
+| **Routing boundaries** | `docs/adr/0002-native-subagent-announce.md` | `sessions_spawn` as only transport, skill-vs-runtime separation |
+| **Namespace design** | `docs/adr/0001-managed-namespace.md` | Isolation strategy, `oe-` prefix conventions |
+| **Watchdog authority** | `docs/adr/0003-watchdog-authority.md` | Narrow authority boundaries, prohibited operations |
+| **This handbook** | `docs/opencode-iteration-handbook.md` | Current design state, permanent progress (this file) |
+| **Agent entrypoint** | `AGENTS.md` | Required reading order, hard boundaries |
+| **Worker roles** | `workspaces/{name}/AGENTS.md` | Per-workspace capabilities and constraints |
+
+## Required Reading Paths
+
+### For Planning a New Feature
+
+1. Read this handbook — Current Design Status (above)
+2. Read `docs/architecture.md` — Understand component interactions
+3. Read `docs/adr/0002-native-subagent-announce.md` — Transport boundaries
+4. Read relevant workspace `AGENTS.md` — If involving workers
+5. Read `docs/operations.md` — If changing runtime behavior
+
+### For Implementing Code
+
+1. Read `AGENTS.md` — Hard boundaries and checklist
+2. Read this handbook — Current state and invariants
+3. Read workspace `AGENTS.md` — If touching worker code
+4. Run `python -m openclaw_enhance.cli docs-check` — Validate before committing
+
+### For Workspace-Specific Work
+
+1. Read `workspaces/{name}/AGENTS.md` — Capability boundaries
+2. Read `workspaces/{name}/TOOLS.md` — Available tools
+3. Read this handbook — How workers fit into overall architecture
+4. Respect: Searcher/syshelper read-only or limited, script_coder requires tests, watchdog narrow authority
+
+### For Understanding Permanent Progress
+
+1. Read **Permanent Progress Record** (below)
+2. Read **Session State vs Permanent Memory** (below)
+3. Check latest milestone in this handbook
+4. Consult `.sisyphus/plans/*.md` only for execution detail — not for architectural truth
+
+## Known Invariants / No-Go Areas
+
+### Architecture Invariants (Do Not Violate)
+
+1. **Native execution only**: `sessions_spawn` / announce is the ONLY subagent mechanism
+   - Never create wrapper functions like `dispatch_task()` over native primitives
+   - Skills teach when/why to spawn, not how
+
+2. **File-backed skills**: `skills/*/SKILL.md` is source of truth
+   - Never duplicate skill content in Python strings
+   - Use `render_skill_contract()` to read at runtime
+
+3. **Symmetric lifecycle**: Install and uninstall must mirror each other
+   - Every installed component must have removal logic
+   - Manifest tracks enhancement-owned components
+
+4. **Non-invasive to OpenClaw core**:
+   - No edits to OpenClaw source
+   - No runtime modifications to main's AGENTS.md/TOOLS.md
+   - CLI-first preference for all operations
+
+### Worker Role Boundaries (Do Not Cross)
+
+- **oe-searcher**: Read-only file access, sandbox for temp files, NO agent spawning
+- **oe-syshelper**: Strictly read-only, NO file modifications, NO agent spawning
+- **oe-script_coder**: Full file access, can spawn searcher only for research, requires tests
+- **oe-watchdog**: Runtime state only, NO project file modifications, NO git, NO tests, reports to orchestrator
+
+### Documentation Invariants
+
+- `AGENTS.md` stays short and operational
+- This handbook stays focused on state/navigation, not deep technical docs
+- Existing `docs/*.md` remain canonical for their topics
+- `.sisyphus/*` is session state, not permanent memory
+
+## Permanent Progress Record
+
+### Completed Milestones
+
+**router-skill-first-alignment** — COMPLETE
+- Date: 2026-03-13
+- Scope: Refactored routing from Python API to skill-first model
+- Deliverables:
+  - File-backed skill loading from `skills/*/SKILL.md`
+  - Removal of `SkillRouter`, `TaskAssessment`, `RoutingDecision` classes
+  - Main-skill sync during install to active workspace
+  - Symmetric uninstall with manifest tracking
+  - `docs-check` validation for `sessions_spawn` and banned terms
+  - Documentation alignment across all docs
+- Success criteria: 77 tests passing, no router API in source, all docs reference native execution
+
+### Current Durable Status
+
+The repository is in **stable maintenance mode** for the skill-first architecture:
+- Core routing: skill contracts + native `sessions_spawn`
+- Installer: syncs main skills, symmetric uninstall
+- Validation: `docs-check` enforces alignment
+- Workers: 4 specialized agents with strict boundaries
+- No planned breaking changes to architecture
+
+### Where to Record Future Progress
+
+**Record in this handbook:**
+- Completed milestones that change future work
+- Architecture changes (routing, transport, worker model)
+- New workflow constraints or validation rules
+- New permanent documentation locations
+
+**Do NOT record here:**
+- Session-level execution state (use `.sisyphus/*`)
+- Small code-only bugfixes
+- Test additions with no architecture impact
+- Documentation typo fixes
+
+## Session State vs Permanent Memory
+
+### What `.sisyphus/*` Contains (Session-Only)
+
+- **`.sisyphus/plans/*.md`** — Active and completed execution plans with task breakdowns
+- **`.sisyphus/boulder.json`** — Pointer to current active plan and session tracking
+- **`.sisyphus/evidence/*.txt`** — Task execution artifacts and QA scenario outputs
+
+**These are execution artifacts.** They record HOW work was done in a session. They may be consulted for detail but are **NOT** canonical architectural truth.
+
+### What This Handbook Contains (Permanent)
+
+- Current design status at milestone level
+- Source-of-truth map for the repo
+- Invariants and no-go areas
+- Progress record of completed milestones
+- Update protocol (this section)
+
+**This is durable project memory.** It survives sessions and tells future agents where the project stands.
+
+## Update Protocol
+
+### When You MUST Update This Handbook
+
+Update after completing work that changes:
+- [ ] **Architecture**: Routing model, transport mechanism, worker topology
+- [ ] **Workflow**: New constraints on how agents must operate
+- [ ] **Milestones**: Completed milestones that unlock/change future work
+- [ ] **Documentation**: New permanent doc locations or source-of-truth changes
+
+### When You MUST NOT Update This Handbook
+
+Do NOT update for:
+- [ ] Code-only bugfixes with no architecture impact
+- [ ] Adding tests to existing functionality
+- [ ] Documentation typo fixes
+- [ ] Refactoring with no behavioral change
+- [ ] Session execution updates (those go to `.sisyphus/*`)
+
+### How to Update
+
+1. Edit `docs/opencode-iteration-handbook.md` directly
+2. Update relevant section (Current Design Status, Progress Record, etc.)
+3. Run `python -m openclaw_enhance.cli docs-check` to validate
+4. Commit with message: `docs(handbook): update [what changed]`
+5. Ensure `AGENTS.md` still correctly links to handbook sections
+
+## Quick Reference
+
+**Validation:**
+```bash
+python -m openclaw_enhance.cli docs-check
+pytest tests/unit/test_docs_examples.py -q
+```
+
+**Skill rendering:**
+```bash
+python -m openclaw_enhance.cli render-skill oe-toolcall-router
+python -m openclaw_enhance.cli render-workspace oe-orchestrator
+```
+
+**Install/Uninstall:**
+```bash
+python -m openclaw_enhance.cli install --dry-run
+python -m openclaw_enhance.cli status
+python -m openclaw_enhance.cli uninstall
+```
+
+---
+
+**Version**: 1.0.0  
+**Last Updated**: 2026-03-13  
+**Milestone**: router-skill-first-alignment COMPLETE
