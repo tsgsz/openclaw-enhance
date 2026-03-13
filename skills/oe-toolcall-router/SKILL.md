@@ -23,6 +23,8 @@ Keep `main` thin and responsive:
 - **Simple tasks**: Stay in main (≤2 toolcalls, no parallelism)
 - **Heavy tasks**: Escalate to oe-orchestrator (native subagent path)
 
+**Rule**: Router decides, native subagent flow executes.
+
 ## Routing Heuristics
 
 ### Stay in Main (route)
@@ -43,7 +45,9 @@ Keep `main` thin and responsive:
 | Duration | > 30 minutes |
 | Scope | Multi-file, research, or complex |
 
-## Escalation Path
+## Escalation via Native Subagent Flow
+
+When escalation is needed, use OpenClaw's native `sessions_spawn` tool:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -68,47 +72,57 @@ Keep `main` thin and responsive:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Usage
+### Escalation Command
 
-```python
-from openclaw_enhance.skills_catalog import SkillRouter, TaskAssessment
+Use `sessions_spawn` to escalate to the orchestrator:
 
-router = SkillRouter()
-
-# Simple task - stays local
-assessment = TaskAssessment(
-    description="Fix typo in README",
-    estimated_toolcalls=1,
-    requires_parallel=False,
-    complexity_score=1,
-)
-decision = router.route_task(assessment)
-# decision.action = "route"
-# decision.target = "main"
-
-# Complex task - escalates
-assessment = TaskAssessment(
-    description="Refactor auth module across 5 files",
-    estimated_toolcalls=8,
-    requires_parallel=False,
-    complexity_score=4,
-)
-decision = router.route_task(assessment)
-# decision.action = "escalate"
-# decision.target = "oe-orchestrator"
+```json
+{
+  "task": "Description of the complex task to perform",
+  "agentId": "oe-orchestrator",
+  "label": "optional-task-label"
+}
 ```
+
+The orchestrator will:
+1. Assess the escalated task
+2. Plan execution using planning-with-files if needed
+3. Dispatch to appropriate workers via native announce
+4. Synthesize results
+5. Return final result to main
 
 ## Decision Contract
 
-Returns `RoutingDecision`:
+When assessing a task, determine:
 - `action`: `"route"` | `"escalate"`
 - `target`: `"main"` | `"oe-orchestrator"`
 - `reason`: Human-readable explanation
-- `estimated_duration`: timedelta estimate
+- `estimated_duration`: Expected time to complete
 
 ## Important Notes
 
 - **NEVER** route directly to workers from main
+- **NEVER** create wrapper functions around `sessions_spawn`
 - Always escalate to `oe-orchestrator` first
-- Orchestrator handles worker delegation
-- Native subagent path is used for escalation
+- Orchestrator handles worker delegation via native announce
+- Native subagent path (`sessions_spawn` → announce) is the ONLY execution mechanism
+
+## Escalation Examples
+
+### Simple Task (stays in main)
+- User: "Fix typo in README"
+- Assessment: 1 toolcall, no parallelism
+- Action: route to main
+- Execution: Handle directly in main session
+
+### Complex Task (escalates to orchestrator)
+- User: "Refactor auth module across 5 files"
+- Assessment: 8 toolcalls, multi-file scope
+- Action: escalate to oe-orchestrator
+- Execution: Use `sessions_spawn` with agentId="oe-orchestrator"
+
+### Research Task (escalates to orchestrator)
+- User: "Research Python async patterns and update codebase"
+- Assessment: Multiple searches + code changes, >30 min
+- Action: escalate to oe-orchestrator
+- Execution: Use `sessions_spawn` with agentId="oe-orchestrator"

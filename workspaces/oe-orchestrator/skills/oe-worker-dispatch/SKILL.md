@@ -125,43 +125,68 @@ Use when:
 - Sub-tasks have sub-tasks
 - Complex decomposition required
 
-## Usage
+## Native Subagent Dispatch
 
-### Dispatch Single Task
-```python
-dispatch_task(
-    agent_type="searcher",
-    task="Research FastAPI dependency injection",
-    context={
-        "project_type": "python",
-        "priority": "high"
-    },
-    timeout_minutes=10
-)
+All dispatch is done through OpenClaw's native `sessions_spawn` tool. Do NOT create wrapper functions.
+
+### Single Task Dispatch
+
+Use `sessions_spawn` to dispatch to a specific agent:
+
+```json
+{
+  "task": "Research FastAPI dependency injection patterns",
+  "agentId": "oe-searcher",
+  "label": "auth-research"
+}
 ```
 
-### Dispatch Multiple Tasks (Parallel)
-```python
-dispatch_parallel(
-    tasks=[
-        {"agent": "searcher", "task": "Research topic A"},
-        {"agent": "searcher", "task": "Research topic B"},
-        {"agent": "syshelper", "task": "Find related files"},
-    ],
-    max_concurrent=3
-)
+### Parallel Task Dispatch
+
+Spawn multiple agents in parallel using separate `sessions_spawn` calls:
+
+```json
+// Spawn 1: Research topic A
+{
+  "task": "Research topic A",
+  "agentId": "oe-searcher",
+  "label": "research-a"
+}
+
+// Spawn 2: Research topic B
+{
+  "task": "Research topic B",
+  "agentId": "oe-searcher",
+  "label": "research-b"
+}
+
+// Spawn 3: Find related files
+{
+  "task": "Find related files",
+  "agentId": "oe-syshelper",
+  "label": "file-discovery"
+}
 ```
 
 ### Dispatch with Monitoring
-```python
-dispatch_with_watchdog(
-    agent_type="script_coder",
-    task="Long-running code generation",
-    watchdog_config={
-        "check_interval_seconds": 60,
-        "timeout_alert_threshold": 30
-    }
-)
+
+For long-running tasks, spawn a watchdog alongside the worker:
+
+```json
+// Main worker
+{
+  "task": "Long-running code generation task",
+  "agentId": "oe-script_coder",
+  "label": "code-gen",
+  "runTimeoutSeconds": 1800
+}
+
+// Watchdog (optional, for monitoring)
+{
+  "task": "Monitor code-gen task for timeout",
+  "agentId": "oe-watchdog",
+  "label": "code-gen-monitor"
+}
 ```
 
 ## Result Synthesis
@@ -175,6 +200,9 @@ dispatch_with_watchdog(
 5. **Cross-reference**: Validate across multiple agents
 
 ### Synthesis Template
+
+When synthesizing results from multiple subagents:
+
 ```markdown
 ## Summary
 [High-level overview]
@@ -182,10 +210,10 @@ dispatch_with_watchdog(
 ## Detailed Results
 
 ### From [Agent Type] - [Task Name]
-[Agent output]
+[Agent output from announce]
 
 ### From [Agent Type] - [Task Name]
-[Agent output]
+[Agent output from announce]
 
 ## Synthesis
 [Combined insights, conflicts resolved, conclusions drawn]
@@ -201,19 +229,23 @@ dispatch_with_watchdog(
 ## Error Handling
 
 ### Agent Failure
-```python
-try:
-    result = dispatch_task(...)
-except AgentTimeout:
-    # Retry with longer timeout
-    result = dispatch_task(..., timeout_minutes=extended)
-except AgentError as e:
-    # Log and escalate
-    log_error(e)
-    escalate_to_main(e)
+
+When a subagent fails (announces failure or times out):
+
+1. Check announce status for error details
+2. Retry with adjusted parameters if transient
+3. Escalate to main if unrecoverable
+
+```markdown
+## Agent Failure Response
+
+**Failed Agent**: [agent type]
+**Error**: [from announce]
+**Action**: [retry/escalate/alternative]
 ```
 
 ### Partial Results
+
 When some agents succeed and others fail:
 1. Capture successful results
 2. Log failures with context
@@ -239,7 +271,7 @@ When some agents succeed and others fail:
 ### Concurrency Limits
 - Default: 3 concurrent agents
 - Max: 5 concurrent agents
-- Override via `max_concurrent` parameter
+- Override via `maxConcurrent` in spawn calls
 
 ## Best Practices
 
@@ -250,6 +282,7 @@ When some agents succeed and others fail:
 5. **Synthesize don't concatenate**: Add value in synthesis step
 6. **Handle failures gracefully**: Partial results are better than none
 7. **Monitor long tasks**: Use watchdog for tasks > 10 minutes
+8. **Never wrap sessions_spawn**: Use native tool directly
 
 ## Integration
 
@@ -264,35 +297,28 @@ Task plans guide dispatch decisions
 
 ## Example: Complete Workflow
 
-```python
-# 1. Assess task
-assessment = TaskAssessment(
-    description="Refactor auth module",
-    estimated_toolcalls=8,
-    requires_parallel=True,
-    complexity_score=4
-)
+**Scenario**: Refactor auth module
 
-# 2. Plan
-plan = create_task_plan(assessment)
+1. **Assess task**
+   - Estimated toolcalls: 8
+   - Requires parallel: Yes
+   - Action: Plan and dispatch
 
-# 3. Dispatch parallel research
-research_results = dispatch_parallel([
-    {"agent": "searcher", "task": "Research auth patterns"},
-    {"agent": "syshelper", "task": "Find auth files"},
-    {"agent": "searcher", "task": "Look up test examples"},
-])
+2. **Plan**
+   - Create task plan using planning-with-files
+   - Identify subtasks: research, file discovery, implementation
 
-# 4. Dispatch coding (sequential, depends on research)
-code_result = dispatch_task(
-    agent_type="script_coder",
-    task="Refactor auth based on research",
-    context=research_results
-)
+3. **Dispatch parallel research** (native sessions_spawn)
+   - Spawn searcher: "Research auth patterns"
+   - Spawn syshelper: "Find auth files"
+   - Spawn searcher: "Look up test examples"
+   - Wait for all to announce results
 
-# 5. Synthesize
-final_result = synthesize_results([
-    research_results,
-    code_result
-])
-```
+4. **Dispatch coding** (sequential, depends on research)
+   - Spawn script_coder: "Refactor auth based on research"
+   - Include research results in task context
+
+5. **Synthesize**
+   - Collect all announce results
+   - Apply synthesis template
+   - Return final result to main
