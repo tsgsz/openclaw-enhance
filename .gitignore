@@ -226,3 +226,5 @@ dist/
 # OpenClaw Enhance specific
 workspaces/*/
 !workspaces/.gitkeep
+!workspaces/oe-orchestrator/
+!workspaces/oe-orchestrator/**

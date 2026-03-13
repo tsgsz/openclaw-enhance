@@ -65,6 +65,23 @@ def render_skill(skill_name: str) -> None:
         raise click.ClickException(f"{e}. Available skills: {available}") from e
 
 
+@cli.command("render-workspace")
+@click.argument("workspace_name")
+def render_workspace(workspace_name: str) -> None:
+    """Render a workspace configuration by name.
+
+    WORKSPACE_NAME: Name of the workspace to render (e.g., oe-orchestrator)
+    """
+    from openclaw_enhance.workspaces import render_workspace, list_workspaces
+
+    try:
+        rendered = render_workspace(workspace_name)
+        click.echo(rendered)
+    except ValueError as e:
+        available = ", ".join(list_workspaces()) if list_workspaces() else "none"
+        raise click.ClickException(f"{e}. Available workspaces: {available}") from e
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     try:
