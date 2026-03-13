@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "lint": "eslint hooks extensions scripts --ext .ts"
+    "lint": "eslint hooks extensions scripts --ext .ts",
+    "test": "npm run build && node --test dist/extensions/openclaw-enhance-runtime/src/runtime-bridge.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

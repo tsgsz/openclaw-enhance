@@ -82,6 +82,135 @@ def render_workspace(workspace_name: str) -> None:
         raise click.ClickException(f"{e}. Available workspaces: {available}") from e
 
 
+# Registry of hook contracts for rendering
+HOOK_CONTRACTS: dict[str, str] = {
+    "oe-subagent-spawn-enrich": """---
+name: oe-subagent-spawn-enrich
+version: 1.0.0
+event: subagent_spawning
+priority: 100
+description: Enriches subagent spawn events with task metadata
+---
+
+# oe-subagent-spawn-enrich Hook
+
+Enriches `subagent_spawning` events with enhanced metadata for tracking and deduplication.
+
+## Event Subscription
+
+```yaml
+hooks:
+  - event: subagent_spawning
+    handler: oe-subagent-spawn-enrich
+    priority: 100
+```
+
+## Enrichment Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `task_id` | string | Unique identifier for this task invocation |
+| `project` | string | Project context from runtime state |
+| `parent_session` | string | Parent session ID that initiated the spawn |
+| `eta_bucket` | string | Categorized ETA: "short" (<5min), "medium" (5-30min), "long" (>30min) |
+| `dedupe_key` | string | Deterministic key for duplicate detection |
+
+## Handler Interface
+
+```typescript
+interface SpawnEnrichInput {
+  event: 'subagent_spawning';
+  payload: {
+    subagent_type: string;
+    task_description: string;
+    estimated_toolcalls?: number;
+    estimated_duration_minutes?: number;
+  };
+  context: {
+    session_id: string;
+    project?: string;
+    parent_session?: string;
+  };
+}
+
+interface SpawnEnrichOutput {
+  enriched_payload: {
+    task_id: string;
+    project: string;
+    parent_session: string;
+    eta_bucket: 'short' | 'medium' | 'long';
+    dedupe_key: string;
+  };
+}
+```
+
+## Usage Example
+
+```typescript
+import { handler } from './handler';
+
+const result = handler({
+  event: 'subagent_spawning',
+  payload: {
+    subagent_type: 'oe-orchestrator',
+    task_description: 'Refactor auth module',
+    estimated_toolcalls: 5,
+  },
+  context: {
+    session_id: 'sess_001',
+    project: 'my-project',
+  },
+});
+
+// result.enriched_payload:
+// {
+//   task_id: 'task_abc123_xyz789',
+//   project: 'my-project',
+//   parent_session: 'sess_001',
+//   eta_bucket: 'medium',
+//   dedupe_key: 'my-project:oe-orchestrator:a1b2c3d4:20240115'
+// }
+```
+
+## Integration
+
+This hook is consumed by the `openclaw-enhance-runtime` extension via the RuntimeBridge.
+""",
+}
+
+
+def render_hook_contract(hook_name: str) -> str:
+    """Render the contract for a hook.
+
+    Args:
+        hook_name: Name of the hook to render.
+
+    Returns:
+        Rendered hook contract as markdown string.
+
+    Raises:
+        ValueError: If hook name is unknown.
+    """
+    if hook_name not in HOOK_CONTRACTS:
+        raise ValueError(f"Unknown hook: {hook_name}")
+    return HOOK_CONTRACTS[hook_name]
+
+
+@cli.command("render-hook")
+@click.argument("hook_name")
+def render_hook(hook_name: str) -> None:
+    """Render a hook contract by name.
+
+    HOOK_NAME: Name of the hook to render (e.g., oe-subagent-spawn-enrich)
+    """
+    try:
+        contract = render_hook_contract(hook_name)
+        click.echo(contract)
+    except ValueError as e:
+        available = ", ".join(HOOK_CONTRACTS.keys())
+        raise click.ClickException(f"{e}. Available hooks: {available}") from e
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     try:
