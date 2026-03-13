@@ -36,14 +36,10 @@ def cli() -> None:
 )
 def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
     """Install OpenClaw hooks and extensions."""
-    from openclaw_enhance.install import (
-        InstallError,
-        install as do_install,
-        preflight_checks,
-    )
+    import openclaw_enhance.install as install_module
 
     # Run preflight checks
-    preflight = preflight_checks(openclaw_home)
+    preflight = install_module.preflight_checks(openclaw_home)
 
     if preflight.warnings:
         for warning in preflight.warnings:
@@ -59,7 +55,7 @@ def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
         return
 
     try:
-        result = do_install(openclaw_home, force=force)
+        result = install_module.install(openclaw_home, force=force)
 
         if result.success:
             click.echo(f"Success: {result.message}")
@@ -70,7 +66,7 @@ def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
                 click.echo(f"Error: {error}", err=True)
             raise click.ClickException(result.message)
 
-    except InstallError as exc:
+    except install_module.InstallError as exc:
         raise click.ClickException(str(exc)) from exc
 
 
@@ -166,14 +162,13 @@ def render_skill(skill_name: str) -> None:
 
     SKILL_NAME: Name of the skill to render (e.g., oe-toolcall-router)
     """
-    from openclaw_enhance.skills_catalog import render_skill_contract, SKILL_CONTRACTS
+    from openclaw_enhance.skills_catalog import render_skill_contract
 
     try:
         contract = render_skill_contract(skill_name)
         click.echo(contract)
     except ValueError as e:
-        available = ", ".join(SKILL_CONTRACTS.keys())
-        raise click.ClickException(f"{e}. Available skills: {available}") from e
+        raise click.ClickException(str(e)) from e
 
 
 @cli.command("render-workspace")
@@ -183,7 +178,7 @@ def render_workspace(workspace_name: str) -> None:
 
     WORKSPACE_NAME: Name of the workspace to render (e.g., oe-orchestrator)
     """
-    from openclaw_enhance.workspaces import render_workspace, list_workspaces
+    from openclaw_enhance.workspaces import list_workspaces, render_workspace
 
     try:
         rendered = render_workspace(workspace_name)

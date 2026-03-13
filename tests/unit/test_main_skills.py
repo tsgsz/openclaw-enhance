@@ -1,19 +1,20 @@
 """Unit tests for main session skill routing logic."""
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch
+
+import pytest
 
 from openclaw_enhance.skills_catalog import (
-    SkillMetadata,
+    SKILLS_REGISTRY,
     RoutingDecision,
+    SkillMetadata,
     SkillRouter,
     TaskAssessment,
     estimate_task_duration,
-    should_escalate_to_orchestrator,
+    list_skill_contract_names,
     render_skill_contract,
-    SKILLS_REGISTRY,
+    should_escalate_to_orchestrator,
 )
 
 
@@ -270,11 +271,10 @@ class TestRenderSkillContract:
         assert "estimate" in contract.lower()
 
     def test_render_toolcall_router_contract(self):
-        """Test rendering oe-toolcall-router skill contract."""
+        """Toolcall router contract matches SKILL.md exactly."""
         contract = render_skill_contract("oe-toolcall-router")
-        assert contract is not None
-        assert "route" in contract.lower() or "escalate" in contract.lower()
-        assert "toolcall" in contract.lower() or "orchestrator" in contract.lower()
+        expected = Path("skills/oe-toolcall-router/SKILL.md").read_text(encoding="utf-8")
+        assert contract == expected
 
     def test_render_timeout_sync_contract(self):
         """Test rendering oe-timeout-state-sync skill contract."""
@@ -287,6 +287,18 @@ class TestRenderSkillContract:
         """Rendering unknown skill should raise ValueError."""
         with pytest.raises(ValueError, match="Unknown skill"):
             render_skill_contract("nonexistent-skill")
+
+    def test_render_unknown_skill_lists_available_names(self):
+        """Unknown skill errors include available skill names."""
+        with pytest.raises(ValueError, match="Available skills"):
+            render_skill_contract("missing")
+
+    def test_list_skill_contract_names(self):
+        """Skill listing includes known contracts."""
+        names = list_skill_contract_names()
+        assert "oe-eta-estimator" in names
+        assert "oe-toolcall-router" in names
+        assert "oe-timeout-state-sync" in names
 
     def test_render_contract_has_yaml_frontmatter(self):
         """Rendered contract should have YAML frontmatter."""

@@ -9,6 +9,7 @@ This module provides:
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -52,7 +53,9 @@ class TaskAssessment:
 SKILLS_REGISTRY: list[SkillMetadata] = [
     SkillMetadata(
         name="oe-eta-estimator",
-        description="Estimates task duration based on toolcall count, complexity, and parallelism needs",
+        description=(
+            "Estimates task duration based on toolcall count, complexity, and parallelism needs"
+        ),
         version="1.0.0",
         user_invocable=True,
         allowed_tools=["Read", "Write", "Glob", "Grep"],
@@ -92,191 +95,59 @@ SKILLS_REGISTRY: list[SkillMetadata] = [
 ]
 
 
-# Skill contract templates for rendering
-SKILL_CONTRACTS: dict[str, str] = {
-    "oe-eta-estimator": """---
-name: oe-eta-estimator
-version: 1.0.0
-description: Estimates task duration based on toolcall count, complexity, and parallelism needs
-user-invocable: true
-allowed-tools: "Read, Write, Glob, Grep"
-metadata:
-  routing_heuristics:
-    max_toolcalls: 2
-    max_duration_minutes: 30
-    base_time_per_toolcall: 3
----
+def _expand_configured_path(path_value: str) -> Path:
+    return Path(path_value).expanduser().resolve()
 
-# ETA Estimator
 
-Estimate task duration before execution.
+def _default_repo_skills_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "skills"
 
-## When to Use
 
-Use when:
-- Planning a multi-step task
-- User asks "how long will this take?"
-- Deciding whether to escalate to orchestrator
+def _default_bundled_skills_dir() -> Path:
+    return Path(__file__).resolve().parent / "_bundled_skills"
 
-## Estimation Formula
 
-```
-base_time = toolcalls × 3 minutes
-complexity_multiplier = 1 + (complexity_score / 10)
-parallel_multiplier = 1.5 if requires_parallel else 1.0
-duration = base_time × complexity_multiplier × parallel_multiplier
-minimum = 1 minute
-```
+def _repo_skills_dir() -> Path:
+    configured = os.getenv("OPENCLAW_ENHANCE_SKILLS_DIR")
+    if configured:
+        return _expand_configured_path(configured)
+    return _default_repo_skills_dir()
 
-## Examples
 
-| Task | Toolcalls | Parallel | ETA |
-|------|-----------|----------|-----|
-| Fix typo | 1 | No | 2 min |
-| Add function + tests | 4 | No | 15 min |
-| Multi-file refactor | 8 | Yes | 45 min |
+def _bundled_skills_dir() -> Path:
+    configured = os.getenv("OPENCLAW_ENHANCE_BUNDLED_SKILLS_DIR")
+    if configured:
+        return _expand_configured_path(configured)
+    return _default_bundled_skills_dir()
 
-## Output Contract
 
-Returns:
-- `estimated_duration`: timedelta
-- `confidence`: "high" | "medium" | "low"
-- `breakdown`: Dict of time components
-""",
-    "oe-toolcall-router": """---
-name: oe-toolcall-router
-version: 1.0.0
-description: Routes tasks to main or escalates to oe-orchestrator based on heuristics
-user-invocable: true
-allowed-tools: "Read, Write, Bash"
-metadata:
-  routing_heuristics:
-    escalation_threshold: 2
-    parallel_escalation: true
-    long_running_threshold_minutes: 30
----
+def _active_skills_dir() -> Path:
+    repo_skills = _repo_skills_dir()
+    if repo_skills.is_dir():
+        return repo_skills
 
-# Toolcall Router
+    bundled_skills = _bundled_skills_dir()
+    if bundled_skills.is_dir():
+        return bundled_skills
 
-Route tasks between main session and oe-orchestrator.
+    raise ValueError("No skills directory found")
 
-## Routing Heuristics
 
-Keep `main` thin - escalate heavy work to orchestrator.
+def list_skill_contract_names() -> list[str]:
+    try:
+        active_dir = _active_skills_dir()
+    except ValueError:
+        return []
 
-### Stay in Main (route)
-- Simple tasks: ≤2 toolcalls
-- No parallelism required
-- Duration ≤ 15 minutes
-- Single file changes
-- Quick lookups
+    return sorted(
+        skill_file.parent.name
+        for skill_file in active_dir.glob("*/SKILL.md")
+        if skill_file.is_file()
+    )
 
-### Escalate to Orchestrator (escalate)
-- Complex tasks: >2 toolcalls
-- Requires parallel agents
-- Duration > 30 minutes
-- Multi-file changes
-- Research tasks with many searches
 
-## Escalation Path
-
-```
-main session
-    ↓
-[assess task]
-    ↓
-┌─────────────┐
-│ Toolcalls>2 │──Yes──→ oe-orchestrator
-│  or Parallel│        (native subagent)
-└─────────────┘
-    No↓
-┌─────────────┐
-│ Duration>30 │──Yes──→ oe-orchestrator
-└─────────────┘
-    No↓
-   main (local)
-```
-
-## Usage
-
-```python
-from openclaw_enhance.skills_catalog import SkillRouter, TaskAssessment
-
-router = SkillRouter()
-assessment = TaskAssessment(
-    description="Refactor auth module",
-    estimated_toolcalls=5,
-    requires_parallel=False,
-    complexity_score=3,
-)
-decision = router.route_task(assessment)
-# decision.action = "escalate"
-# decision.target = "oe-orchestrator"
-```
-
-## Output Contract
-
-Returns `RoutingDecision`:
-- `action`: "route" | "escalate"
-- `target`: "main" | "oe-orchestrator"
-- `reason`: explanation string
-- `estimated_duration`: timedelta
-""",
-    "oe-timeout-state-sync": """---
-name: oe-timeout-state-sync
-version: 1.0.0
-description: Synchronizes timeout state between main session and runtime storage
-user-invocable: false
-allowed-tools: "Read, Write, Bash"
-metadata:
-  routing_heuristics:
-    max_toolcalls: 1
-    max_duration_minutes: 5
-    sync_interval_seconds: 60
----
-
-# Timeout State Sync
-
-Sync timeout state with runtime storage.
-
-## Purpose
-
-When a task times out:
-1. Record timeout event in runtime state
-2. Update last_updated timestamp
-3. Provide recovery hooks
-
-## Trigger Conditions
-
-- Task exceeds ETA by 2x
-- Session appears hung (>30 min no response)
-- User explicitly requests timeout handling
-
-## Sync Behavior
-
-```python
-sync_timeout_state(
-    session_id="sess_abc123",
-    task_description="Long refactor",
-    timeout_duration=timedelta(minutes=30),
-    runtime_state=runtime_state,
-)
-```
-
-## State Updates
-
-Updates `RuntimeState`:
-- `last_updated_utc`: current timestamp
-- Timeout event logged (implementation-specific)
-
-## Recovery
-
-After timeout sync:
-- Check if subagent completed
-- Resume or retry as appropriate
-- Update task_plan.md if applicable
-""",
-}
+def _skill_contract_path(skill_name: str) -> Path:
+    return _active_skills_dir() / skill_name / "SKILL.md"
 
 
 class SkillRouter:
@@ -303,7 +174,10 @@ class SkillRouter:
             return RoutingDecision(
                 action="escalate",
                 target="oe-orchestrator",
-                reason=f"High toolcall count ({assessment.estimated_toolcalls} > {self._escalation_threshold})",
+                reason=(
+                    f"High toolcall count ({assessment.estimated_toolcalls} > "
+                    f"{self._escalation_threshold})"
+                ),
                 estimated_duration=estimated_duration,
             )
 
@@ -319,7 +193,9 @@ class SkillRouter:
             return RoutingDecision(
                 action="escalate",
                 target="oe-orchestrator",
-                reason=f"Long-running task ({estimated_duration.total_seconds() // 60} min > 30 min)",
+                reason=(
+                    f"Long-running task ({estimated_duration.total_seconds() // 60} min > 30 min)"
+                ),
                 estimated_duration=estimated_duration,
             )
 
@@ -410,9 +286,12 @@ def render_skill_contract(skill_name: str) -> str:
     Raises:
         ValueError: If skill name is unknown.
     """
-    if skill_name not in SKILL_CONTRACTS:
-        raise ValueError(f"Unknown skill: {skill_name}")
-    return SKILL_CONTRACTS[skill_name]
+    contract_path = _skill_contract_path(skill_name)
+    if not contract_path.is_file():
+        available = ", ".join(list_skill_contract_names()) or "none"
+        raise ValueError(f"Unknown skill: {skill_name}. Available skills: {available}")
+
+    return contract_path.read_text(encoding="utf-8")
 
 
 def sync_timeout_state(
