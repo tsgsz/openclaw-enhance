@@ -1,5 +1,6 @@
 """CLI entry point for openclaw_enhance."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -12,19 +13,99 @@ from openclaw_enhance.runtime.support_matrix import SupportError, validate_envir
 @click.group()
 @click.version_option(version=VERSION, prog_name=PACKAGE_NAME)
 def cli() -> None:
+    """OpenClaw Enhance - Managed lifecycle for OpenClaw hooks and extensions."""
     pass
 
 
 @cli.command()
-def install() -> None:
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=Path.home() / ".openclaw",
+    help="Path to OpenClaw home directory",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Force reinstall if already installed",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Run preflight checks without installing",
+)
+def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
     """Install OpenClaw hooks and extensions."""
-    click.echo("Install command not yet implemented.")
+    from openclaw_enhance.install import (
+        InstallError,
+        install as do_install,
+        preflight_checks,
+    )
+
+    # Run preflight checks
+    preflight = preflight_checks(openclaw_home)
+
+    if preflight.warnings:
+        for warning in preflight.warnings:
+            click.echo(f"Warning: {warning}", err=True)
+
+    if not preflight.passed:
+        for error in preflight.errors:
+            click.echo(f"Error: {error}", err=True)
+        raise click.ClickException("Preflight checks failed")
+
+    if dry_run:
+        click.echo("Preflight checks passed. Installation would proceed.")
+        return
+
+    try:
+        result = do_install(openclaw_home, force=force)
+
+        if result.success:
+            click.echo(f"Success: {result.message}")
+            if result.components_installed:
+                click.echo(f"Installed components: {', '.join(result.components_installed)}")
+        else:
+            for error in result.errors:
+                click.echo(f"Error: {error}", err=True)
+            raise click.ClickException(result.message)
+
+    except InstallError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @cli.command()
-def uninstall() -> None:
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=None,
+    help="Path to OpenClaw home directory (optional)",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Force uninstall even if checks fail",
+)
+def uninstall(openclaw_home: Path | None, force: bool) -> None:
     """Uninstall OpenClaw hooks and extensions."""
-    click.echo("Uninstall command not yet implemented.")
+    from openclaw_enhance.install import uninstall as do_uninstall
+
+    try:
+        result = do_uninstall(openclaw_home, force=force)
+
+        click.echo(f"Result: {result.message}")
+
+        if result.components_removed:
+            click.echo(f"Removed components: {', '.join(result.components_removed)}")
+
+        if result.components_failed:
+            click.echo(f"Failed components: {', '.join(result.components_failed)}", err=True)
+
+        if not result.success and not force:
+            raise click.ClickException(result.message)
+
+    except Exception as exc:
+        raise click.ClickException(f"Uninstall failed: {exc}") from exc
 
 
 @cli.command()
@@ -43,9 +124,39 @@ def doctor(openclaw_home: Path) -> None:
 
 
 @cli.command()
-def status() -> None:
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Output in JSON format",
+)
+def status(output_json: bool) -> None:
     """Show current OpenClaw installation status."""
-    click.echo("Status command not yet implemented.")
+    from openclaw_enhance.install import get_install_status
+
+    install_status = get_install_status()
+
+    if output_json:
+        click.echo(json.dumps(install_status, indent=2))
+    else:
+        click.echo(f"Installation Path: {install_status['install_path']}")
+        click.echo(f"Installed: {'Yes' if install_status['installed'] else 'No'}")
+
+        if install_status["installed"]:
+            click.echo(f"Version: {install_status['version']}")
+            click.echo(f"Install Time: {install_status.get('install_time', 'N/A')}")
+
+            if install_status["components"]:
+                click.echo(f"Components ({len(install_status['components'])}):")
+                for component in install_status["components"]:
+                    click.echo(f"  - {component}")
+
+        if install_status["locked"]:
+            click.echo("Status: Locked")
+            if install_status.get("lock_info"):
+                lock_info = install_status["lock_info"]
+                click.echo(f"  Operation: {lock_info['operation']}")
+                click.echo(f"  PID: {lock_info['pid']}")
 
 
 @cli.command("render-skill")
