@@ -12,7 +12,7 @@
 
 1. 原生 Openclaw 在同时进行多任务时，智力显著下降。
 2. 原生 Openclaw 在遇到大段的TOOLS调用时，无法响应用户的其它要求。
-3. 原生 Openclaw 的 main 在 session_spawn 之后，subagent 会直接返回结果。
+3. 原生 Openclaw 的 main 在 sessions_spawn 之后，subagent 会直接返回结果。
 4. 原生 Oepnclaw 的 main 在干活的时候不会给大概要干多就的预期，有时候 subagent 挂了也不会多说话。
 5. 原生 Openclaw 的文件写入全靠大模型临时编，受记忆影响非常大，后期无法管理。
 

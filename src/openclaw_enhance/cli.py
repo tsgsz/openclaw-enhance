@@ -317,6 +317,85 @@ def render_hook(hook_name: str) -> None:
         raise click.ClickException(f"{e}. Available hooks: {available}") from e
 
 
+@cli.command("docs-check")
+def docs_check() -> None:
+    """Validate documentation aligns with skill-first model."""
+    from pathlib import Path
+
+    src_dir = Path(__file__).parent
+    project_root = src_dir.parent.parent
+
+    target_files = [
+        project_root / "README.md",
+        project_root / "docs" / "architecture.md",
+        project_root / "docs" / "install.md",
+        project_root / "docs" / "operations.md",
+        project_root / "docs" / "troubleshooting.md",
+        project_root / "docs" / "adr" / "0002-native-subagent-announce.md",
+    ]
+
+    required_terms = ["sessions_spawn"]
+    banned_terms = [
+        "SkillRouter",
+        "dispatch_task(",
+        "dispatch_parallel(",
+        "dispatch_with_watchdog(",
+    ]
+
+    errors: list[str] = []
+
+    missing_files = [f.relative_to(project_root) for f in target_files if not f.exists()]
+    if missing_files:
+        for mf in missing_files:
+            errors.append(f"Missing file: {mf}")
+
+    if errors:
+        for err in errors:
+            click.echo(f"Error: {err}", err=True)
+        raise click.ClickException("Docs check failed")
+
+    file_contents: dict[Path, str] = {}
+    for f in target_files:
+        try:
+            content = f.read_text(encoding="utf-8")
+            file_contents[f] = content
+        except Exception as e:
+            errors.append(f"Failed to read {f.relative_to(project_root)}: {e}")
+
+    if errors:
+        for err in errors:
+            click.echo(f"Error: {err}", err=True)
+        raise click.ClickException("Docs check failed")
+
+    found_required = False
+    for term in required_terms:
+        for f, content in file_contents.items():
+            if term in content:
+                found_required = True
+                break
+        if found_required:
+            break
+
+    if not found_required:
+        term = required_terms[0]
+        errors.append(
+            f"Required term not found: '{term}' must appear in at least one documentation file"
+        )
+
+    for term in banned_terms:
+        for f, content in file_contents.items():
+            if term in content:
+                rel_path = f.relative_to(project_root)
+                errors.append(f"Banned term '{term}' found in {rel_path}")
+
+    if errors:
+        for err in errors:
+            click.echo(f"Error: {err}", err=True)
+        raise click.ClickException("Docs check failed")
+
+    click.echo("Docs check passed.")
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     try:
