@@ -109,7 +109,7 @@ Results → Orchestrator synthesis → Return to main
 ### Architecture Invariants (Do Not Violate)
 
 1. **Native execution only**: `sessions_spawn` / announce is the ONLY subagent mechanism
-   - Never create wrapper functions like `dispatch_task()` over native primitives
+   - Never create wrapper functions like dispatch helper methods over native primitives
    - Skills teach when/why to spawn, not how
 
 2. **File-backed skills**: `skills/*/SKILL.md` is source of truth
@@ -148,7 +148,7 @@ Results → Orchestrator synthesis → Return to main
 - Scope: Refactored routing from Python API to skill-first model
 - Deliverables:
   - File-backed skill loading from `skills/*/SKILL.md`
-  - Removal of `SkillRouter`, `TaskAssessment`, `RoutingDecision` classes
+  - Removal of Python router runtime (router classes and assessment types)
   - Main-skill sync during install to active workspace
   - Symmetric uninstall with manifest tracking
   - `docs-check` validation for `sessions_spawn` and banned terms

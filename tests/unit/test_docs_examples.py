@@ -360,3 +360,63 @@ class TestDocumentationCompleteness:
             content = install_doc.read_text()
             assert "install" in content.lower()
             assert "uninstall" in content.lower()
+
+
+class TestOpencodePlaybookDocs:
+    """Test opencode iteration playbook documentation."""
+
+    def test_agents_md_exists(self) -> None:
+        """Ensure AGENTS.md exists at repo root."""
+        agents_file = Path("AGENTS.md")
+        assert agents_file.exists(), "AGENTS.md must exist at repo root"
+
+    def test_agents_md_has_required_sections(self) -> None:
+        """Ensure AGENTS.md has required sections."""
+        agents_file = Path("AGENTS.md")
+        if not agents_file.exists():
+            pytest.skip("AGENTS.md not found")
+
+        content = agents_file.read_text()
+
+        assert "Required Reading Order" in content
+        assert "Source of Truth Map" in content
+        assert "docs/opencode-iteration-handbook.md" in content
+        assert ".sisyphus" in content
+
+    def test_handbook_exists(self) -> None:
+        """Ensure handbook exists."""
+        handbook = DOCS_DIR / "opencode-iteration-handbook.md"
+        assert handbook.exists(), "Handbook must exist"
+
+    def test_handbook_has_required_sections(self) -> None:
+        """Ensure handbook has required sections."""
+        handbook = DOCS_DIR / "opencode-iteration-handbook.md"
+        if not handbook.exists():
+            pytest.skip("Handbook not found")
+
+        content = handbook.read_text()
+
+        required_sections = [
+            "Current Design Status",
+            "Source of Truth Map",
+            "Required Reading Paths",
+            "Known Invariants",
+            "Permanent Progress Record",
+            "Session State vs Permanent Memory",
+            "Update Protocol",
+        ]
+
+        for section in required_sections:
+            assert f"## {section}" in content, f"Missing section: {section}"
+
+    def test_handbook_references_architecture(self) -> None:
+        """Ensure handbook references current architecture."""
+        handbook = DOCS_DIR / "opencode-iteration-handbook.md"
+        if not handbook.exists():
+            pytest.skip("Handbook not found")
+
+        content = handbook.read_text()
+
+        assert "skill-first" in content.lower()
+        assert "sessions_spawn" in content
+        assert "router-skill-first-alignment" in content

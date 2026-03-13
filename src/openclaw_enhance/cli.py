@@ -326,12 +326,14 @@ def docs_check() -> None:
     project_root = src_dir.parent.parent
 
     target_files = [
+        project_root / "AGENTS.md",
         project_root / "README.md",
         project_root / "docs" / "architecture.md",
         project_root / "docs" / "install.md",
         project_root / "docs" / "operations.md",
         project_root / "docs" / "troubleshooting.md",
         project_root / "docs" / "adr" / "0002-native-subagent-announce.md",
+        project_root / "docs" / "opencode-iteration-handbook.md",
     ]
 
     required_terms = ["sessions_spawn"]
@@ -387,6 +389,28 @@ def docs_check() -> None:
             if term in content:
                 rel_path = f.relative_to(project_root)
                 errors.append(f"Banned term '{term}' found in {rel_path}")
+
+    agents_file = project_root / "AGENTS.md"
+    if agents_file.exists():
+        agents_content = agents_file.read_text(encoding="utf-8")
+        if "opencode-iteration-handbook.md" not in agents_content:
+            errors.append("AGENTS.md must link to docs/opencode-iteration-handbook.md")
+
+    handbook_file = project_root / "docs" / "opencode-iteration-handbook.md"
+    if handbook_file.exists():
+        handbook_content = handbook_file.read_text(encoding="utf-8")
+        required_handbook_sections = [
+            "Current Design Status",
+            "Source of Truth Map",
+            "Permanent Progress Record",
+            "Session State vs Permanent Memory",
+            "Update Protocol",
+        ]
+        for section in required_handbook_sections:
+            if f"## {section}" not in handbook_content:
+                errors.append(f"Handbook missing required section: {section}")
+    else:
+        errors.append("Missing required file: docs/opencode-iteration-handbook.md")
 
     if errors:
         for err in errors:
