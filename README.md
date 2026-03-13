@@ -2,6 +2,8 @@
 
 本项目用于对 Openclaw 做智力和稳定性上的增强。
 
+> **For OpenCode sessions**: Start with [`AGENTS.md`](./AGENTS.md) for project rules and [`docs/opencode-iteration-handbook.md`](./docs/opencode-iteration-handbook.md) for current design state.
+
 1. 不侵入 Openclaw 的源代码，一切能力都用 plugin, hooks, skills, agents定义来实现。
 2. 不修改任何运行时的的文件：例如 main 的 AGENTS.md, TOOLS.md 等。
 3. 可以一键部署或者卸载。

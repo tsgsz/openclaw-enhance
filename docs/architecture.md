@@ -2,6 +2,8 @@
 
 This document describes the architecture of `openclaw-enhance`, a non-invasive control-plane package for OpenClaw.
 
+> **Project State**: See [`opencode-iteration-handbook.md`](./opencode-iteration-handbook.md) for current design status, permanent progress, and required reading paths.
+
 ## Overview
 
 `openclaw-enhance` augments OpenClaw's multitasking capabilities, long-running task handling, and operational visibility without modifying OpenClaw core source code. It uses OpenClaw's native extension points: skills, hooks, extensions, and agent workspaces.
