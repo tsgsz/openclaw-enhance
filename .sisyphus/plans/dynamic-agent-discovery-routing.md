@@ -275,7 +275,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `test(docs): enforce worker manifest guardrails` | Files: `src/openclaw_enhance/cli.py`, `tests/unit/test_docs_examples.py`, `tests/unit/test_agent_catalog.py`
 
-- [ ] 5. Rewrite `oe-worker-dispatch` as a discovery-first routing contract
+- [x] 5. Rewrite `oe-worker-dispatch` as a discovery-first routing contract
 
   **What to do**: Replace the static worker-description section in `workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md` with an explicit discovery-first workflow. The contract must require orchestrator to enumerate worker `AGENTS.md` files, parse frontmatter, build a candidate catalog, hard-filter by constraints, rank by deterministic least-privilege rules, and dispatch only then. Keep special-case branches for `oe-tool-recovery` and `oe-watchdog` explicit and separate from ordinary scoring.
   **Must NOT do**: Do not reintroduce hardcoded authoritative worker descriptions; do not allow main to route directly to workers; do not add custom transport or worker-to-worker handoff.

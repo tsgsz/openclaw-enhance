@@ -32,12 +32,24 @@ Subagent (specialized)
 Orchestrator ← synthesize results
 ```
 
-### Supported Agent Types
-- `searcher`: Research, web search, documentation lookup (cheap model + sandbox read/write)
+### Worker Selection (Catalog-Driven)
+
+The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter:
+
+1. **Enumerate**: Scan `workspaces/*/AGENTS.md` for available workers
+2. **Parse**: Extract routing metadata (capabilities, constraints, cost) from YAML frontmatter to build candidate catalog
+3. **Filter**: Apply hard constraints based on task requirements (e.g., `mutation_mode: read_only` for safe exploration)
+4. **Rank**: Select by least-privilege rules (narrowest scope, lowest cost, best capability match)
+5. **Dispatch**: Spawn selected worker via `sessions_spawn`
+
+**Current Built-in Workers** (non-authoritative examples):
+- `searcher`: Research, web search, documentation lookup (cheap model + read-only)
 - `syshelper`: System introspection, grep, file listing (cheap model + read-only)
-- `script_coder`: Script development and testing (codex-class model + sandbox read/write)
-- `watchdog`: Session monitoring, timeout detection, diagnostics (any model + full access)
+- `script_coder`: Script development and testing (standard model + repo write + requires tests)
+- `watchdog`: Session monitoring, timeout detection, diagnostics (specialized monitoring role)
 - `tool_recovery`: Leaf-node recovery specialist for failed tool calls (reasoning model + read-only)
+
+**Note**: Worker capabilities are defined in their respective `AGENTS.md` frontmatter, not in this list. This section provides examples only; the Orchestrator must discover actual worker metadata at runtime.
 
 ## Constraints
 
