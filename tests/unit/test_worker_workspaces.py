@@ -232,3 +232,31 @@ class TestWorkspacePathResolution:
             metadata = get_workspace_metadata(workspace)
             path = Path(metadata["path"])
             assert (path / "TOOLS.md").exists()
+
+
+class TestWorkspaceMetadataWithFrontmatter:
+    """Test workspace metadata includes parsed frontmatter."""
+
+    def test_metadata_includes_manifest_key(self):
+        """Metadata should include manifest key for workspaces with frontmatter."""
+        metadata = get_workspace_metadata("oe-searcher")
+        assert "manifest" in metadata
+
+    def test_manifest_has_required_fields(self):
+        """Manifest should have agent_id, workspace, routing, is_valid, errors."""
+        metadata = get_workspace_metadata("oe-searcher")
+        manifest = metadata["manifest"]
+        assert "agent_id" in manifest
+        assert "workspace" in manifest
+        assert "routing" in manifest
+        assert "is_valid" in manifest
+        assert "errors" in manifest
+
+    def test_metadata_preserves_existing_keys(self):
+        """Metadata should preserve existing keys like name, path, skills."""
+        metadata = get_workspace_metadata("oe-searcher")
+        assert metadata["name"] == "oe-searcher"
+        assert "path" in metadata
+        assert "skills" in metadata
+        assert metadata["has_agents"] is True
+        assert metadata["has_tools"] is True

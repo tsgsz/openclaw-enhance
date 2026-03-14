@@ -9,6 +9,8 @@ This module provides functionality for:
 from pathlib import Path
 from typing import Any
 
+from openclaw_enhance.agent_catalog import parse_agent_manifest
+
 
 WORKSPACES_DIR = Path("workspaces")
 
@@ -79,7 +81,7 @@ def get_workspace_metadata(workspace_name: str) -> dict[str, Any]:
         workspace_name: Name of the workspace.
 
     Returns:
-        Dictionary with workspace metadata.
+        Dictionary with workspace metadata including parsed frontmatter if available.
 
     Raises:
         ValueError: If workspace does not exist.
@@ -90,13 +92,27 @@ def get_workspace_metadata(workspace_name: str) -> dict[str, Any]:
     workspace_path = _get_workspace_path(workspace_name)
     skills = get_workspace_skills(workspace_name)
 
-    return {
+    metadata = {
         "name": workspace_name,
         "path": str(workspace_path.absolute()),
         "skills": skills,
         "has_agents": (workspace_path / "AGENTS.md").exists(),
         "has_tools": (workspace_path / "TOOLS.md").exists(),
     }
+
+    # Parse frontmatter from AGENTS.md if available
+    agents_path = workspace_path / "AGENTS.md"
+    if agents_path.exists():
+        manifest = parse_agent_manifest(agents_path.read_text())
+        metadata["manifest"] = {
+            "agent_id": manifest.agent_id,
+            "workspace": manifest.workspace,
+            "routing": manifest.routing,
+            "is_valid": manifest.is_valid,
+            "errors": manifest.errors,
+        }
+
+    return metadata
 
 
 def _read_file_if_exists(path: Path) -> str:
