@@ -470,16 +470,16 @@ Validate changes in a real environment:
 
 ```bash
 # Validate installation lifecycle changes
-python -m openclaw_enhance.cli validate-feature --class install-lifecycle
+python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install
 
 # Validate CLI surface changes
-python -m openclaw_enhance.cli validate-feature --class cli-surface
+python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface
 
 # Validate routing or agent changes
-python -m openclaw_enhance.cli validate-feature --class workspace-routing
+python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield
 
 # Validate watchdog or hook changes
-python -m openclaw_enhance.cli validate-feature --class runtime-watchdog
+python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder
 ```
 
 Reports are automatically saved to `docs/reports/`.

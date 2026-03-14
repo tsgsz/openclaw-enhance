@@ -110,6 +110,9 @@ class TestDocumentationExamples:
         assert "python -m openclaw_enhance.cli status" in content
         assert "python -m openclaw_enhance.cli uninstall" in content
         assert "python -m openclaw_enhance.cli validate-feature" in content
+        assert "--feature-class" in content
+        assert "--report-slug" in content
+        assert "--class" not in content
 
     def test_architecture_doc_has_diagrams(self) -> None:
         """Ensure architecture.md has ASCII diagrams."""

@@ -349,6 +349,7 @@ def docs_check() -> None:
         "dispatch_task(",
         "dispatch_parallel(",
         "dispatch_with_watchdog(",
+        "validate-feature --class",
     ]
 
     errors: list[str] = []

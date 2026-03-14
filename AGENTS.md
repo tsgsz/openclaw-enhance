@@ -87,9 +87,9 @@ Before implementing any code:
 After completing any feature development:
 - [ ] Unit tests pass
 - [ ] Integration tests pass
-- [ ] **Real-environment validation loop completed**
+  - [ ] **Real-environment validation loop completed**
   - [ ] Feature class identified (see `docs/testing-playbook.md`)
-  - [ ] `python -m openclaw_enhance.cli validate-feature --class <class>` passes
+  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class <class> --report-slug <slug>` passes
   - [ ] Validation report saved to `docs/reports/`
 - [ ] `python -m openclaw_enhance.cli docs-check` passes
 
