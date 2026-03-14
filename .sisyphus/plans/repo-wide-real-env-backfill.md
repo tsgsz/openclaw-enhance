@@ -164,7 +164,7 @@ Wave 3: harness execution, durable report generation, and workflow state updates
 
   **Commit**: YES | Message: `docs(validation): normalize validate-feature contract` | Files: `AGENTS.md`, `docs/install.md`, `docs/operations.md`, `tests/unit/test_docs_examples.py`, `src/openclaw_enhance/cli.py` (if docs-check needs tightening)
 
-- [ ] 2. Expand `docs/testing-playbook.md` into the shipped-feature coverage matrix and method source of truth
+- [x] 2. Expand `docs/testing-playbook.md` into the shipped-feature coverage matrix and method source of truth
 
   **What to do**: Rewrite the playbook so it no longer stops at feature classes. Add a “Current branch shipped set” inventory that covers the handbook milestones plus delivered branch capabilities like `install --dev`. For each shipped capability/milestone, record: mapped feature class, canonical scenario slug(s), exact commands, required observable proof, report path, and whether the scenario is expected to produce a PASS or EXEMPT report. Explicitly map these canonical slugs: `backfill-core-install`, `backfill-dev-install`, `backfill-cli-surface`, `backfill-routing-yield`, `backfill-recovery-worker`, and `backfill-watchdog-reminder`.
   **Must NOT do**: Do not create new feature classes. Do not keep the matrix only in `.sisyphus/` or only in comments/tests.
