@@ -210,6 +210,7 @@ class TestValidateFeatureCommandOrdering:
         )
 
         calls = [call[0][0] for call in mock_run.call_args_list]
+        envs = [call[1].get("env", {}) for call in mock_run.call_args_list]
 
         # Should have status, doctor, render commands, docs-check, and validate-feature self-surface
         assert any("status" in c for c in calls)
@@ -219,6 +220,11 @@ class TestValidateFeatureCommandOrdering:
         assert any("render-hook" in c for c in calls)
         assert any("docs-check" in c for c in calls)
         assert any("validate-feature" in c for c in calls)
+
+        # Verify environment variable injection
+        for env in envs:
+            assert "OPENCLAW_ENHANCE_WORKSPACES_DIR" in env
+            assert "workspaces" in env["OPENCLAW_ENHANCE_WORKSPACES_DIR"]
 
 
 class TestValidateFeatureExemptions:

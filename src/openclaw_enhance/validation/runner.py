@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -46,12 +47,20 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
         CommandResult with captured output and timing.
     """
     start = time.time()
+
+    # Ensure we can find workspaces during validation even if not installed
+    # by pointing to the repository's workspaces directory.
+    env = os.environ.copy()
+    project_root = Path(__file__).parent.parent.parent.parent
+    env["OPENCLAW_ENHANCE_WORKSPACES_DIR"] = str(project_root / "workspaces")
+
     result = subprocess.run(
         cmd,
         shell=True,
         capture_output=True,
         text=True,
         cwd=openclaw_home.parent,
+        env=env,
     )
     duration = time.time() - start
 
