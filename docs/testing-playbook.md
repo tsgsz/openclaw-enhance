@@ -94,3 +94,49 @@ Reports must be saved to: `docs/reports/YYYY-MM-DD-<slug>-<feature-class>.md`
 - The `uninstall` command is the primary cleanup mechanism.
 - Manual removal of `~/.openclaw/openclaw-enhance` is permitted if `uninstall` fails.
 - Never modify `~/.openclaw/config.json` manually; use the CLI.
+
+## 6. Current Branch Shipped Set
+
+This section tracks the canonical backfill slugs for features already shipped in the current branch. Use these slugs with `validate-feature --report-slug <slug>` to generate standardized backfill reports.
+
+| Feature Capability | Canonical Slug | Feature Class | Method Contract | Observable Proof |
+| :--- | :--- | :--- | :--- | :--- |
+| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
+| Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
+| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status --json`, `render-workspace`, `render-skill`, `render-hook` | Valid JSON output; rendered content matches source files |
+| Orchestrator Yield | `backfill-routing-yield` | `workspace-routing` | `openclaw chat --message "帮我规划一个复杂任务"` | Session logs show `oe-orchestrator` using `sessions_yield` for sync |
+| Recovery Worker | `backfill-recovery-worker` | `workspace-routing` | `openclaw agent list` | `oe-tool-recovery` appears in agent list with correct capabilities |
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+
+### 6.1 Method Contracts & Expectations
+
+#### `backfill-core-install`
+- **Command**: `python -m openclaw_enhance.cli uninstall && python -m openclaw_enhance.cli install`
+- **Expectation**: Exit code 0. "Installation successful" in stdout.
+- **Report**: Must include `doctor` output showing all checks passed.
+
+#### `backfill-dev-install`
+- **Command**: `python -m openclaw_enhance.cli install --dev`
+- **Expectation**: Exit code 0.
+- **Proof**: `ls -la ~/.openclaw/openclaw-enhance/workspaces/oe-orchestrator` shows it points back to `src/openclaw_enhance/workspaces/oe-orchestrator`.
+
+#### `backfill-cli-surface`
+- **Command**: `python -m openclaw_enhance.cli status --json`
+- **Expectation**: Valid JSON. `installed` is `true`.
+- **Command**: `python -m openclaw_enhance.cli render-skill oe-toolcall-router`
+- **Expectation**: Output contains "Toolcall Router" and "sessions_spawn".
+
+#### `backfill-routing-yield`
+- **Command**: `openclaw chat --message "帮我规划一个复杂任务"`
+- **Expectation**: Orchestrator spawns subagents and uses `sessions_yield` to wait for results.
+- **Proof**: `openclaw session info <id>` shows `sessions_yield` calls in history.
+
+#### `backfill-recovery-worker`
+- **Command**: `openclaw agent list`
+- **Expectation**: `oe-tool-recovery` is listed.
+- **Proof**: `openclaw agent info oe-tool-recovery` shows "Recovery capabilities".
+
+#### `backfill-watchdog-reminder`
+- **Command**: `python -m openclaw_enhance.cli status`
+- **Expectation**: Shows hook registration status.
+- **Proof**: `grep "openclawEnhance" ~/.openclaw/config.json` returns matches.
