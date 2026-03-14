@@ -421,6 +421,43 @@ class TestHarnessEnvironmentValidation:
         assert hasattr(install, "get_install_status")
 
 
+class TestHarnessWatchdogIntegration:
+    """E2E tests for watchdog runtime integration in harness."""
+
+    def test_watchdog_workspace_available(self):
+        """Watchdog workspace should be available in harness."""
+        result = subprocess.run(
+            [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0
+        assert "oe-watchdog" in result.stdout
+        assert "SessionSender" in result.stdout or "monitoring" in result.stdout.lower()
+
+    def test_watchdog_reminder_delivery_validation(self):
+        """Watchdog reminder delivery should validate successfully."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "runtime-watchdog",
+                "--report-slug",
+                "harness-watchdog-test",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, f"Watchdog validation failed: {result.stderr}"
+        assert "runtime-watchdog" in result.stdout
+        assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
+
+
 class TestHarnessRealEnvironmentValidation:
     """E2E tests for real-environment validation via CLI."""
 

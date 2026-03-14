@@ -30,7 +30,7 @@ This AGENTS.md defines the capabilities and constraints for the `oe-watchdog` wo
 The Watchdog is a monitoring-focused agent with **narrow authority** responsible for:
 - **Timeout Detection**: Identifying sessions exceeding expected duration
 - **Status Monitoring**: Tracking session and runtime state
-- **Reminder Delivery**: Sending notifications to sessions
+- **Reminder Delivery**: Sending timeout notifications via SessionSender protocol
 - **Health Checks**: Verifying system and agent health
 - **State Reporting**: Reporting on runtime conditions
 
@@ -38,7 +38,7 @@ The Watchdog is a monitoring-focused agent with **narrow authority** responsible
 
 ### ✅ ALLOWED Operations (Narrow Scope)
 1. **Timeout Confirmation**: Verify if a session has exceeded its ETA
-2. **Reminder Delivery**: Send timeout reminders to sessions via `session_send`
+2. **Reminder Delivery**: Send timeout reminders via SessionSender protocol
 3. **Runtime State Writes**: Write to runtime state store only
 4. **Session Status**: Check session metadata and progress
 5. **Health Reporting**: Report on system health indicators
@@ -58,7 +58,7 @@ The Watchdog is a monitoring-focused agent with **narrow authority** responsible
 ### Core Responsibilities
 1. **Monitor Sessions**: Track active sessions for timeout conditions
 2. **Confirm Timeouts**: Verify ETA violations before alerting
-3. **Send Reminders**: Deliver timeout notifications to sessions
+3. **Send Reminders**: Deliver timeout notifications via SessionSender
 4. **Report Status**: Provide session and system status reports
 5. **Log Events**: Record monitoring events to runtime state
 
@@ -110,7 +110,7 @@ The only write access is to runtime state:
 1. **Check Sessions**: List active sessions
 2. **Compare ETA**: Check elapsed time vs expected duration
 3. **Confirm Timeout**: Verify session is truly stuck
-4. **Send Reminder**: Notify session of timeout via `session_send`
+4. **Send Reminder**: Deliver notification via SessionSender protocol
 5. **Log Event**: Record timeout event to runtime state
 6. **Report**: Return status to orchestrator
 
@@ -123,18 +123,18 @@ Process:
   3. If elapsed > ETA * 1.5:
      a. session_read to confirm stuck state
      b. Verify no recent progress
-     c. Send reminder via session_send
+     c. Send reminder via SessionSender.send_to_session()
      d. Write timeout event to runtime state
   4. Report status to orchestrator
-Output: Timeout status + actions taken
+Output: Timeout status + reminder delivery confirmation
 ```
 
 ### Reminder Delivery Pattern
 ```
 Watchdog confirms timeout
     ↓
-Send reminder to session:
-  "Task exceeded ETA. Need help? Reply 'continue' or 'abort'."
+Send reminder via SessionSender:
+  notifier.send_to_session(session_id, message)
     ↓
 Log delivery to runtime state
     ↓
@@ -151,7 +151,7 @@ Report to orchestrator
 
 ### With Other Agents
 - **No direct interaction** - Watchdog operates independently
-- Sends reminders to sessions (one-way communication)
+- Sends reminders via SessionSender protocol (one-way communication)
 - Does not spawn or coordinate other agents
 
 ## Output Format
@@ -169,7 +169,7 @@ Date/Time: [timestamp]
 | def456 | active | 3m | 10m | ✓ OK |
 
 ## Actions Taken
-1. Sent timeout reminder to session abc123
+1. Sent timeout reminder to session abc123 via SessionSender
 2. Logged event to runtime state
 
 ## Runtime State Updates
@@ -194,7 +194,7 @@ Date/Time: [timestamp]
 The Watchdog is explicitly restricted to:
 1. Reading session metadata and messages
 2. Writing to runtime state only
-3. Sending reminders to sessions
+3. Sending reminders via SessionSender protocol
 4. Reporting status
 
 ### Safety Mechanisms
@@ -229,13 +229,14 @@ The Watchdog is explicitly restricted to:
 }
 ```
 
-### Reminder Log
+### Reminder Delivery Log
 ```json
 {
   "event_type": "reminder",
   "session_id": "abc123",
   "timestamp": "2026-03-13T10:30:00Z",
-  "message": "Task exceeded ETA..."
+  "message": "Task exceeded ETA...",
+  "delivery_status": "sent"
 }
 ```
 

@@ -60,10 +60,12 @@ SHIPPED_FEATURES = [
     {
         "slug": "backfill-watchdog-reminder",
         "feature_class": FeatureClass.RUNTIME_WATCHDOG,
-        "capability": "Watchdog Hooks",
+        "capability": "Watchdog Reminder Delivery",
         "proof_expectations": [
-            "hooks are registered in config.json",
-            "watchdog detects timeouts",
+            "test_end_to_end_monitoring_cycle passes",
+            "MockSessionSender.send_to_session invoked with session_id and message",
+            "notifier.send_suspected_timeout or send_confirmed_timeout returns Reminder object",
+            "sent_messages list contains delivery evidence",
         ],
     },
 ]

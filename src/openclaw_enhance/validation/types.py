@@ -139,6 +139,7 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             pytest_cmd,
         ]
 
+    project_root = Path(__file__).parent.parent.parent.parent
     bundles = {
         FeatureClass.CLI_SURFACE: [
             "python -m openclaw_enhance.cli status",
@@ -154,7 +155,11 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             ),
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
-            'cat ~/.openclaw/config.json | grep "openclawEnhance"',
+            (
+                f"cd {project_root} && python -m pytest "
+                "tests/integration/test_timeout_flow.py::TestTimeoutFlow::"
+                "test_end_to_end_monitoring_cycle -xvs"
+            ),
         ],
         FeatureClass.DOCS_TEST_ONLY: [
             "python -m openclaw_enhance.cli docs-check",

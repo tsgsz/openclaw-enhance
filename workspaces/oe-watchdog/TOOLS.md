@@ -168,16 +168,17 @@ The following tools are **NOT AVAILABLE** to the Watchdog:
 
 | Tool | Reason |
 |------|--------|
-| `Edit` | Cannot modify files |
-| `Write` (to project) | Only runtime state allowed |
-| `call_omo_agent` | Cannot spawn agents |
-| `websearch_web_search_exa` | Use searcher for web queries |
-| `background_output` | No background task management |
-| `background_cancel` | No task cancellation |
-| `Grep` | Not needed for monitoring |
-| `Glob` | Not needed for monitoring |
-| `LSP Tools` | Not needed for monitoring |
-| `session_send` | Not available in toolset |
+| `Edit` | Not available - Cannot modify files |
+| `Write` (to project) | Not available - Only runtime state allowed |
+| `call_omo_agent` | Not available - Cannot spawn agents |
+| `websearch_web_search_exa` | Not available - Use searcher for web queries |
+| `background_output` | Not available - No background task management |
+| `background_cancel` | Not available - No task cancellation |
+| `Grep` | Not available - Not needed for monitoring |
+| `Glob` | Not available - Not needed for monitoring |
+| `LSP Tools` | Not available - Not needed for monitoring |
+
+**Note**: Reminder delivery uses the SessionSender protocol (implemented in notifier.py), not a direct tool call.
 
 ### Why These Are Prohibited
 - **Edit/Write(project)**: Watchdog has narrow authority

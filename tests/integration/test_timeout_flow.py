@@ -233,8 +233,7 @@ class TestTimeoutFlow:
         assert pending[0].session_id == "suspected_session"
 
     def test_end_to_end_monitoring_cycle(self, temp_home: Path, mock_sender: MockSessionSender):
-        """Test a complete monitoring and response cycle."""
-        # Initialize all components
+        """Test a complete monitoring and response cycle with delivery proof."""
         state_sync = StateSync(user_home=temp_home)
         store_adapter = RuntimeStoreAdapter(state_sync)
         detector = TimeoutDetector(
@@ -245,37 +244,44 @@ class TestTimeoutFlow:
                 min_session_duration=timedelta(seconds=0),
             ),
         )
+        from openclaw_enhance.watchdog.policy import TimeoutPolicy
+
         policy_engine = PolicyEngine()
+        policy_engine._policies["default"] = TimeoutPolicy(
+            name="test_policy",
+            min_duration=timedelta(seconds=0),
+            multiplier_threshold=0.5,
+            action=ActionType.REMIND_ONCE,
+        )
+        policy_engine.assign_policy("e2e_session", "default")
         notifier = Notifier(sender=mock_sender)
 
-        # Step 1: Monitor detects timeout
         detector.start_monitoring("e2e_session")
         events = detector.check_timeouts()
         assert len(events) == 1
         detected_event = events[0]
 
-        # Step 2: Event is in runtime store
         pending = state_sync.get_pending_suspected_events()
         assert any(e.session_id == "e2e_session" for e in pending)
 
-        # Step 3: Watchdog processes suspected timeout
         decision = policy_engine.evaluate(detected_event)
 
-        # Step 4: Send reminder based on policy
         if decision.should_send_reminder(0):
             reminder = notifier.send_suspected_timeout(detected_event)
             assert reminder is not None
             policy_engine.record_reminder(detected_event.session_id)
 
-        # Step 5: Eventually confirm timeout
         if policy_engine.should_confirm_timeout(detected_event, decision):
             confirmed = state_sync.confirm_timeout(detected_event.session_id)
             assert confirmed is not None
             notifier.send_confirmed_timeout(confirmed)
 
-        # Verify state has both suspected and confirmed events
         all_events = state_sync.get_pending_suspected_events()
         assert len(all_events) >= 1
+
+        assert len(mock_sender.sent_messages) > 0, "No reminders delivered via SessionSender"
+        delivered_session_ids = [sid for sid, _ in mock_sender.sent_messages]
+        assert "e2e_session" in delivered_session_ids, "Reminder not delivered to e2e_session"
 
     def test_multiple_sessions_tracking(self, temp_home: Path):
         """Test tracking multiple concurrent sessions."""
