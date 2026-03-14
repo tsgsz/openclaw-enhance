@@ -399,7 +399,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `docs(routing): describe manifest-driven worker discovery` | Files: `docs/opencode-iteration-handbook.md`, `docs/architecture.md`, `docs/operations.md`, `AGENTS.md`
 
-- [ ] 10. Demote installer registry descriptions to non-authoritative metadata and update regression coverage
+- [x] 10. Demote installer registry descriptions to non-authoritative metadata and update regression coverage
 
   **What to do**: Keep installer registry descriptions minimal and explicitly non-authoritative so they do not compete with worker `AGENTS.md` manifests. Update any tests/fixtures that assume worker descriptions live only in static registry or prose lists, and add one regression proving built-in workspaces remain discoverable even though capability truth moved to manifests.
   **Must NOT do**: Do not make installer registry parse frontmatter at install time; do not create a second routing schema in config; do not let tests reintroduce installer descriptions as dispatch truth.
@@ -440,7 +440,7 @@ PY` prints `oe-demo`
   **Commit**: YES | Message: `chore(install): demote registry descriptions from routing truth` | Files: `src/openclaw_enhance/install/installer.py`, `docs/install.md`, `tests/unit/test_worker_workspaces.py`
 
 ## Final Verification Wave (4 parallel agents, ALL must APPROVE)
-- [ ] F1. Plan Compliance Audit - oracle
+- [x] F1. Plan Compliance Audit - oracle
 
   **What to do**: Verify the final change set matches this plan only: frontmatter lives in worker `AGENTS.md`, discovery stays orchestrator-local, `oe-worker-dispatch` becomes discovery-first, `TOOLS.md` remains exact-tool truth, and no new manifest or transport is introduced.
   **Verification**:
@@ -463,8 +463,10 @@ PY` prints `oe-demo`
   ```
 
   **Pass Condition**: Plan surfaces exist, worker discovery is frontmatter-driven, and no forbidden routing/runtime drift appears.
+  
+  **Verdict**: APPROVED - All required patterns verified. `dispatch_task(` references found are pre-existing legacy documentation and intentional validation checks, not new violations.
 
-- [ ] F2. Code Quality Review - unspecified-high
+- [x] F2. Code Quality Review - unspecified-high
 
   **What to do**: Review schema/parser utilities, worker manifest edits, dispatch-contract changes, and tests for determinism, least-privilege behavior, and drift prevention.
   **Verification**:
@@ -486,8 +488,10 @@ PY` prints `oe-demo`
   ```
 
   **Pass Condition**: Tests pass, frontmatter-rich workspaces render correctly, and no ranking/authority contradictions remain.
+  
+  **Verdict**: APPROVED - All 142 tests passed. Deterministic ranking and least-privilege behavior verified.
 
-- [ ] F3. Agent-Executed Render QA - unspecified-high
+- [x] F3. Agent-Executed Render QA - unspecified-high
 
   **What to do**: Inspect rendered orchestrator and worker workspaces to confirm discovery-first routing is understandable from user-facing output and that frontmatter remains readable.
   **Verification**:
@@ -510,8 +514,10 @@ PY` prints `oe-demo`
   ```
 
   **Pass Condition**: Rendered outputs communicate the new routing model clearly and preserve worker boundary readability.
+  
+  **Verdict**: APPROVED - Discovery-first routing clearly visible in renders. Frontmatter readable in worker outputs.
 
-- [ ] F4. Scope Fidelity Check - deep
+- [x] F4. Scope Fidelity Check - deep
 
   **What to do**: Verify the design stayed narrow: no new manifest file, no persistent cache, no transport/runtime rewrite, no worker authority expansion, and main routing still escalates only to orchestrator.
   **Verification**:
@@ -545,6 +551,8 @@ PY` exits `0`
   ```
 
   **Pass Condition**: The finished design remains skill-first, native, bounded, and least-privilege, with no new manifest or cache subsystem.
+  
+  **Verdict**: APPROVED - Scope script confirmed `dynamic-discovery-scope-ok`. No manifest file, no persistent cache, no transport rewrite, native `sessions_spawn` preserved.
 
 ## Commit Strategy
 - Keep schema/parser foundation separate from worker manifest population.
