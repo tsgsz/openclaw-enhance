@@ -419,3 +419,34 @@ class TestHarnessEnvironmentValidation:
         assert hasattr(install, "install")
         assert hasattr(install, "uninstall")
         assert hasattr(install, "get_install_status")
+
+
+class TestHarnessRealEnvironmentValidation:
+    """E2E tests for real-environment validation via CLI."""
+
+    def test_real_env_validation_install_lifecycle(self):
+        """Test install-lifecycle validation in real OpenClaw environment."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "install-lifecycle",
+                "--report-slug",
+                "harness-test",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        # Should execute validation scenario (exit 0 or 1 for product failure)
+        assert result.returncode in [0, 1], f"Unexpected exit code: {result.returncode}"
+        assert "install-lifecycle" in result.stdout or "Validation" in result.stdout
+
+        # Verify report was generated
+        reports_dir = Path("docs/reports")
+        assert reports_dir.exists(), "Reports directory should exist"
+        report_files = list(reports_dir.glob("*harness-test-install-lifecycle.md"))
+        assert len(report_files) > 0, "Validation report should be generated"

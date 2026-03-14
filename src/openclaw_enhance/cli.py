@@ -8,6 +8,7 @@ import click
 
 from openclaw_enhance.constants import PACKAGE_NAME, VERSION
 from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
+from openclaw_enhance.validation.types import FeatureClass, ValidationConclusion
 
 
 @click.group()
@@ -34,7 +35,13 @@ def cli() -> None:
     is_flag=True,
     help="Run preflight checks without installing",
 )
-def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
+@click.option(
+    "--dev",
+    "dev_mode",
+    is_flag=True,
+    help="Development mode: use symlinks instead of copying files (macOS/Linux only)",
+)
+def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> None:
     """Install OpenClaw hooks and extensions."""
     import openclaw_enhance.install as install_module
 
@@ -55,7 +62,7 @@ def install(openclaw_home: Path, force: bool, dry_run: bool) -> None:
         return
 
     try:
-        result = install_module.install(openclaw_home, force=force)
+        result = install_module.install(openclaw_home, force=force, dev_mode=dev_mode)
 
         if result.success:
             click.echo(f"Success: {result.message}")
@@ -424,6 +431,63 @@ def docs_check() -> None:
         raise click.ClickException("Docs check failed")
 
     click.echo("Docs check passed.")
+
+
+@cli.command("validate-feature")
+@click.option(
+    "--feature-class",
+    type=click.Choice([fc.value for fc in FeatureClass]),
+    required=True,
+    help="Feature class to validate",
+)
+@click.option(
+    "--report-slug",
+    required=True,
+    help="Short identifier for this validation run",
+)
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=Path.home() / ".openclaw",
+    help="Path to OpenClaw home directory",
+)
+@click.option(
+    "--reports-dir",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=Path("docs/reports"),
+    help="Directory to write reports to",
+)
+def validate_feature(
+    feature_class: str,
+    report_slug: str,
+    openclaw_home: Path,
+    reports_dir: Path,
+) -> None:
+    """Run real-environment validation for a feature."""
+    from openclaw_enhance.validation.reporting import write_report
+    from openclaw_enhance.validation.runner import run_scenario
+
+    fc = FeatureClass(feature_class)
+
+    click.echo(f"Running validation for {fc.value} (slug: {report_slug})...")
+
+    report = run_scenario(
+        feature_class=fc,
+        slug=report_slug,
+        openclaw_home=openclaw_home,
+        reports_dir=reports_dir,
+    )
+
+    report_path = report.get_report_path(reports_dir, report_slug)
+    write_report(report, report_path)
+
+    click.echo(f"Report written to: {report_path}")
+    click.echo(f"Conclusion: {report.conclusion.value.upper()}")
+
+    if report.conclusion in (ValidationConclusion.PASS, ValidationConclusion.EXEMPT):
+        return
+
+    sys.exit(1)
 
 
 def main() -> int:

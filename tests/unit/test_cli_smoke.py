@@ -36,7 +36,9 @@ class TestCLIHelp:
 class TestCLICommandsExist:
     """Tests that CLI commands exist and exit cleanly."""
 
-    @pytest.mark.parametrize("command", ["install", "uninstall", "doctor", "status"])
+    @pytest.mark.parametrize(
+        "command", ["install", "uninstall", "doctor", "status", "validate-feature"]
+    )
     def test_command_help_exits_zero(self, command):
         """Each command's --help should exit with code 0."""
         result = subprocess.run(
@@ -46,7 +48,9 @@ class TestCLICommandsExist:
         )
         assert result.returncode == 0, f"Command '{command} --help' failed: {result.stderr}"
 
-    @pytest.mark.parametrize("command", ["install", "uninstall", "doctor", "status"])
+    @pytest.mark.parametrize(
+        "command", ["install", "uninstall", "doctor", "status", "validate-feature"]
+    )
     def test_command_exists_in_help(self, command):
         """Each command should be listed in main help."""
         result = subprocess.run(
@@ -105,3 +109,17 @@ class TestCLIDoctorPythonValidation:
             assert result.exit_code != 0
             assert "python" in result.output.lower() or "unsupported" in result.output.lower()
             assert "3.10" in result.output or "3.9" in result.output
+
+
+class TestCLIValidateFeature:
+    def test_validate_feature_help_shows_options(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "openclaw_enhance.cli", "validate-feature", "--help"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+        assert "--feature-class" in result.stdout
+        assert "--report-slug" in result.stdout
+        assert "--openclaw-home" in result.stdout
+        assert "--reports-dir" in result.stdout

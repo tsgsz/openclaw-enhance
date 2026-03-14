@@ -1,0 +1,227 @@
+"""Unit tests for validation runner and reporting."""
+
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from openclaw_enhance.validation.reporting import generate_markdown_report, write_report
+from openclaw_enhance.validation.runner import (
+    build_report_path,
+    execute_command,
+    run_scenario,
+)
+from openclaw_enhance.validation.types import (
+    BaselineState,
+    CommandResult,
+    FeatureClass,
+    ValidationConclusion,
+    ValidationReport,
+)
+
+
+class TestExecuteCommand:
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_execute_command_success(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="output",
+            stderr="",
+        )
+
+        result = execute_command("echo test", Path("/tmp"))
+
+        assert result.exit_code == 0
+        assert result.stdout == "output"
+        assert result.stderr == ""
+        assert result.command == "echo test"
+        assert result.duration_seconds >= 0
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_execute_command_failure(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="error",
+        )
+
+        result = execute_command("false", Path("/tmp"))
+
+        assert result.exit_code == 1
+        assert result.stderr == "error"
+        assert not result.is_success
+
+
+class TestRunScenario:
+    @patch("openclaw_enhance.validation.runner.execute_command")
+    @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.runner.verify_ownership")
+    def test_run_scenario_all_pass(self, mock_verify, mock_baseline, mock_execute):
+        mock_baseline.return_value = BaselineState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+        )
+        mock_execute.return_value = CommandResult(
+            command="test",
+            exit_code=0,
+            stdout="ok",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+        report = run_scenario(
+            FeatureClass.CLI_SURFACE,
+            "test-slug",
+            Path("/tmp/.openclaw"),
+            Path("/tmp/reports"),
+        )
+
+        assert report.conclusion == ValidationConclusion.PASS
+        assert report.feature_class == FeatureClass.CLI_SURFACE
+        assert len(report.results) > 0
+
+    @patch("openclaw_enhance.validation.runner.execute_command")
+    @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.runner.verify_ownership")
+    def test_run_scenario_product_failure(self, mock_verify, mock_baseline, mock_execute):
+        mock_baseline.return_value = BaselineState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+        )
+        mock_execute.return_value = CommandResult(
+            command="test",
+            exit_code=1,
+            stdout="",
+            stderr="error",
+            duration_seconds=0.1,
+        )
+
+        report = run_scenario(
+            FeatureClass.CLI_SURFACE,
+            "test-slug",
+            Path("/tmp/.openclaw"),
+            Path("/tmp/reports"),
+        )
+
+        assert report.conclusion == ValidationConclusion.PRODUCT_FAILURE
+
+    @patch("openclaw_enhance.validation.runner.execute_command")
+    @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.runner.verify_ownership")
+    def test_run_scenario_environment_failure(self, mock_verify, mock_baseline, mock_execute):
+        mock_baseline.return_value = BaselineState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+        )
+        mock_execute.return_value = CommandResult(
+            command="test",
+            exit_code=127,
+            stdout="",
+            stderr="command not found",
+            duration_seconds=0.1,
+        )
+
+        report = run_scenario(
+            FeatureClass.CLI_SURFACE,
+            "test-slug",
+            Path("/tmp/.openclaw"),
+            Path("/tmp/reports"),
+        )
+
+        assert report.conclusion == ValidationConclusion.ENVIRONMENT_FAILURE
+
+    def test_run_scenario_exempt(self):
+        report = run_scenario(
+            FeatureClass.DOCS_TEST_ONLY,
+            "test-slug",
+            Path("/tmp/.openclaw"),
+            Path("/tmp/reports"),
+        )
+
+        assert report.conclusion == ValidationConclusion.EXEMPT
+        assert len(report.results) == 0
+
+
+class TestBuildReportPath:
+    def test_build_report_path_format(self):
+        path = build_report_path(
+            Path("/tmp/reports"),
+            "test-slug",
+            FeatureClass.CLI_SURFACE,
+        )
+
+        assert path.parent == Path("/tmp/reports")
+        assert "test-slug" in path.name
+        assert "cli-surface" in path.name
+        assert path.suffix == ".md"
+
+
+class TestGenerateMarkdownReport:
+    def test_generate_markdown_report_basic(self):
+        report = ValidationReport(
+            feature_name="test-feature",
+            feature_class=FeatureClass.CLI_SURFACE,
+            conclusion=ValidationConclusion.PASS,
+            environment="macOS /tmp/.openclaw",
+            baseline=BaselineState(
+                openclaw_home=Path("/tmp/.openclaw"),
+                is_installed=False,
+            ),
+        )
+
+        markdown = generate_markdown_report(report)
+
+        assert "# Validation Report: test-feature" in markdown
+        assert "cli-surface" in markdown
+        assert "PASS" in markdown
+
+    def test_generate_markdown_report_with_results(self):
+        report = ValidationReport(
+            feature_name="test-feature",
+            feature_class=FeatureClass.CLI_SURFACE,
+            conclusion=ValidationConclusion.PASS,
+            environment="macOS /tmp/.openclaw",
+            baseline=BaselineState(
+                openclaw_home=Path("/tmp/.openclaw"),
+                is_installed=False,
+            ),
+            results=[
+                CommandResult(
+                    command="echo test",
+                    exit_code=0,
+                    stdout="test",
+                    stderr="",
+                    duration_seconds=0.1,
+                )
+            ],
+        )
+
+        markdown = generate_markdown_report(report)
+
+        assert "echo test" in markdown
+        assert "✓ PASS" in markdown
+        assert "Exit Code: 0" in markdown
+
+
+class TestWriteReport:
+    def test_write_report(self, tmp_path):
+        report = ValidationReport(
+            feature_name="test-feature",
+            feature_class=FeatureClass.CLI_SURFACE,
+            conclusion=ValidationConclusion.PASS,
+            environment="macOS /tmp/.openclaw",
+            baseline=BaselineState(
+                openclaw_home=Path("/tmp/.openclaw"),
+                is_installed=False,
+            ),
+        )
+
+        output_path = tmp_path / "reports" / "test.md"
+        write_report(report, output_path)
+
+        assert output_path.exists()
+        content = output_path.read_text()
+        assert "test-feature" in content
