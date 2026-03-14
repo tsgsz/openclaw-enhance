@@ -20,7 +20,7 @@ python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.07s
 
 **stdout:**
 ```
@@ -1892,4 +1892,19 @@ Task plans guide dispatch decisions
 
 
 ---
+```
+
+### Command 2: ✓ PASS
+
+```bash
+cd /Users/tsgsz/workspace/openclaw-enhance && pytest tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract -q --tb=no
+```
+
+- Exit Code: 0
+- Duration: 0.44s
+
+**stdout:**
+```
+.............                                                                                                                                                                                                                                         [100%]
+13 passed in 0.16s
 ```

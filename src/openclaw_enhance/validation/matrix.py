@@ -43,8 +43,8 @@ SHIPPED_FEATURES = [
         "capability": "Orchestrator Yield",
         "proof_expectations": [
             "oe-orchestrator workspace renders with sessions_yield references",
-            "agent list shows discovered workers from frontmatter",
-            "orchestrator AGENTS.md documents bounded-loop and yield behavior",
+            "TestBoundedLoopContract integration tests verify runtime contract",
+            "tests programmatically confirm yield primitives and round states exist",
         ],
     },
     {

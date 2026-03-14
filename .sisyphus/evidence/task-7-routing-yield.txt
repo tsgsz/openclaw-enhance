@@ -1,3 +1,18 @@
+19:python -m openclaw_enhance.cli render-workspace oe-orchestrator
+27:# Workspace: oe-orchestrator
+29:**Path:** `/Users/tsgsz/workspace/openclaw-enhance/workspaces/oe-orchestrator`
+33:This AGENTS.md defines the capabilities and constraints for the `oe-orchestrator` workspace.
+93:- Operates within `workspaces/oe-orchestrator/`
+94:- Skills located in `workspaces/oe-orchestrator/skills/`
+106:The Orchestrator uses a **bounded multi-round loop** to handle complex tasks that require iterative refinement. This replaces the previous one-shot fan-out/fan-in model with an event-driven approach using `sessions_yield` as the round-boundary synchronization primitive.
+125:4. **YieldForResults**: Call `sessions_yield` to end current turn cleanly
+126:5. **CollectResults**: Receive auto-announced worker results on next turn
+174:4. **Yield**: Call `sessions_yield` to await recovery results.
+182:- **`sessions_yield`**: End orchestrator turn to await auto-announced results
+185:**Important**: `sessions_yield` is used ONLY by the orchestrator at round boundaries. Workers remain single-round executors and do not use yield.
+250:This TOOLS.md defines the available tools and their usage patterns for the `oe-orchestrator` workspace.
+260:- Read skill definitions from `workspaces/oe-orchestrator/skills/`
+1247:      "workspace": "oe-orchestrator",
 # Validation Report: backfill-routing-yield
 
 - **Date**: 2026-03-14
@@ -18,14 +33,34 @@
 ```bash
 python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
+
+- Exit Code: 0
+- Duration: 0.07s
+
+**stdout:**
+```
+# Workspace: oe-orchestrator
+
+**Path:** `/Users/tsgsz/workspace/openclaw-enhance/workspaces/oe-orchestrator`
+
 ---
-65:### Worker Selection (Catalog-Driven)
-67:The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter:
-70:2. **Parse**: Extract routing metadata (capabilities, constraints, cost) from YAML frontmatter to build candidate catalog
-82:**Note**: Worker capabilities are defined in their respective `AGENTS.md` frontmatter, not in this list. This section provides examples only; the Orchestrator must discover actual worker metadata at runtime.
-106:The Orchestrator uses a **bounded multi-round loop** to handle complex tasks that require iterative refinement. This replaces the previous one-shot fan-out/fan-in model with an event-driven approach using `sessions_yield` as the round-boundary synchronization primitive.
-125:4. **YieldForResults**: Call `sessions_yield` to end current turn cleanly
-145:| `max_rounds` | Maximum allowed rounds (default: 3, hard cap: 5) |
-174:4. **Yield**: Call `sessions_yield` to await recovery results.
-182:- **`sessions_yield`**: End orchestrator turn to await auto-announced results
-185:**Important**: `sessions_yield` is used ONLY by the orchestrator at round boundaries. Workers remain single-round executors and do not use yield.
+   - Return final result to main
+
+
+---
+```
+
+### Command 2: ✓ PASS
+
+```bash
+cd /Users/tsgsz/workspace/openclaw-enhance && pytest tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract -q --tb=no
+```
+
+- Exit Code: 0
+- Duration: 0.44s
+
+**stdout:**
+```
+.............                                                                                                                                                                                                                                         [100%]
+13 passed in 0.16s
+```

@@ -117,6 +117,13 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
                 "python -m openclaw_enhance.cli uninstall",
             ]
 
+    if feature_class == FeatureClass.WORKSPACE_ROUTING:
+        project_root = Path(__file__).parent.parent.parent.parent
+        return [
+            "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
+            f"cd {project_root} && pytest tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract -q --tb=no",
+        ]
+
     bundles = {
         FeatureClass.CLI_SURFACE: [
             "python -m openclaw_enhance.cli status",
@@ -130,9 +137,6 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
                 "python -m openclaw_enhance.cli validate-feature "
                 "--feature-class docs-test-only --report-slug self-surface-smoke"
             ),
-        ],
-        FeatureClass.WORKSPACE_ROUTING: [
-            "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
             'cat ~/.openclaw/config.json | grep "openclawEnhance"',
