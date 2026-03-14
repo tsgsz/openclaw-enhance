@@ -527,6 +527,111 @@ class TestRetryOwnerEnum:
         assert len(owners) == 5
 
 
+class TestValidation:
+    """Tests for validation rules with 'validation' in names for filtering."""
+
+    def test_validation_rejects_missing_required_fields(self):
+        """Test that missing required fields are rejected by validation."""
+        # Test multiple missing fields scenario
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                # missing tool_name
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence=0.9,
+                retry_owner=RetryOwner.SCRIPT_CODER,
+            )
+        assert "tool_name" in str(exc_info.value)
+
+    def test_validation_rejects_invalid_retry_owner_enum(self):
+        """Test that invalid enum values for retry_owner are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence=0.9,
+                retry_owner="invalid_owner",  # Invalid enum value
+            )
+        assert "retry_owner" in str(exc_info.value)
+
+    def test_validation_rejects_max_retries_above_bound(self):
+        """Test that max_retries > 3 is rejected by bounds validation."""
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence=0.9,
+                retry_owner=RetryOwner.SCRIPT_CODER,
+                max_retries=5,  # Above bound of 3
+            )
+        assert "max_retries" in str(exc_info.value)
+
+    def test_validation_rejects_confidence_outside_range(self):
+        """Test that confidence outside 0-1 range is rejected."""
+        # Test confidence below 0
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence=-0.1,  # Below 0
+                retry_owner=RetryOwner.SCRIPT_CODER,
+            )
+        assert "confidence" in str(exc_info.value)
+
+        # Test confidence above 1
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence=1.1,  # Above 1
+                retry_owner=RetryOwner.SCRIPT_CODER,
+            )
+        assert "confidence" in str(exc_info.value)
+
+    def test_validation_rejects_invalid_evidence_source_enum(self):
+        """Test that invalid enum values for evidence_source are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source="invalid_source",  # Invalid enum value
+                confidence=0.9,
+                retry_owner=RetryOwner.SCRIPT_CODER,
+            )
+        assert "evidence_source" in str(exc_info.value)
+
+    def test_validation_rejects_wrong_types(self):
+        """Test that wrong types are rejected by validation."""
+        # Test wrong type for confidence
+        with pytest.raises(ValidationError) as exc_info:
+            RecoveredMethod(
+                failed_step="step-001",
+                tool_name="Edit",
+                failure_reason="Indentation mismatch",
+                exact_invocation="Edit(filePath='config.py', oldString='x', newString='y')",
+                evidence_source=EvidenceSource.TOOL_CONTRACT,
+                confidence="high",  # Wrong type: string instead of number
+                retry_owner=RetryOwner.SCRIPT_CODER,
+            )
+        assert "confidence" in str(exc_info.value)
+
+
 class TestToOrchestratorPayload:
     """Tests for to_orchestrator_payload method."""
 

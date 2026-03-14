@@ -516,10 +516,6 @@ class TestOrchestratorRecoveryFlow:
                 "placeholder" in str(exc_info.value).lower()
                 or "exact" in str(exc_info.value).lower()
             ), f"Should reject placeholder pattern in: {invocation}"
-            assert (
-                "placeholder" in str(exc_info.value).lower()
-                or "exact" in str(exc_info.value).lower()
-            ), f"Should reject placeholder pattern in: {invocation}"
 
     def test_one_recovery_assisted_retry_per_step(self, agents_content, dispatch_skill_content):
         """Verify retry limit is enforced (max 1) and second failure escalates.

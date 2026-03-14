@@ -380,7 +380,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `test(orchestrator): cover tool recovery flow` | Files: `tests/integration/test_orchestrator_dispatch_contract.py`, related integration test files
 
-- [ ] 8. Update durable docs and architecture memory for the recovery worker model
+- [x] 8. Update durable docs and architecture memory for the recovery worker model
 
   **What to do**: Update durable project memory so future sessions understand why `oe-tool-recovery` exists, how it differs from `oe-syshelper`, and how tool-failure recovery fits into the bounded loop. Update `docs/opencode-iteration-handbook.md`, `docs/architecture.md`, `docs/operations.md`, and any concise entrypoint docs that list worker roles. If needed, add a focused ADR or extend an existing ADR only at the decision level - avoid reintroducing implementation-heavy pseudocode.
   **Must NOT do**: Do not blur `oe-tool-recovery` and `oe-syshelper`; do not imply worker-to-worker direct messaging; do not add custom runtime components.

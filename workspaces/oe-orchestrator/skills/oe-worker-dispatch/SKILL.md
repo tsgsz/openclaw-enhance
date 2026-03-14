@@ -156,8 +156,10 @@ When a **Tool-Usage Failure** (tool-usage failure) is detected, the Orchestrator
 1. **Dispatch**: Orchestrator spawns `oe-tool-recovery` with the failure context via `sessions_spawn`.
 2. **Yield**: Orchestrator calls `sessions_yield` to await the recovery suggestion.
 3. **Evaluate**: Orchestrator receives `RecoveredMethod` and evaluates the `retry_owner` decision.
-4. **Retry**: If `retry_owner` is `same_owner` or `self`, the Orchestrator re-dispatches the original worker with the `exact_invocation` from the recovery result.
-5. **Reroute/Escalate**: If `retry_owner` is `reroute`, `blocked`, or `escalated`, the Orchestrator follows the corresponding path.
+4. **Retry**: If `retry_owner` is `self`, the Orchestrator re-dispatches the original worker with the `exact_invocation` from the recovery result.
+5. **Reroute**: If `retry_owner` is `script_coder`, `searcher`, or `syshelper`, the Orchestrator dispatches to that agent type instead.
+6. **Orchestrator Owned**: If `retry_owner` is `orchestrator`, the Orchestrator handles the retry directly.
+7. **Escalate**: If recovery fails or the assisted retry fails, the Orchestrator terminates as `escalated`.
 
 **Constraints:**
 - **Max 1 recovery-assisted retry** per failed step.

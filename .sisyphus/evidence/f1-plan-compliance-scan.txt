@@ -1,0 +1,18 @@
+workspaces/oe-tool-recovery/AGENTS.md:3:This AGENTS.md defines the capabilities and constraints for the `oe-tool-recovery` workspace.
+workspaces/oe-tool-recovery/AGENTS.md:64:- Operates within `workspaces/oe-tool-recovery/`
+workspaces/oe-tool-recovery/AGENTS.md:65:- Skills located in `workspaces/oe-tool-recovery/skills/`
+workspaces/oe-tool-recovery/AGENTS.md:88:- `retry_owner`: Recommended agent type to execute the retry
+workspaces/oe-orchestrator/AGENTS.md:91:- **Recovery Dispatch**: Tool-usage failure detected; dispatch `oe-tool-recovery`
+workspaces/oe-orchestrator/AGENTS.md:121:- **Recovery Cap**: Max ONE recovery-assisted retry per failed step.
+workspaces/oe-orchestrator/AGENTS.md:131:3. **Recovery Dispatch**: Spawn `oe-tool-recovery` via `sessions_spawn` with the failed context.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:141:| **Tool-Usage Failure** | tool_not_found, invalid_parameters, permission_denied, tool_execution_error | Route to oe-tool-recovery (max 1 attempt per failed step) |
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:147:When a **Tool-Usage Failure** (tool-usage failure) is detected, the Orchestrator dispatches to `oe-tool-recovery` to generate a `RecoveredMethod` (recovered_method).
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:156:1. **Dispatch**: Orchestrator spawns `oe-tool-recovery` with the failure context via `sessions_spawn`.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:158:3. **Evaluate**: Orchestrator receives `RecoveredMethod` and evaluates the `retry_owner` decision.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:159:4. **Retry**: If `retry_owner` is `same_owner` or `self`, the Orchestrator re-dispatches the original worker with the `exact_invocation` from the recovery result.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:160:5. **Reroute/Escalate**: If `retry_owner` is `reroute`, `blocked`, or `escalated`, the Orchestrator follows the corresponding path.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:163:- **Max 1 recovery-assisted retry** per failed step.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:172:- **Recovery**: `oe-tool-recovery` identifies that `websearch_web_search_exa` should be used instead.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:177:- **Recovery**: `oe-tool-recovery` reads the file and provides the exact `oldString` with correct indentation.
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:181:- **Signal**: `oe-tool-recovery` cannot find a solution or the assisted retry fails.
+workspaces/oe-syshelper/AGENTS.md:31:All operations are strictly read-only:
