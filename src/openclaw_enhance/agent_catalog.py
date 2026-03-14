@@ -110,6 +110,10 @@ def validate_workspace_manifests(workspace_dir: Path) -> list[str]:
         return [f"Workspaces directory not found: {workspaces_path}"]
 
     for agents_file in workspaces_path.glob("*/AGENTS.md"):
+        # Skip orchestrator - it's not a worker and doesn't need worker frontmatter
+        if "oe-orchestrator" in str(agents_file):
+            continue
+
         try:
             content = agents_file.read_text(encoding="utf-8")
             manifest = parse_agent_manifest(content)

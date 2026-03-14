@@ -1,0 +1,10 @@
+workspaces/oe-script_coder/AGENTS.md:2:schema_version: 1
+workspaces/oe-script_coder/AGENTS.md:3:routing:
+workspaces/oe-searcher/AGENTS.md:2:schema_version: 1
+workspaces/oe-searcher/AGENTS.md:3:routing:
+workspaces/oe-syshelper/AGENTS.md:2:schema_version: 1
+workspaces/oe-syshelper/AGENTS.md:3:routing:
+workspaces/oe-tool-recovery/AGENTS.md:2:schema_version: 1
+workspaces/oe-tool-recovery/AGENTS.md:3:routing:
+workspaces/oe-watchdog/AGENTS.md:2:schema_version: 1
+workspaces/oe-watchdog/AGENTS.md:3:routing:

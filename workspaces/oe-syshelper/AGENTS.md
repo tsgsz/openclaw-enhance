@@ -1,23 +1,25 @@
 ---
 schema_version: 1
+agent_id: oe-syshelper
+workspace: oe-syshelper
 routing:
   description: System introspection agent for file exploration, session analysis, and code search.
-  capabilities: [system_discovery, session_analysis, code_navigation, search_operations]
+  capabilities: [introspection]
   accepts: [introspection_tasks, session_summaries, symbol_lookups]
   rejects: [file_modifications, state_changes, subagent_spawning]
   output_kind: introspection_report
-  mutation_mode: none
+  mutation_mode: read_only
   can_spawn: false
   requires_tests: false
-  session_access: full
+  session_access: read_only
   network_access: none
-  repo_scope: read
-  cost_tier: low
-  model_tier: fast
+  repo_scope: selected_files
+  cost_tier: cheap
+  model_tier: cheap
   duration_band: short
   parallel_safe: true
   priority_boost: 0
-  tool_classes: [file_system, session_management, lsp]
+  tool_classes: [code_search, session_inspect]
 ---
 # Syshelper Agent Configuration
 

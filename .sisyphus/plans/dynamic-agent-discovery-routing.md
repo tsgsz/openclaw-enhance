@@ -109,7 +109,7 @@ Wave 3: docs and non-authoritative registry alignment (`9`, `10`)
 > Implementation + Test = ONE task. Never separate.
 > EVERY task MUST have: Agent Profile + Parallelization + QA Scenarios.
 
-- [ ] 1. Define the worker-routing frontmatter schema and parser foundation
+- [x] 1. Define the worker-routing frontmatter schema and parser foundation
 
   **What to do**: Add a dedicated catalog/parsing module that reads YAML frontmatter from worker `AGENTS.md` files and validates a closed routing schema. Lock the schema to routing-only metadata: identity, capability, constraint, scheduling, and abstract tool classes. Add explicit invalid/ineligible outcomes for unknown enum values, missing required fields, and malformed frontmatter. Keep exact tools out of the schema.
   **Must NOT do**: Do not implement a new dispatcher runtime; do not parse arbitrary prose for capability decisions; do not put exact tool names or prompt text into the schema.
