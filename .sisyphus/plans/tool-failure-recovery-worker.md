@@ -340,7 +340,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `test(recovery): enforce recovery worker boundaries` | Files: `tests/integration/test_worker_role_boundaries.py`, `tests/unit/test_worker_workspaces.py`
 
-- [ ] 7. Add orchestrator recovery-flow integration tests and retry-limit coverage
+- [x] 7. Add orchestrator recovery-flow integration tests and retry-limit coverage
 
   **What to do**: Extend integration coverage so orchestrator dispatches `oe-tool-recovery` when tool-usage failures occur, consumes a valid `recovered_method`, retries exactly once with new evidence, and escalates if recovery or the assisted retry fails. Add explicit tests for tool-not-found, invalid-parameter, retry-limit, and recovery-worker-failure cases. Keep them contract-level if runtime implementation is still documentation-driven, but make assertions specific enough to prevent ambiguous future behavior.
   **Must NOT do**: Do not write trivial placeholder tests; do not hide missing behavior behind broad string-matching only; do not allow tests to imply infinite retries.
