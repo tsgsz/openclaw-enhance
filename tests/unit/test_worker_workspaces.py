@@ -136,6 +136,12 @@ class TestToolRecoveryWorkspace:
         assert metadata["name"] == "oe-tool-recovery"
         assert "oe-tool-recovery" in metadata["skills"]
 
+    def test_tool_recovery_has_exactly_one_skill(self):
+        """Tool recovery should have exactly 1 skill."""
+        skills = get_workspace_skills("oe-tool-recovery")
+        assert len(skills) == 1
+        assert "oe-tool-recovery" in skills
+
 
 class TestWorkspaceRendering:
     """Test workspace rendering functionality."""
@@ -180,6 +186,26 @@ class TestWorkspaceRendering:
 
         # Header should be present
         assert "# Workspace: oe-watchdog" in rendered
+
+    def test_render_tool_recovery_includes_recovery_skill(self):
+        """Rendered tool recovery should include recovery skill."""
+        rendered = render_workspace("oe-tool-recovery")
+        assert "oe-tool-recovery" in rendered
+        assert "Recovery" in rendered or "recovery" in rendered.lower()
+
+    def test_render_tool_recovery_shows_only_recovery_specific_content(self):
+        """Tool recovery render should show only recovery-specific context."""
+        rendered = render_workspace("oe-tool-recovery")
+
+        # Should contain recovery-specific content
+        assert "Tool Recovery" in rendered or "tool-recovery" in rendered.lower()
+        assert "recovered_method" in rendered or "failure" in rendered.lower()
+
+        # Should contain its skill
+        assert "oe-tool-recovery" in rendered
+
+        # Header should be present
+        assert "# Workspace: oe-tool-recovery" in rendered
 
 
 class TestWorkspacePathResolution:

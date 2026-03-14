@@ -260,7 +260,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `docs(orchestrator): add tool recovery loop rules` | Files: `workspaces/oe-orchestrator/AGENTS.md`, `tests/unit/test_orchestrator_workspace.py`
 
-- [ ] 5. Update worker-dispatch routing rules for recovery classification and handoff
+- [x] 5. Update worker-dispatch routing rules for recovery classification and handoff
 
   **What to do**: Extend `workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md` so it distinguishes generic retriable failures from tool-usage failures that should route to `oe-tool-recovery`. Add dispatch instructions for the recovery worker, document the exact failure context passed in, state how `recovered_method` re-enters the orchestrator retry flow, and explicitly forbid direct worker-to-worker retry handoff.
   **Must NOT do**: Do not tell workers to call each other; do not create a second retry loop inside `oe-tool-recovery`; do not weaken existing `reroutable` and `escalated` meanings.
@@ -300,7 +300,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `docs(dispatch): add recovery worker routing rules` | Files: `workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md`, related contract tests
 
-- [ ] 6. Add worker-boundary and workspace tests for `oe-tool-recovery`
+- [x] 6. Add worker-boundary and workspace tests for `oe-tool-recovery`
 
   **What to do**: Extend worker boundary coverage so the new worker's authority is enforced the same way `oe-syshelper` and `oe-watchdog` are enforced today. Add tests for allowed operations, prohibited operations, render coverage, skill presence, and the rule that recovery worker recommends but does not execute or decide. Update any worker metadata tests to include `oe-tool-recovery`.
   **Must NOT do**: Do not rely on documentation-only assertions if an existing test pattern can make the boundary more explicit; do not alter `oe-syshelper` tests except to preserve its unchanged contract.

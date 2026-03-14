@@ -241,6 +241,97 @@ class TestWatchdogBoundaries(TestWorkerRoleBoundaries):
         assert "Code Changes" in agents
 
 
+class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
+    """Test oe-tool-recovery narrow authority boundaries."""
+
+    def test_tool_recovery_has_narrow_authority_documented(self):
+        """Tool recovery should document narrow authority explicitly."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "Narrow Scope" in agents or "narrow authority" in agents.lower()
+        assert "Authority Boundaries" in agents
+
+    def test_tool_recovery_has_allowed_operations_section(self):
+        """Tool recovery should have explicit allowed operations section."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "✅ ALLOWED" in agents
+        assert "Contract Reading" in agents or "Documentation Lookup" in agents
+
+    def test_tool_recovery_has_prohibited_operations_section(self):
+        """Tool recovery should have explicit prohibited operations section."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "❌ PROHIBITED" in agents
+        assert "File Modifications" in agents
+        assert "Agent Spawning" in agents
+
+    def test_tool_recovery_cannot_modify_files(self):
+        """Tool recovery cannot modify project files."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+        tools = self._read_file("oe-tool-recovery", "TOOLS.md")
+
+        assert "❌ File Modifications" in agents or "Cannot write or edit" in agents
+        assert "Read-Only Guarantee" in agents or "read-only" in agents.lower()
+        assert "Prohibited Tools" in tools
+        assert "Write/Edit" in tools or "Cannot modify" in tools
+
+    def test_tool_recovery_cannot_spawn_subagents(self):
+        """Tool recovery cannot spawn subagents."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+        tools = self._read_file("oe-tool-recovery", "TOOLS.md")
+
+        assert "❌ Agent Spawning" in agents or "Cannot spawn subagents" in agents
+        assert "call_omo_agent" not in tools or "Prohibited" in tools
+        assert "sessions_spawn" not in agents or "Cannot" in agents
+
+    def test_tool_recovery_recommends_only(self):
+        """Tool recovery returns recommendations, does not execute."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+        tools = self._read_file("oe-tool-recovery", "TOOLS.md")
+
+        # Should emphasize recommendation-only role
+        assert "Advisory Role" in agents or "recommendation" in agents.lower()
+        assert "Autonomous Retry" in agents or "Cannot execute" in agents
+        assert "recovered_method" in agents
+
+    def test_tool_recovery_is_leaf_node(self):
+        """Tool recovery is a leaf node - cannot dispatch to other workers."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "leaf-node" in agents.lower() or "leaf node" in agents.lower()
+        assert "Worker Communication" in agents or "Cannot communicate" in agents
+        assert "No Direct Contact" in agents or "does not interact" in agents.lower()
+
+    def test_tool_recovery_has_read_only_tools(self):
+        """Tool recovery has only read-only tools."""
+        tools = self._read_file("oe-tool-recovery", "TOOLS.md")
+
+        # Should have read tools
+        assert "Read" in tools
+        assert "Glob" in tools
+        assert "Grep" in tools
+
+        # Should not have write/edit
+        assert "Prohibited Tools" in tools
+        assert "Write/Edit" in tools or "Cannot modify" in tools
+
+    def test_tool_recovery_has_recovery_output_schema(self):
+        """Tool recovery documents recovery output schema."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "Recovery Output Schema" in agents or "recovered_method" in agents
+        assert "exact_invocation" in agents
+        assert "confidence" in agents.lower()
+
+    def test_tool_recovery_failure_escalates_to_orchestrator(self):
+        """Tool recovery failure escalates to orchestrator."""
+        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+
+        assert "orchestrator" in agents.lower()
+        assert "Advisory Role" in agents or "Passive Specialist" in agents
+
+
 class TestWorkspaceSkillBoundaries(TestWorkerRoleBoundaries):
     """Test that skills respect workspace boundaries."""
 
@@ -280,6 +371,16 @@ class TestWorkspaceSkillBoundaries(TestWorkerRoleBoundaries):
 
         assert "status" in skill.lower() or "health" in skill.lower()
         assert "Authority Boundaries" in skill or "narrow" in skill.lower()
+
+    def test_tool_recovery_skill_has_narrow_scope(self):
+        """Tool recovery skill should have narrow scope."""
+        skill = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
+
+        assert "recovery" in skill.lower()
+        assert "recovered_method" in skill
+        assert "Constraints" in skill
+        assert "No Execution" in skill or "read-only" in skill.lower()
+        assert "Leaf Node" in skill
 
 
 class TestNoACPWorkspace(TestWorkerRoleBoundaries):
