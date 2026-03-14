@@ -20,7 +20,7 @@ python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
 
 - Exit Code: 0
-- Duration: 0.07s
+- Duration: 0.08s
 
 **stdout:**
 ```
@@ -1901,7 +1901,7 @@ cd /Users/tsgsz/workspace/openclaw-enhance && pytest tests/integration/test_orch
 ```
 
 - Exit Code: 0
-- Duration: 0.50s
+- Duration: 0.45s
 
 **stdout:**
 ```

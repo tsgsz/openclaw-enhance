@@ -389,7 +389,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): backfill cli surface coverage` | Files: `src/openclaw_enhance/validation/types.py`, `src/openclaw_enhance/validation/matrix.py`, `tests/unit/test_cli_smoke.py`, `tests/integration/test_status_command.py`, `docs/testing-playbook.md`
 
-- [ ] 7. Expand workspace-routing coverage to prove worker discovery, orchestrator routing, and bounded-loop/yield behavior
+- [x] 7. Expand workspace-routing coverage to prove worker discovery, orchestrator routing, and bounded-loop/yield behavior
 
   **What to do**: Strengthen `workspace-routing` so it covers the actual shipped routing stack: worker frontmatter discovery, `oe-orchestrator` selection for complex tasks, and observable proof that bounded orchestration/yield behavior is occurring. Use canonical slug `backfill-routing-yield`. The scenario must prove more than “agent list contains names”; it needs an observable artifact such as session transcript content or durable harness evidence that complex routing reached `oe-orchestrator` and exercised the bounded-loop/yield path.
   **Must NOT do**: Do not introduce undocumented OpenClaw commands. Do not claim `sessions_yield` proof from static docs alone.
