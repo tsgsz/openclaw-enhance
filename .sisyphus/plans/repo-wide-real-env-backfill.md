@@ -122,7 +122,7 @@ Wave 3: harness execution, durable report generation, and workflow state updates
 > Implementation + Test = ONE task. Never separate.
 > EVERY task MUST have: Agent Profile + Parallelization + QA Scenarios.
 
-- [ ] 1. Normalize the live `validate-feature` contract across CLI, docs, and checks
+- [x] 1. Normalize the live `validate-feature` contract across CLI, docs, and checks
 
   **What to do**: Update every durable example, checklist, and verification command to use the real CLI surface: `validate-feature --feature-class <class> --report-slug <slug>`. Add or tighten `docs-check` assertions so `--class` no longer survives in `AGENTS.md`, `docs/install.md`, `docs/operations.md`, or any canonical examples. Ensure all examples also show canonical slugs for the backfill workflow rather than placeholder prose.
   **Must NOT do**: Do not add backward-compatibility aliases for `--class`. Do not leave any durable doc on the old syntax.
