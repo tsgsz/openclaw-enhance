@@ -82,6 +82,19 @@ Use this skill when:
 - "Check if any sessions have timed out"
 - "Alert on hung sessions"
 
+### tool_recovery
+**Purpose**: Tool-call failure diagnosis and recovery method generation
+
+**Characteristics**:
+- Model: Reasoning-capable (e.g., GPT-4o, Claude 3.5 Sonnet)
+- Tools: Read, Glob, Grep, websearch, webfetch, context7_query-docs, Bash (read-only)
+- Use for: tool_not_found, invalid_parameters, permission_denied, tool_execution_error
+
+**Example Tasks**:
+- "Diagnose why 'git commit' failed with exit code 128"
+- "Find correct parameters for 'websearch_web_search_exa'"
+- "Verify if 'src/main.py' exists before retrying Read"
+
 ## Dispatch Patterns
 
 ### Iterative Round-Based Dispatch (v2)
@@ -120,13 +133,53 @@ Each dispatch within a round must have:
 
 #### Failure Classification
 
-Worker results are classified into three categories:
+Worker results are classified into four categories:
 
 | Category | Signal | Action |
 |----------|--------|--------|
 | **Retriable** | Transient failure, incomplete context | Limit 1 retry with clarified instructions |
+| **Tool-Usage Failure** | tool_not_found, invalid_parameters, permission_denied, tool_execution_error | Route to oe-tool-recovery (max 1 attempt per failed step) |
 | **Reroutable** | Wrong worker chosen, task too large | Change worker or decompose into subtasks |
 | **Escalated** | Design conflict, needs main decision | Yield `blocked` checkpoint to main |
+
+#### Recovery Dispatch
+
+When a **Tool-Usage Failure** (tool-usage failure) is detected, the Orchestrator dispatches to `oe-tool-recovery` to generate a `RecoveredMethod` (recovered_method).
+
+**Context Passed to Recovery Worker:**
+- `failed_step`: Identity of the failed step
+- `tool_name`: Name of the tool that failed
+- `failure_reason`: Error message or signal from the worker
+- `exact_invocation`: The failed tool call string
+
+**Handoff & Re-entry:**
+1. **Dispatch**: Orchestrator spawns `oe-tool-recovery` with the failure context via `sessions_spawn`.
+2. **Yield**: Orchestrator calls `sessions_yield` to await the recovery suggestion.
+3. **Evaluate**: Orchestrator receives `RecoveredMethod` and evaluates the `retry_owner` decision.
+4. **Retry**: If `retry_owner` is `same_owner` or `self`, the Orchestrator re-dispatches the original worker with the `exact_invocation` from the recovery result.
+5. **Reroute/Escalate**: If `retry_owner` is `reroute`, `blocked`, or `escalated`, the Orchestrator follows the corresponding path.
+
+**Constraints:**
+- **Max 1 recovery-assisted retry** per failed step.
+- **No worker-to-worker handoff**: Recovery worker never communicates with the failed worker (explicitly forbid direct handoff).
+- **No business task execution**: Recovery worker only diagnoses and suggests; it never performs the original task.
+- **Leaf-node only**: Recovery worker cannot spawn other agents.
+
+#### Recovery Flow Examples
+
+**Scenario 1: Tool-not-found**
+- **Signal**: Worker reports `tool 'websearch' not found`.
+- **Recovery**: `oe-tool-recovery` identifies that `websearch_web_search_exa` should be used instead.
+- **Action**: Orchestrator re-dispatches worker with corrected tool call.
+
+**Scenario 2: Invalid-parameter**
+- **Signal**: `Edit` tool fails with `oldString not found`.
+- **Recovery**: `oe-tool-recovery` reads the file and provides the exact `oldString` with correct indentation.
+- **Action**: Orchestrator re-dispatches worker with corrected parameters.
+
+**Scenario 3: Recovery failure escalation**
+- **Signal**: `oe-tool-recovery` cannot find a solution or the assisted retry fails.
+- **Action**: Orchestrator terminates orchestration as `escalated`.
 
 #### Checkpoint Visibility to Main
 

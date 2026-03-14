@@ -1,0 +1,9 @@
+141:| **Tool-Usage Failure** | tool_not_found, invalid_parameters, permission_denied, tool_execution_error | Route to oe-tool-recovery (max 1 attempt per failed step) |
+147:When a **Tool-Usage Failure** (tool-usage failure) is detected, the Orchestrator dispatches to `oe-tool-recovery` to generate a `RecoveredMethod` (recovered_method).
+156:1. **Dispatch**: Orchestrator spawns `oe-tool-recovery` with the failure context via `sessions_spawn`.
+158:3. **Evaluate**: Orchestrator receives `RecoveredMethod` and evaluates the `retry_owner` decision.
+159:4. **Retry**: If `retry_owner` is `same_owner` or `self`, the Orchestrator re-dispatches the original worker with the `exact_invocation` from the recovery result.
+160:5. **Reroute/Escalate**: If `retry_owner` is `reroute`, `blocked`, or `escalated`, the Orchestrator follows the corresponding path.
+172:- **Recovery**: `oe-tool-recovery` identifies that `websearch_web_search_exa` should be used instead.
+177:- **Recovery**: `oe-tool-recovery` reads the file and provides the exact `oldString` with correct indentation.
+181:- **Signal**: `oe-tool-recovery` cannot find a solution or the assisted retry fails.
