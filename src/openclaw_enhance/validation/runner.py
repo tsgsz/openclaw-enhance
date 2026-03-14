@@ -116,7 +116,7 @@ def run_scenario(
             findings=[f"Readiness check failed: {e}"],
         )
 
-    commands = get_bundle_commands(feature_class)
+    commands = get_bundle_commands(feature_class, slug)
     results = []
 
     for cmd in commands:

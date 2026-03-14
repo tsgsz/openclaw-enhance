@@ -139,13 +139,47 @@ class TestValidateFeatureCommandOrdering:
             ],
         )
 
-        # Verify commands were called in order
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        # Should have uninstall, install, status, doctor, uninstall
         assert len(calls) >= 5
         assert "uninstall" in calls[0]
         assert "install" in calls[1]
+        assert "--dev" not in calls[1]
+        assert "status" in calls[2]
+        assert "doctor" in calls[3]
+        assert "uninstall" in calls[4]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_install_lifecycle_dev_mode_slug(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        """Install lifecycle with dev slug should use --dev flag."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        runner = CliRunner()
+        runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "install-lifecycle",
+                "--report-slug",
+                "backfill-dev-install",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        calls = [call[0][0] for call in mock_run.call_args_list]
+
+        assert len(calls) >= 5
+        assert "uninstall" in calls[0]
+        assert "install --dev" in calls[1]
         assert "status" in calls[2]
         assert "doctor" in calls[3]
         assert "uninstall" in calls[4]

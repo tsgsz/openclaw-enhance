@@ -86,16 +86,35 @@ class ValidationReport:
         return reports_dir / filename
 
 
-def get_bundle_commands(feature_class: FeatureClass) -> list[str]:
-    """Get the mandatory command bundle for a feature class."""
+def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str]:
+    """Get the mandatory command bundle for a feature class.
+
+    Args:
+        feature_class: The feature class to get commands for.
+        slug: Optional slug to determine variant (e.g., 'backfill-dev-install' for dev mode).
+
+    Returns:
+        List of commands to execute for validation.
+    """
+    if feature_class == FeatureClass.INSTALL_LIFECYCLE:
+        if "dev" in slug:
+            return [
+                "python -m openclaw_enhance.cli uninstall",
+                "python -m openclaw_enhance.cli install --dev",
+                "python -m openclaw_enhance.cli status",
+                "python -m openclaw_enhance.cli doctor",
+                "python -m openclaw_enhance.cli uninstall",
+            ]
+        else:
+            return [
+                "python -m openclaw_enhance.cli uninstall",
+                "python -m openclaw_enhance.cli install",
+                "python -m openclaw_enhance.cli status",
+                "python -m openclaw_enhance.cli doctor",
+                "python -m openclaw_enhance.cli uninstall",
+            ]
+
     bundles = {
-        FeatureClass.INSTALL_LIFECYCLE: [
-            "python -m openclaw_enhance.cli uninstall",
-            "python -m openclaw_enhance.cli install",
-            "python -m openclaw_enhance.cli status",
-            "python -m openclaw_enhance.cli doctor",
-            "python -m openclaw_enhance.cli uninstall",
-        ],
         FeatureClass.CLI_SURFACE: [
             "python -m openclaw_enhance.cli status --json",
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
