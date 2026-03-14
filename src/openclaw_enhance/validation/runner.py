@@ -109,11 +109,11 @@ def run_scenario(
 
     initial_guardrail_state = None
     if feature_class == FeatureClass.INSTALL_LIFECYCLE:
-        try:
-            from openclaw_enhance.validation.guardrails import (
-                capture_baseline_state as capture_guardrail_state,
-            )
+        from openclaw_enhance.validation.guardrails import (
+            capture_baseline_state as capture_guardrail_state,
+        )
 
+        try:
             initial_guardrail_state = capture_guardrail_state(openclaw_home)
             verify_ownership(initial_guardrail_state)
         except Exception as e:
@@ -145,12 +145,14 @@ def run_scenario(
             )
 
     if feature_class == FeatureClass.INSTALL_LIFECYCLE and initial_guardrail_state is not None:
-        try:
-            from openclaw_enhance.validation.guardrails import (
-                capture_baseline_state as capture_guardrail_state,
-                verify_cleanup_success,
-            )
+        from openclaw_enhance.validation.guardrails import (
+            capture_baseline_state as capture_guardrail_state,
+        )
+        from openclaw_enhance.validation.guardrails import (
+            verify_cleanup_success,
+        )
 
+        try:
             final_guardrail_state = capture_guardrail_state(openclaw_home)
             cleanup_ok = verify_cleanup_success(initial_guardrail_state, final_guardrail_state)
             if not cleanup_ok:

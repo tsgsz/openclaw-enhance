@@ -1901,7 +1901,7 @@ cd /Users/tsgsz/workspace/openclaw-enhance && pytest tests/integration/test_orch
 ```
 
 - Exit Code: 0
-- Duration: 0.44s
+- Duration: 0.50s
 
 **stdout:**
 ```

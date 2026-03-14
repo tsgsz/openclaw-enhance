@@ -119,9 +119,14 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
         project_root = Path(__file__).parent.parent.parent.parent
+        pytest_cmd = (
+            f"cd {project_root} && pytest "
+            "tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract "
+            "-q --tb=no"
+        )
         return [
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
-            f"cd {project_root} && pytest tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract -q --tb=no",
+            pytest_cmd,
         ]
 
     bundles = {

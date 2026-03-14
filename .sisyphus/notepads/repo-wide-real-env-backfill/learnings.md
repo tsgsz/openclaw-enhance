@@ -180,3 +180,18 @@ Normalized validate-feature contract to use --feature-class and --report-slug ac
 - Command 2: pytest TestBoundedLoopContract (runtime verification)
 - Both commands pass, report conclusion: PASS
 - Evidence shows both static render and runtime test execution
+
+## Task 7 Diagnostics Fix
+
+### LSP Warnings Fixed
+- E501 in types.py line 124: Line too long (136 > 100) - split pytest command into multi-line variable
+- I001 in runner.py line 149: Import block unsorted - moved import to top of conditional block
+
+### Changes
+- types.py: Split long f-string into pytest_cmd variable with proper line breaks
+- runner.py: Moved guardrails import outside try block to satisfy import ordering
+
+### Verification
+- Both files now pass lsp_diagnostics with no warnings
+- Validation still passes: workspace-routing exits 0 with PASS conclusion
+- Functionality preserved: runtime proof via TestBoundedLoopContract still executes
