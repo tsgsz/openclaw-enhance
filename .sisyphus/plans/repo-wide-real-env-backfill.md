@@ -348,7 +348,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): backfill install lifecycle coverage` | Files: `src/openclaw_enhance/validation/types.py`, `src/openclaw_enhance/validation/matrix.py`, `tests/integration/test_install_uninstall.py`, `tests/integration/test_dev_mode_integration.py`, `docs/testing-playbook.md`
 
-- [ ] 6. Expand the CLI-surface bundle to cover the user-facing command surface and validator self-surface
+- [x] 6. Expand the CLI-surface bundle to cover the user-facing command surface and validator self-surface
 
   **What to do**: Strengthen the `cli-surface` bundle so it proves the delivered CLI surface, not just rendering smoke. The real-environment scenario must validate status output, doctor behavior, render commands, docs-check, and at least one validator self-surface check showing that `validate-feature` itself produces the documented report contract. Use canonical slug `backfill-cli-surface` and record explicit output expectations in the playbook/matrix.
   **Must NOT do**: Do not rely on unit smoke tests alone. Do not treat help output as sufficient proof of the shipped CLI surface.
