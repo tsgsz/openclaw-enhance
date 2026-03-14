@@ -422,7 +422,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
   **Commit**: YES | Message: `docs(recovery): document tool recovery worker model` | Files: `docs/opencode-iteration-handbook.md`, `docs/architecture.md`, `docs/operations.md`, `AGENTS.md`, related ADR/docs files
 
 ## Final Verification Wave (4 parallel agents, ALL must APPROVE)
-- [ ] F1. Plan Compliance Audit - oracle
+- [x] F1. Plan Compliance Audit - oracle
 
   **What to do**: Audit the delivered changes against this plan only. Confirm that the new worker exists, `oe-syshelper` stayed read-only, orchestrator owns all retry decisions, and each numbered task delivered the promised surfaces without adding worker-to-worker handoff or custom transport.
   **Verification**:
@@ -446,7 +446,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Pass Condition**: Every planned surface is present and no forbidden transport/worker-boundary drift is found.
 
-- [ ] F2. Code Quality Review - unspecified-high
+- [x] F2. Code Quality Review - unspecified-high
 
   **What to do**: Review worker contracts, registration changes, and tests for internal consistency, duplicate logic, invalid references, and missing assertions around retry limits or recommendation-only behavior.
   **Verification**:
@@ -469,7 +469,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Pass Condition**: The focused test suite and render path both succeed, and the review finds no contract inconsistencies.
 
-- [ ] F3. Agent-Executed Render QA - unspecified-high
+- [x] F3. Agent-Executed Render QA - unspecified-high
 
   **What to do**: Perform agent-executed inspection of rendered docs/workspaces to verify the recovery model is understandable from user-facing outputs without human intervention.
   **Verification**:
@@ -493,7 +493,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Pass Condition**: Agent-executed render inspection shows the recovery model is coherent and policy-aligned without manual review.
 
-- [ ] F4. Scope Fidelity Check - deep
+- [x] F4. Scope Fidelity Check - deep
 
   **What to do**: Verify the finished design stayed narrow: `oe-syshelper` unchanged in role, `oe-tool-recovery` remains a leaf node, orchestrator still owns retry decisions, and the system still relies only on native dispatch primitives.
   **Verification**:

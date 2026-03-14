@@ -6,7 +6,6 @@ from typing import Any
 
 import yaml
 
-
 VALID_CAPABILITIES = {
     "research",
     "documentation",

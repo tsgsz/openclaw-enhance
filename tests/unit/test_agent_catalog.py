@@ -1,8 +1,7 @@
 """Tests for agent catalog and manifest parsing."""
 
-import pytest
 
-from openclaw_enhance.agent_catalog import AgentManifest, parse_agent_manifest
+from openclaw_enhance.agent_catalog import parse_agent_manifest
 
 
 def test_parse_valid_manifest():

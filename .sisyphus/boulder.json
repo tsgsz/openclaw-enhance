@@ -1,21 +1,22 @@
 {
-  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/tool-failure-recovery-worker.md",
+  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/dynamic-agent-discovery-routing.md",
   "completed_plan": null,
-  "started_at": "2026-03-14T06:09:26.254Z",
+  "started_at": "2026-03-14T08:30:15.000Z",
   "completed_at": null,
   "session_ids": [
     "ses_31d1f8671ffeKAr2VaoYv3NdMU"
   ],
-  "plan_name": "tool-failure-recovery-worker",
+  "plan_name": "dynamic-agent-discovery-routing",
   "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance",
   "status": "active",
   "tasks_completed": 0,
-  "tasks_total": 46,
+  "tasks_total": 14,
   "final_verification": {
     "F1": null,
     "F2": null,
     "F3": null,
     "F4": null
   },
-  "commit": null
+  "commit": null,
+  "agent": "atlas"
 }
