@@ -180,7 +180,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `feat(recovery): register tool recovery workspace` | Files: `src/openclaw_enhance/install/installer.py`, `tests/unit/test_worker_workspaces.py`, related discovery files
 
-- [ ] 3. Define the `recovered_method` contract and recovery-worker output validation
+- [x] 3. Define the `recovered_method` contract and recovery-worker output validation
 
   **What to do**: Add a single source of truth for the recovery result contract used by orchestrator and `oe-tool-recovery`. The contract must require fields for failed step identity, tool name, failure reason, exact invocation shape, preconditions, optional fallback tool, evidence source, confidence, and retry owner. Add unit tests that validate both required fields and forbidden ambiguity (for example, missing retry owner, unbounded retry counts, or free-form-only output).
   **Must NOT do**: Do not invent a second transport; do not let the contract make final execution decisions on behalf of orchestrator.
