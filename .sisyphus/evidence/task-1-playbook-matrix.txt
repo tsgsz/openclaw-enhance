@@ -1,0 +1,10 @@
+| `install-lifecycle` | Changes to install/uninstall logic, path management, or config patching. | Full Lifecycle Bundle |
+| `cli-surface` | Changes to `openclaw-enhance` CLI commands or output formatting. | CLI Surface Bundle |
+| `workspace-routing` | Changes to `AGENTS.md`, `TOOLS.md`, or agent registration. | Routing & Agent Bundle |
+| `runtime-watchdog` | Changes to hooks, runtime monitoring, or watchdog logic. | Runtime Integration Bundle |
+| `docs-test-only` | Changes only to documentation or unit/integration tests. | Docs Check Only (Exempt) |
+### 2.1 Full Lifecycle Bundle (`install-lifecycle`)
+### 2.2 CLI Surface Bundle (`cli-surface`)
+### 2.3 Routing & Agent Bundle (`workspace-routing`)
+### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
+### 2.5 Docs Check Only (`docs-test-only`)
