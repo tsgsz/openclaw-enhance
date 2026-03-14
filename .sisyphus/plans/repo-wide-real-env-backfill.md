@@ -517,7 +517,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): backfill watchdog reminder coverage` | Files: `workspaces/oe-watchdog/AGENTS.md`, `workspaces/oe-watchdog/TOOLS.md`, `src/openclaw_enhance/watchdog/*.py`, `src/openclaw_enhance/validation/types.py`, `src/openclaw_enhance/validation/matrix.py`, `tests/integration/test_timeout_flow.py`, `tests/e2e/test_openclaw_harness.py`, `docs/testing-playbook.md`
 
-- [ ] 10. Extend harness/integration support so canonical backfill scenarios capture deterministic live evidence
+- [x] 10. Extend harness/integration support so canonical backfill scenarios capture deterministic live evidence
 
   **What to do**: Extend the existing harness and integration support to capture the proof artifacts required by the coverage matrix: session transcript snippets, report file assertions, runtime-state evidence, and live reminder/recovery traces. Reuse `OPENCLAW_HARNESS=1` and the existing e2e file instead of inventing a new runner. Add any helper/fixture code needed for deterministic evidence capture, but keep it repo-owned and minimal.
   **Must NOT do**: Do not build a separate backfill orchestration framework. Do not make non-harness test runs flaky or dependent on a live OpenClaw install.
