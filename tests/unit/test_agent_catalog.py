@@ -1,6 +1,5 @@
 """Tests for agent catalog and manifest parsing."""
 
-
 from openclaw_enhance.agent_catalog import parse_agent_manifest
 
 
@@ -9,6 +8,7 @@ def test_parse_valid_manifest():
     content = """---
 agent_id: oe-searcher
 workspace: oe-searcher
+schema_version: "1.0"
 routing:
   capabilities: [research, documentation]
   model_tier: cheap
@@ -137,3 +137,40 @@ routing:
 
     assert manifest.is_valid is False
     assert "model_tier" in manifest.errors[0].lower()
+
+
+def test_parse_missing_schema_version():
+    """Test parsing manifest without schema_version."""
+    content = """---
+agent_id: oe-searcher
+workspace: oe-searcher
+routing:
+  capabilities: [research]
+---
+
+# Agent
+"""
+    manifest = parse_agent_manifest(content)
+
+    assert manifest.is_valid is False
+    assert "schema_version" in manifest.errors[0]
+
+
+def test_parse_tool_names_conflict():
+    """Test parsing manifest with exact tool names (conflicting metadata)."""
+    content = """---
+agent_id: oe-searcher
+workspace: oe-searcher
+schema_version: "1.0"
+routing:
+  capabilities: [research]
+  tool_names: [websearch, grep]
+---
+
+# Agent
+"""
+    manifest = parse_agent_manifest(content)
+
+    assert manifest.is_valid is False
+    assert "tool_names" in manifest.errors[0]
+    assert "Conflicting" in manifest.errors[0]

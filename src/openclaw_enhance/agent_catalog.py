@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -76,6 +77,14 @@ def parse_agent_manifest(content: str) -> AgentManifest:
         if model_tier and model_tier not in VALID_MODEL_TIERS:
             errors.append(f"Invalid model_tier: {model_tier}")
 
+    schema_version = data.get("schema_version")
+    if not schema_version:
+        errors.append("Missing required field: schema_version")
+
+    tool_names = routing.get("tool_names", []) if isinstance(routing, dict) else []
+    if tool_names:
+        errors.append("Conflicting metadata: tool_names must not contain exact tool names")
+
     return AgentManifest(
         agent_id=agent_id,
         workspace=workspace,
@@ -83,3 +92,34 @@ def parse_agent_manifest(content: str) -> AgentManifest:
         is_valid=len(errors) == 0,
         errors=errors,
     )
+
+
+def validate_workspace_manifests(workspace_dir: Path) -> list[str]:
+    """Validate all worker AGENTS.md manifests in workspace directory.
+
+    Args:
+        workspace_dir: Root directory containing workspaces/ subdirectory.
+
+    Returns:
+        List of validation error messages (empty if all valid).
+    """
+    errors = []
+    workspaces_path = workspace_dir / "workspaces"
+
+    if not workspaces_path.exists():
+        return [f"Workspaces directory not found: {workspaces_path}"]
+
+    for agents_file in workspaces_path.glob("*/AGENTS.md"):
+        try:
+            content = agents_file.read_text(encoding="utf-8")
+            manifest = parse_agent_manifest(content)
+
+            if not manifest.is_valid:
+                rel_path = agents_file.relative_to(workspace_dir)
+                for error in manifest.errors:
+                    errors.append(f"{rel_path}: {error}")
+        except Exception as e:
+            rel_path = agents_file.relative_to(workspace_dir)
+            errors.append(f"{rel_path}: Failed to read file: {e}")
+
+    return errors

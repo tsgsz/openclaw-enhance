@@ -412,6 +412,12 @@ def docs_check() -> None:
     else:
         errors.append("Missing required file: docs/opencode-iteration-handbook.md")
 
+    from openclaw_enhance.agent_catalog import validate_workspace_manifests
+
+    manifest_errors = validate_workspace_manifests(project_root)
+    if manifest_errors:
+        errors.extend(manifest_errors)
+
     if errors:
         for err in errors:
             click.echo(f"Error: {err}", err=True)
