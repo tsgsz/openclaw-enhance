@@ -20,7 +20,7 @@ cd /Users/tsgsz/workspace/openclaw-enhance && python -m pytest tests/integration
 ```
 
 - Exit Code: 0
-- Duration: 0.30s
+- Duration: 0.29s
 
 **stdout:**
 ```

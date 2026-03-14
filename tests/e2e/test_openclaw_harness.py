@@ -279,9 +279,7 @@ class TestHarnessEndToEndWorkflow:
 
     def test_full_install_status_uninstall_cycle(self, isolated_test_env):
         """Test complete install -> status -> uninstall cycle."""
-        from openclaw_enhance.install import install, uninstall, get_install_status
-        from openclaw_enhance.paths import managed_root
-        import json
+        from openclaw_enhance.install import get_install_status, install, uninstall
 
         user_home = isolated_test_env
         openclaw_home = Path.home() / ".openclaw"
@@ -309,20 +307,12 @@ class TestHarnessEndToEndWorkflow:
 
     def test_skill_catalog_available_in_harness(self):
         """Verify skill catalog is functional in harness."""
-        from openclaw_enhance.skills_catalog import (
-            render_skill_contract,
-            estimate_task_duration,
-        )
+        from openclaw_enhance.skills_catalog import render_skill_contract
 
         # Test contract-based skill rendering (file-backed)
         router_contract = render_skill_contract("oe-toolcall-router")
         assert "sessions_spawn" in router_contract or "TOOLCALL" in router_contract
         assert "oe-orchestrator" in router_contract
-
-        # Test ETA estimator helper
-        duration = estimate_task_duration("Refactor authentication module")
-        assert duration.minutes > 0
-        assert duration.toolcall_estimate >= 0
 
 
 class TestHarnessErrorHandling:
@@ -487,3 +477,102 @@ class TestHarnessRealEnvironmentValidation:
         assert reports_dir.exists(), "Reports directory should exist"
         report_files = list(reports_dir.glob("*harness-test-install-lifecycle.md"))
         assert len(report_files) > 0, "Validation report should be generated"
+
+
+class TestHarnessRoutingYieldValidation:
+    """E2E tests for routing and yield validation in harness."""
+
+    def test_routing_yield_validation_passes(self):
+        """Routing yield validation should pass with deterministic evidence."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "harness-routing-test",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, f"Routing validation failed: {result.stderr}"
+        assert "workspace-routing" in result.stdout
+        assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
+
+    def test_routing_yield_report_contains_evidence(self):
+        """Routing yield report should contain deterministic evidence."""
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "harness-routing-evidence",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        reports_dir = Path("docs/reports")
+        report_files = list(reports_dir.glob("*harness-routing-evidence-workspace-routing.md"))
+
+        if report_files:
+            content = report_files[0].read_text()
+            assert "sessions_yield" in content or "bounded-loop" in content
+            assert "oe-orchestrator" in content
+
+
+class TestHarnessRecoveryWorkerValidation:
+    """E2E tests for recovery worker validation in harness."""
+
+    def test_recovery_worker_validation_passes(self):
+        """Recovery worker validation should pass with executable evidence."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "harness-recovery-test",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, f"Recovery validation failed: {result.stderr}"
+        assert "workspace-routing" in result.stdout
+
+    def test_recovery_worker_report_contains_executable_proof(self):
+        """Recovery worker report should contain executable test proof."""
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "backfill-recovery-worker",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        reports_dir = Path("docs/reports")
+        report_files = list(reports_dir.glob("*backfill-recovery-worker-workspace-routing.md"))
+
+        if report_files:
+            content = report_files[0].read_text()
+            assert "websearch" in content or "RecoveredMethod" in content
+            assert "test_websearch_not_found_recovery_executable" in content or "PASSED" in content

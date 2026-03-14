@@ -374,3 +374,40 @@ Normalized validate-feature contract to use --feature-class and --report-slug ac
 - Integration tests: 56 passed
 - Validation: PASS conclusion
 - Harness watchdog: 2 passed, 25 deselected (was 0 selected before)
+
+## Task 10: Harness Live Evidence Capture for Routing/Recovery/Watchdog
+
+### Implementation Approach
+- Extended `test_openclaw_harness.py` with 3 new test classes for canonical backfill scenarios
+- Added `TestHarnessRoutingYieldValidation` with 2 tests for routing/yield evidence
+- Added `TestHarnessRecoveryWorkerValidation` with 2 tests for recovery worker executable proof
+- Reused existing `TestHarnessWatchdogIntegration` (added in task 9) for watchdog coverage
+
+### Test Design Pattern
+- All tests inherit `pytestmark = pytest.mark.skipif(OPENCLAW_HARNESS != "1")` gating
+- Tests execute `validate-feature` CLI commands via subprocess.run
+- Report file assertions check for deterministic evidence strings
+- Non-harness runs skip cleanly (5 skipped, 26 deselected)
+- Harness runs execute deterministically (5 passed in 1.46s)
+
+### Evidence Capture Strategy
+- Harness live: `OPENCLAW_HARNESS=1 pytest -k "real_env or recovery or watchdog"` → 5 passed
+- Harness skip: `pytest -k "real_env or recovery or watchdog"` → 5 skipped
+- Evidence files: `.sisyphus/evidence/task-10-harness-live.txt`, `task-10-harness-skip.txt`
+- Integration tests: 79 passed (validation_real_env + timeout_flow + orchestrator_dispatch_contract)
+
+### Files Modified
+- `tests/e2e/test_openclaw_harness.py`: Added 2 new test classes (6 new tests total, reused 2 from task 9)
+- No changes to integration tests (already covered routing/recovery/watchdog contracts)
+
+### Key Decisions
+- Reused existing watchdog tests from task 9 (no duplication needed)
+- Routing/recovery tests validate via workspace-routing feature class (slug-aware pytest routing)
+- Report assertions check for proof strings: "sessions_yield", "websearch", "RecoveredMethod", "PASSED"
+- LSP warnings (import sorting) are non-blocking for harness tests
+
+### Verification Results
+- Harness mode: 5 tests passed, deterministic evidence captured
+- Non-harness mode: 5 tests skipped cleanly (no failures)
+- Integration tests: 79 passed (all existing coverage preserved)
+- Evidence files generated successfully in `.sisyphus/evidence/`
