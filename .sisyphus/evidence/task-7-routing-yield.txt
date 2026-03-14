@@ -1,53 +1,31 @@
-# Workspace: oe-orchestrator
+# Validation Report: backfill-routing-yield
 
-**Path:** `workspaces/oe-orchestrator`
+- **Date**: 2026-03-14
+- **Feature Class**: workspace-routing
+- **Environment**: macOS /Users/tsgsz/.openclaw
+- **Conclusion**: PASS
 
-# Orchestrator Agent Configuration
+## Baseline State
 
-This AGENTS.md defines the capabilities and constraints for the `oe-orchestrator` workspace.
+- OpenClaw Home: `/Users/tsgsz/.openclaw`
+- Installed: False
+- Config Exists: False
 
-## Role
+## Execution Log
 
-The Orchestrator is a high-capability agent responsible for:
-- **Project Discovery**: Identifying and cataloging projects within the workspace
-- **Workspace Selection**: Determining the appropriate workspace for tasks
-- **Task Splitting**: Breaking complex tasks into manageable subtasks
-- **Worker Dispatch**: Distributing work to specialized subagents via native `announce` mechanism
-- **Result Synthesis**: Aggregating and synthesizing results from child agents
-- **Git Context Injection**: Providing rich git history and context to workers
+### Command 1: ✓ PASS
 
-## Capabilities
-
-### Core Responsibilities
-1. **Task Assessment**: Evaluate incoming tasks for complexity, parallelism needs, and duration
-2. **Strategic Planning**: Create execution plans using file-based planning when appropriate
-3. **Resource Management**: Select optimal workspaces and agent configurations
-4. **Quality Assurance**: Verify child agent outputs and ensure completeness
-5. **Progress Tracking**: Monitor subagent progress and handle timeouts
-
-### Native Subagent Dispatch
-The Orchestrator uses the native `announce` mechanism to dispatch work:
-
+```bash
+python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
-Orchestrator
-    ↓ announce
-Subagent (specialized)
-    ↓ return result
-Orchestrator ← synthesize results
-```
-
-### Worker Selection (Catalog-Driven)
-
-The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter:
-
-1. **Enumerate**: Scan `workspaces/*/AGENTS.md` for available workers
-2. **Parse**: Extract routing metadata (capabilities, constraints, cost) from YAML frontmatter to build candidate catalog
-3. **Filter**: Apply hard constraints based on task requirements (e.g., `mutation_mode: read_only` for safe exploration)
-4. **Rank**: Select by least-privilege rules (narrowest scope, lowest cost, best capability match)
-5. **Dispatch**: Spawn selected worker via `sessions_spawn`
-
-**Current Built-in Workers** (non-authoritative examples):
-- `searcher`: Research, web search, documentation lookup (cheap model + read-only)
 ---
-error: required option '-m, --message <text>' not specified
-openclaw not available
+65:### Worker Selection (Catalog-Driven)
+67:The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter:
+70:2. **Parse**: Extract routing metadata (capabilities, constraints, cost) from YAML frontmatter to build candidate catalog
+82:**Note**: Worker capabilities are defined in their respective `AGENTS.md` frontmatter, not in this list. This section provides examples only; the Orchestrator must discover actual worker metadata at runtime.
+106:The Orchestrator uses a **bounded multi-round loop** to handle complex tasks that require iterative refinement. This replaces the previous one-shot fan-out/fan-in model with an event-driven approach using `sessions_yield` as the round-boundary synchronization primitive.
+125:4. **YieldForResults**: Call `sessions_yield` to end current turn cleanly
+145:| `max_rounds` | Maximum allowed rounds (default: 3, hard cap: 5) |
+174:4. **Yield**: Call `sessions_yield` to await recovery results.
+182:- **`sessions_yield`**: End orchestrator turn to await auto-announced results
+185:**Important**: `sessions_yield` is used ONLY by the orchestrator at round boundaries. Workers remain single-round executors and do not use yield.

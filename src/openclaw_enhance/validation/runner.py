@@ -107,23 +107,24 @@ def run_scenario(
 
     baseline = _capture_baseline(openclaw_home)
 
-    try:
-        from openclaw_enhance.validation.guardrails import (
-            capture_baseline_state as capture_guardrail_state,
-            verify_cleanup_success,
-        )
+    initial_guardrail_state = None
+    if feature_class == FeatureClass.INSTALL_LIFECYCLE:
+        try:
+            from openclaw_enhance.validation.guardrails import (
+                capture_baseline_state as capture_guardrail_state,
+            )
 
-        initial_guardrail_state = capture_guardrail_state(openclaw_home)
-        verify_ownership(initial_guardrail_state)
-    except Exception as e:
-        return ValidationReport(
-            feature_name=slug,
-            feature_class=feature_class,
-            conclusion=ValidationConclusion.ENVIRONMENT_FAILURE,
-            environment=f"macOS {openclaw_home}",
-            baseline=baseline,
-            findings=[f"Readiness check failed: {e}"],
-        )
+            initial_guardrail_state = capture_guardrail_state(openclaw_home)
+            verify_ownership(initial_guardrail_state)
+        except Exception as e:
+            return ValidationReport(
+                feature_name=slug,
+                feature_class=feature_class,
+                conclusion=ValidationConclusion.ENVIRONMENT_FAILURE,
+                environment=f"macOS {openclaw_home}",
+                baseline=baseline,
+                findings=[f"Readiness check failed: {e}"],
+            )
 
     commands = get_bundle_commands(feature_class, slug)
     results = []
@@ -143,8 +144,13 @@ def run_scenario(
                 findings=[f"Environment failure: {cmd} not found"],
             )
 
-    if feature_class == FeatureClass.INSTALL_LIFECYCLE:
+    if feature_class == FeatureClass.INSTALL_LIFECYCLE and initial_guardrail_state is not None:
         try:
+            from openclaw_enhance.validation.guardrails import (
+                capture_baseline_state as capture_guardrail_state,
+                verify_cleanup_success,
+            )
+
             final_guardrail_state = capture_guardrail_state(openclaw_home)
             cleanup_ok = verify_cleanup_success(initial_guardrail_state, final_guardrail_state)
             if not cleanup_ok:

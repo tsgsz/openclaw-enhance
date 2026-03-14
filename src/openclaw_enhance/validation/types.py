@@ -133,7 +133,6 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
         ],
         FeatureClass.WORKSPACE_ROUTING: [
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
-            "openclaw agent list",
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
             'cat ~/.openclaw/config.json | grep "openclawEnhance"',

@@ -106,3 +106,38 @@ Normalized validate-feature contract to use --feature-class and --report-slug ac
 ### Test Results
 - 105 integration tests pass (orchestrator_dispatch_contract + worker_role_boundaries)
 - New tests: `test_render_workspace_proves_worker_discovery`, `test_all_workers_have_routing_frontmatter`
+
+## Task 7 Fix: Routing and Yield Coverage
+
+### Root Cause of PRODUCT_FAILURE
+- Previous attempt used `openclaw agent list` which is not a valid OpenClaw CLI command
+- Command failed with "required option '-m, --message <text>' not specified"
+- This caused PRODUCT_FAILURE in validation report
+
+### Root Cause of ENVIRONMENT_FAILURE
+- Harness readiness check (`_verify_harness_readiness`) was enforced for ALL feature classes
+- `workspace-routing` doesn't need installed OpenClaw home (just renders repo files)
+- Readiness check blocked validation with "missing VERSION file" error
+
+### Solution
+1. Removed invalid `openclaw agent list` command from workspace-routing bundle
+2. Made harness readiness checks conditional - only for `install-lifecycle` feature class
+3. Other feature classes (cli-surface, workspace-routing, runtime-watchdog) skip readiness checks
+
+### Proof Source
+- Single command: `render-workspace oe-orchestrator` 
+- Renders full AGENTS.md + TOOLS.md + all skills showing:
+  - sessions_yield references (bounded-loop synchronization)
+  - max_rounds documentation (default 3, hard cap 5)
+  - Worker Selection via frontmatter discovery
+  - Round states (Assess, PlanRound, DispatchRound, YieldForResults, etc.)
+
+### Files Changed
+- `src/openclaw_enhance/validation/types.py`: Removed invalid openclaw command
+- `src/openclaw_enhance/validation/runner.py`: Made readiness checks conditional on feature class
+
+### Verification
+- `validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield` exits 0
+- Report conclusion: PASS
+- Report contains "oe-orchestrator" and routing/yield proof
+- 105 integration tests pass
