@@ -207,7 +207,7 @@ Wave 3: harness execution, durable report generation, and workflow state updates
 
   **Commit**: YES | Message: `docs(testing): add shipped-feature coverage matrix` | Files: `docs/testing-playbook.md`
 
-- [ ] 3. Encode the shipped-feature coverage matrix in the validation framework
+- [x] 3. Encode the shipped-feature coverage matrix in the validation framework
 
   **What to do**: Add a focused validation matrix/catalog module that mirrors the playbook in code. It must declare the shipped capability groups, canonical slugs, target feature class, required observable evidence kind, and report expectations. Use it as the single code-side source for the backfill instead of hard-coding bundle behavior only in `types.py`. Add unit coverage that proves every shipped capability maps to at least one canonical scenario and that the documented slugs are complete.
   **Must NOT do**: Do not infer coverage from git diff. Do not create a second unrelated reporting abstraction that disagrees with the playbook.
