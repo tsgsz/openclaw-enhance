@@ -36,6 +36,9 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw"
 
 # Verify installation
 python -m openclaw_enhance.cli status
+
+# Run post-install validation (mandatory for new environments)
+python -m openclaw_enhance.cli validate-feature --class install-lifecycle
 ```
 
 ## Detailed Installation
@@ -191,6 +194,85 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
 
 The `--force` flag allows reinstalling even if already installed.
 
+## Development Mode
+
+For active development of openclaw-enhance itself, use **development mode** (`--dev`). This creates symbolic links instead of copying files, allowing changes to source code to take effect immediately without reinstalling.
+
+### When to Use Development Mode
+
+- **Active development**: You're modifying openclaw-enhance source code
+- **Testing changes**: You need rapid iteration without repeated install/uninstall cycles
+- **Debugging**: You want to see changes reflected immediately
+
+### Platform Support
+
+**Important**: Development mode is only supported on **macOS and Linux**. Windows is not supported due to symlink permission requirements.
+
+### Installing in Development Mode
+
+```bash
+# Install with --dev flag
+python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --dev
+```
+
+This will:
+- Create symbolic links from `~/.openclaw/openclaw-enhance/` to your source directory
+- Register agents and enable hooks normally
+- Track symlink status in the install manifest
+
+### How It Works
+
+In development mode:
+- **Workspaces**: Symbolic links to `workspaces/` in source
+- **Main skills**: Symbolic links to skill contracts in source
+- **Config/hooks**: Still copied (not symlinked) for safety
+
+Example of a development installation:
+
+```
+~/.openclaw/openclaw-enhance/
+├── workspaces/
+│   ├── oe-searcher -> /path/to/source/workspaces/oe-searcher
+│   ├── oe-syshelper -> /path/to/source/workspaces/oe-syshelper
+│   └── ...
+├── manifest.json
+└── runtime-state.json
+```
+
+### Making Changes
+
+With development mode, changes are immediate:
+
+```bash
+# Edit source file
+vim workspaces/oe-searcher/AGENTS.md
+
+# Changes are immediately active - no reinstall needed!
+python -m openclaw_enhance.cli render-workspace oe-searcher
+```
+
+### Uninstalling Development Mode
+
+Uninstall works the same way regardless of install mode:
+
+```bash
+python -m openclaw_enhance.cli uninstall --openclaw-home "$HOME/.openclaw"
+```
+
+**Note**: Uninstall removes the symbolic links but **preserves your source files**.
+
+### Switching Between Modes
+
+To switch from normal to development mode (or vice versa):
+
+```bash
+# Uninstall current mode
+python -m openclaw_enhance.cli uninstall --openclaw-home "$HOME/.openclaw"
+
+# Install in new mode
+python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --dev
+```
+
 ## Uninstall
 
 To completely remove openclaw-enhance:
@@ -289,6 +371,7 @@ After installation, verify:
 
 - [ ] `python -m openclaw_enhance.cli doctor` passes
 - [ ] `python -m openclaw_enhance.cli status` shows all components
+- [ ] `python -m openclaw_enhance.cli validate-feature --class install-lifecycle` passes
 - [ ] All 5 worker agents registered in OpenClaw
 - [ ] Main skills copied to main workspace
 - [ ] Hook enabled in OpenClaw config

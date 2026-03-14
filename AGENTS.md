@@ -81,3 +81,18 @@ Before implementing any code:
 **Completed**: `session-yield-orchestrator-loop` — bounded multi-round orchestration loop using native `sessions_yield`.
 
 **See handbook for full current state, orchestration loop rules, and invariants.**
+
+## Post-Development Checklist (MANDATORY)
+
+After completing any feature development:
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] **Real-environment validation loop completed**
+  - [ ] Feature class identified (see `docs/testing-playbook.md`)
+  - [ ] `python -m openclaw_enhance.cli validate-feature --class <class>` passes
+  - [ ] Validation report saved to `docs/reports/`
+- [ ] `python -m openclaw_enhance.cli docs-check` passes
+
+**Critical Rule**: Features cannot be merged without a successful real-environment validation report in `docs/reports/`. Unit/integration tests verify code correctness, but only real-environment testing verifies actual functionality in the OpenClaw environment.
+
+See `docs/testing-playbook.md` for the feature-class matrix and detailed validation procedures.

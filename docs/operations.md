@@ -464,6 +464,26 @@ View hook contracts:
 python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich
 ```
 
+### Feature Validation
+
+Validate changes in a real environment:
+
+```bash
+# Validate installation lifecycle changes
+python -m openclaw_enhance.cli validate-feature --class install-lifecycle
+
+# Validate CLI surface changes
+python -m openclaw_enhance.cli validate-feature --class cli-surface
+
+# Validate routing or agent changes
+python -m openclaw_enhance.cli validate-feature --class workspace-routing
+
+# Validate watchdog or hook changes
+python -m openclaw_enhance.cli validate-feature --class runtime-watchdog
+```
+
+Reports are automatically saved to `docs/reports/`.
+
 ## Best Practices
 
 ### 1. Let the Router Decide
@@ -541,5 +561,5 @@ See [Troubleshooting](troubleshooting.md) for:
 
 ## Version
 
-Operations Guide Version: 1.1.0
+Operations Guide Version: 1.2.0
 Last Updated: 2026-03-14

@@ -68,11 +68,13 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
 - Execution must use native `sessions_spawn` / announce — no custom dispatch runtime
 - Worker capabilities must respect workspace `AGENTS.md` boundaries
 - Installer changes must maintain symmetric uninstall
+- **Mandatory Validation**: Every feature must pass the real-environment validation loop (`validate-feature`) before completion.
 
 **When modifying skills:**
 - Update `SKILL.md` file directly — this is the source of truth
 - Run `python -m openclaw_enhance.cli render-skill {name}` to verify
 - Skills are synced to workspace on install — consider sync implications
+- **Validation**: Skill changes require `docs-check` and may require routing validation if behavior changes.
 
 ## Source of Truth Map
 
@@ -194,6 +196,16 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Documentation alignment across all docs
 - Success criteria: 77 tests passing, no router API in source, all docs reference native execution
 
+**real-environment-testing-loop** — COMPLETE
+- Date: 2026-03-14
+- Scope: Implemented mandatory real-environment validation loop for all features.
+- Deliverables:
+  - `validate-feature` CLI command for automated bundle execution.
+  - Feature-class matrix in `docs/testing-playbook.md`.
+  - Mandatory report generation in `docs/reports/`.
+  - Post-development checklist integration in `AGENTS.md`.
+- Success criteria: CLI command functional, all docs aligned on mandatory gate, reports generated.
+
 ### Current Durable Status
 
 The repository is in **stable maintenance mode** for the bounded-loop orchestration architecture:
@@ -288,6 +300,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.2.0  
+**Version**: 1.3.0  
 **Last Updated**: 2026-03-14  
-**Milestone**: tool-failure-recovery-worker COMPLETE
+**Milestone**: real-environment-testing-loop COMPLETE
