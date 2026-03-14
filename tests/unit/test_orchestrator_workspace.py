@@ -82,9 +82,37 @@ class TestAgentsMdContent:
         for resp in responsibilities:
             assert resp in agents_content, f"Missing responsibility: {resp}"
 
-    def test_defines_constraints(self, agents_content):
-        """Should define constraints."""
-        assert "## Constraints" in agents_content
+    def test_describes_supported_agent_types(self, agents_content):
+        """Should list supported agent types."""
+        agent_types = ["searcher", "syshelper", "script_coder", "watchdog", "tool_recovery"]
+        for agent in agent_types:
+            assert agent in agents_content, f"Missing agent type: {agent}"
+
+    def test_defines_loop_state_fields(self, agents_content):
+        """Should define mandatory loop state fields."""
+        fields = [
+            "task_id",
+            "round_index",
+            "max_rounds",
+            "pending_dispatches",
+            "received_results",
+            "blocked_items",
+            "dedupe_keys",
+            "recovery_attempts",
+            "recovered_methods",
+            "recovery_in_progress",
+            "termination_state",
+        ]
+        for field in fields:
+            assert field in agents_content, f"Missing state field: {field}"
+
+    def test_documents_recovery_flow(self, agents_content):
+        """Should document tool recovery flow and constraints."""
+        assert "Tool Recovery Flow" in agents_content
+        assert "Recovery Cap" in agents_content
+        assert "No Recovery Loops" in agents_content
+        assert "No Worker Handoff" in agents_content
+        assert "oe-tool-recovery" in agents_content
 
     def test_describes_workflow(self, agents_content):
         """Should describe workflow."""

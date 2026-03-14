@@ -37,6 +37,7 @@ Orchestrator ← synthesize results
 - `syshelper`: System introspection, grep, file listing (cheap model + read-only)
 - `script_coder`: Script development and testing (codex-class model + sandbox read/write)
 - `watchdog`: Session monitoring, timeout detection, diagnostics (any model + full access)
+- `tool_recovery`: Leaf-node recovery specialist for failed tool calls (reasoning model + read-only)
 
 ## Constraints
 
@@ -87,6 +88,9 @@ Assess → PlanRound → DispatchRound → YieldForResults → CollectResults �
 - **Complete**: Sufficient results gathered, synthesize and return to main
 - **Blocked**: External decision needed, yield checkpoint to main
 - **Re-dispatch**: Schedule next round with refined tasks
+- **Recovery Dispatch**: Tool-usage failure detected; dispatch `oe-tool-recovery`
+- **Recovery-Assisted Retry**: Retry original worker with `recovered_method` (max 1 retry)
+- **Escalated**: Recovery failed or retry failed; terminate with escalation
 
 #### Orchestrator-Owned Loop State
 
@@ -101,6 +105,9 @@ Each orchestration maintains explicit state:
 | `received_results` | Results collected from completed workers |
 | `blocked_items` | Issues requiring external intervention |
 | `dedupe_keys` | Identifiers to prevent duplicate dispatches |
+| `recovery_attempts` | Dict mapping `failed_step_id` -> count (max 1 per step) |
+| `recovered_methods` | Dict mapping `failed_step_id` -> `RecoveredMethod` object |
+| `recovery_in_progress` | Boolean flag to prevent nested recovery |
 | `termination_state` | One of: `active`, `completed`, `blocked`, `exhausted`, `escalated` |
 | `termination_reason` | Human-readable explanation of termination |
 
@@ -111,6 +118,21 @@ Each orchestration maintains explicit state:
 - **Incrementality rule**: New round only if it narrows uncertainty or adds new evidence.
 - **Duplicate dispatch guard**: Same worker + objective + context cannot be resent without new evidence.
 - **Blocker escalation**: If two consecutive evaluations show no progress, terminate as `blocked`.
+- **Recovery Cap**: Max ONE recovery-assisted retry per failed step.
+- **No Recovery Loops**: Recovery worker failure or retry failure escalates immediately; do NOT re-enter recovery for the same step.
+- **No Worker Handoff**: Recovery dispatch does NOT create worker-to-worker handoff; the Orchestrator remains the sole dispatcher.
+
+#### Tool Recovery Flow
+
+The Orchestrator manages tool-usage failures (e.g., `tool_not_found`, `invalid_parameters`, `permission_denied`, `tool_execution_error`) via a specialized recovery branch:
+
+1. **Detection**: `EvaluateProgress` identifies a tool-usage failure in worker results.
+2. **Eligibility Check**: Verify `recovery_attempts[failed_step_id]` is 0 and `recovery_in_progress` is false.
+3. **Recovery Dispatch**: Spawn `oe-tool-recovery` via `sessions_spawn` with the failed context.
+4. **Yield**: Call `sessions_yield` to await recovery results.
+5. **Integration**: On next turn, validate `RecoveredMethod`, store in `recovered_methods`, and increment `recovery_attempts`.
+6. **Assisted Retry**: Re-dispatch the original worker using the `exact_invocation` from `RecoveredMethod`.
+7. **Escalation**: If recovery fails, or the assisted retry fails, terminate the orchestration as `escalated`.
 
 #### Native Primitive Usage
 
