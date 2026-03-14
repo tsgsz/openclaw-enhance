@@ -306,7 +306,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): enforce harness readiness and cleanup` | Files: `src/openclaw_enhance/validation/guardrails.py`, `src/openclaw_enhance/validation/runner.py`, `tests/unit/test_real_env_guardrails.py`, `tests/unit/test_real_env_runner.py`, `tests/integration/test_validation_real_env.py`
 
-- [ ] 5. Expand the install-lifecycle bundle to cover both core install flow and `--dev` symlink mode
+- [x] 5. Expand the install-lifecycle bundle to cover both core install flow and `--dev` symlink mode
 
   **What to do**: Strengthen the install-lifecycle real-environment bundle so it proves the shipped installer surface, not just a bare install/uninstall smoke. The bundle must cover: standard install, status/doctor after install, main-skill sync visibility, cleanup symmetry, and a dedicated `--dev` subscenario proving symlink-based install behavior. Use the coverage matrix slugs `backfill-core-install` and `backfill-dev-install`; keep them under the existing `install-lifecycle` feature class, not a new class.
   **Must NOT do**: Do not split `--dev` into a new feature class. Do not treat uninstall success alone as proof that install lifecycle is covered.
