@@ -474,7 +474,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): backfill recovery worker coverage` | Files: `src/openclaw_enhance/validation/types.py`, `src/openclaw_enhance/validation/matrix.py`, `tests/integration/test_orchestrator_dispatch_contract.py`, `tests/e2e/test_openclaw_harness.py`, `docs/testing-playbook.md`
 
-- [ ] 9. Resolve the watchdog contract mismatch and backfill end-to-end reminder delivery coverage
+- [x] 9. Resolve the watchdog contract mismatch and backfill end-to-end reminder delivery coverage
 
   **What to do**: Align watchdog’s documented authority and actual tool surface so end-to-end reminder delivery is real, testable, and still within project boundaries. If `session_send` is supposed to be available, expose/document it consistently in `oe-watchdog` contracts; if a different repo-owned path is required, make that path explicit and testable. Then add canonical slug `backfill-watchdog-reminder` under `runtime-watchdog`, proving timeout detection, watchdog activation, reminder delivery, and durable evidence of receipt/logging.
   **Must NOT do**: Do not fake reminder delivery with state-only confirmation. Do not broaden watchdog into a general-purpose worker or add OpenClaw core changes.
