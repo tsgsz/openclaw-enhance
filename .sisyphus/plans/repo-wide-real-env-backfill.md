@@ -432,7 +432,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): backfill routing and yield coverage` | Files: `src/openclaw_enhance/validation/types.py`, `src/openclaw_enhance/validation/matrix.py`, `tests/integration/test_orchestrator_dispatch_contract.py`, `tests/e2e/test_openclaw_harness.py`, `docs/testing-playbook.md`
 
-- [ ] 8. Add a real-environment recovery-worker scenario that proves `oe-tool-recovery` dispatch on the documented legacy-`websearch` failure
+- [x] 8. Add a real-environment recovery-worker scenario that proves `oe-tool-recovery` dispatch on the documented legacy-`websearch` failure
 
   **What to do**: Add a dedicated canonical scenario `backfill-recovery-worker` under `workspace-routing` that intentionally triggers the documented recovery example where a worker attempts the legacy tool name `websearch` and receives `tool 'websearch' not found`, after which `oe-tool-recovery` recommends `websearch_web_search_exa`. The scenario must prove the orchestrator dispatches `oe-tool-recovery`, waits for the recovery suggestion, and records observable evidence of that recovery path. Prefer this one deterministic, repeatable failure mode over broad combinatorial coverage.
   **Must NOT do**: Do not mock the failure path in the live scenario. Do not test every recovery mode.
