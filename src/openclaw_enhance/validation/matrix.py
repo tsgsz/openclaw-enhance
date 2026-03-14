@@ -7,31 +7,63 @@ SHIPPED_FEATURES = [
         "slug": "backfill-core-install",
         "feature_class": FeatureClass.INSTALL_LIFECYCLE,
         "capability": "Core Installation",
+        "proof_expectations": [
+            "status shows installed: true",
+            "doctor checks pass",
+            "files exist in ~/.openclaw/openclaw-enhance",
+        ],
     },
     {
         "slug": "backfill-dev-install",
         "feature_class": FeatureClass.INSTALL_LIFECYCLE,
         "capability": "Dev Mode (Symlinks)",
+        "proof_expectations": [
+            "install --dev succeeds",
+            "workspaces are symlinked to source",
+        ],
     },
     {
         "slug": "backfill-cli-surface",
         "feature_class": FeatureClass.CLI_SURFACE,
         "capability": "CLI Surface Area",
+        "proof_expectations": [
+            "status output shows installation status",
+            "status --json returns valid JSON",
+            "doctor command passes",
+            "render-workspace shows workspace content",
+            "render-skill shows skill definition",
+            "render-hook shows hook logic",
+            "docs-check passes",
+            "validate-feature self-surface produces EXEMPT report",
+        ],
     },
     {
         "slug": "backfill-routing-yield",
         "feature_class": FeatureClass.WORKSPACE_ROUTING,
         "capability": "Orchestrator Yield",
+        "proof_expectations": [
+            "oe-orchestrator is in agent list",
+            "complex task routes to oe-orchestrator",
+            "sessions_yield is used for synchronization",
+        ],
     },
     {
         "slug": "backfill-recovery-worker",
         "feature_class": FeatureClass.WORKSPACE_ROUTING,
         "capability": "Recovery Worker",
+        "proof_expectations": [
+            "oe-tool-recovery is in agent list",
+            "recovery worker handles tool failures",
+        ],
     },
     {
         "slug": "backfill-watchdog-reminder",
         "feature_class": FeatureClass.RUNTIME_WATCHDOG,
         "capability": "Watchdog Hooks",
+        "proof_expectations": [
+            "hooks are registered in config.json",
+            "watchdog detects timeouts",
+        ],
     },
 ]
 

@@ -6,7 +6,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import TYPE_CHECKING
 
 
 class FeatureClass(Enum):
@@ -116,10 +119,17 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
 
     bundles = {
         FeatureClass.CLI_SURFACE: [
+            "python -m openclaw_enhance.cli status",
             "python -m openclaw_enhance.cli status --json",
+            "python -m openclaw_enhance.cli doctor",
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
             "python -m openclaw_enhance.cli render-skill oe-toolcall-router",
             "python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich",
+            "python -m openclaw_enhance.cli docs-check",
+            (
+                "python -m openclaw_enhance.cli validate-feature "
+                "--feature-class docs-test-only --report-slug self-surface-smoke"
+            ),
         ],
         FeatureClass.WORKSPACE_ROUTING: [
             "openclaw agent list",

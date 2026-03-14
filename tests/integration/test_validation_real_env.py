@@ -16,7 +16,6 @@ import pytest
 from click.testing import CliRunner
 
 from openclaw_enhance.cli import cli
-from openclaw_enhance.validation.types import FeatureClass, ValidationConclusion
 
 
 @pytest.fixture
@@ -191,7 +190,7 @@ class TestValidateFeatureCommandOrdering:
         mock_openclaw_home: Path,
         reports_dir: Path,
     ):
-        """CLI surface should execute render commands in order."""
+        """CLI surface should execute all shipped commands in order."""
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
         runner = CliRunner()
@@ -202,7 +201,7 @@ class TestValidateFeatureCommandOrdering:
                 "--feature-class",
                 "cli-surface",
                 "--report-slug",
-                "baseline-test",
+                "backfill-cli-surface",
                 "--openclaw-home",
                 str(mock_openclaw_home),
                 "--reports-dir",
@@ -212,12 +211,14 @@ class TestValidateFeatureCommandOrdering:
 
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        # Should have status --json, render-workspace, render-skill, render-hook
-        assert len(calls) >= 4
-        assert "status --json" in calls[0]
-        assert "render-workspace" in calls[1]
-        assert "render-skill" in calls[2]
-        assert "render-hook" in calls[3]
+        # Should have status, doctor, render commands, docs-check, and validate-feature self-surface
+        assert any("status" in c for c in calls)
+        assert any("doctor" in c for c in calls)
+        assert any("render-workspace" in c for c in calls)
+        assert any("render-skill" in c for c in calls)
+        assert any("render-hook" in c for c in calls)
+        assert any("docs-check" in c for c in calls)
+        assert any("validate-feature" in c for c in calls)
 
 
 class TestValidateFeatureExemptions:

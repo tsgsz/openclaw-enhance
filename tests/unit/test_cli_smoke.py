@@ -37,7 +37,18 @@ class TestCLICommandsExist:
     """Tests that CLI commands exist and exit cleanly."""
 
     @pytest.mark.parametrize(
-        "command", ["install", "uninstall", "doctor", "status", "validate-feature"]
+        "command",
+        [
+            "install",
+            "uninstall",
+            "doctor",
+            "status",
+            "validate-feature",
+            "render-skill",
+            "render-workspace",
+            "render-hook",
+            "docs-check",
+        ],
     )
     def test_command_help_exits_zero(self, command):
         """Each command's --help should exit with code 0."""
@@ -49,7 +60,18 @@ class TestCLICommandsExist:
         assert result.returncode == 0, f"Command '{command} --help' failed: {result.stderr}"
 
     @pytest.mark.parametrize(
-        "command", ["install", "uninstall", "doctor", "status", "validate-feature"]
+        "command",
+        [
+            "install",
+            "uninstall",
+            "doctor",
+            "status",
+            "validate-feature",
+            "render-skill",
+            "render-workspace",
+            "render-hook",
+            "docs-check",
+        ],
     )
     def test_command_exists_in_help(self, command):
         """Each command should be listed in main help."""
