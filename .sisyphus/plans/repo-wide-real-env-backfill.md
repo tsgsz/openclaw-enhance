@@ -259,7 +259,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `feat(validation): add shipped-feature coverage matrix` | Files: `src/openclaw_enhance/validation/matrix.py`, `src/openclaw_enhance/validation/__init__.py`, `tests/unit/test_validation_matrix.py`, `src/openclaw_enhance/validation/types.py`
 
-- [ ] 4. Upgrade guardrails and runner semantics for canonical harness readiness, cleanup enforcement, and explicit exemptions
+- [x] 4. Upgrade guardrails and runner semantics for canonical harness readiness, cleanup enforcement, and explicit exemptions
 
   **What to do**: Strengthen the validator so the first-pass backfill can trust its evidence. Add explicit readiness checks for the canonical harness target (`~/.openclaw` VERSION/config/basic OpenClaw home shape), wire the runner to actually use cleanup verification after install-lifecycle scenarios, and make `docs-test-only` semantics explicit by deciding whether it records docs-check evidence while still concluding `EXEMPT`. Ensure failure reports distinguish harness-readiness failures from product failures before any bundle-specific work begins.
   **Must NOT do**: Do not broaden support to arbitrary homes or multi-version matrix testing. Do not leave cleanup verification dormant in `guardrails.py`.
