@@ -227,6 +227,9 @@ def _register_agents(
     config_path = _get_openclaw_config_path(openclaw_home)
 
     # Define the agents configuration patch
+    # NOTE: Registry descriptions are non-authoritative.
+    # Actual routing metadata (capabilities, constraints) is read from
+    # each worker's AGENTS.md frontmatter at runtime.
     agents_patch = {
         "openclawEnhance": {
             "agents": {

@@ -359,7 +359,7 @@ PY` prints `oe-demo`
 - [x] 7. Add unit coverage for catalog loading, ranking inputs, and render compatibility
 - [x] 8. Add integration tests for discovery-first dispatch and least-privilege ranking
 
-- [ ] 9. Update durable docs to explain manifest-driven worker discovery
+- [x] 9. Update durable docs to explain manifest-driven worker discovery
 
   **What to do**: Update durable docs so future sessions understand that built-in worker routing metadata now lives in worker `AGENTS.md` frontmatter, while `oe-worker-dispatch` stays the policy layer and `TOOLS.md` stays exact-tool truth. Update architecture, operations, handbook, and root guidance where worker roles or source-of-truth rules are mentioned.
   **Must NOT do**: Do not imply a new manifest file exists; do not imply exact tool lists moved into frontmatter; do not blur main-router responsibilities with orchestrator worker selection.
