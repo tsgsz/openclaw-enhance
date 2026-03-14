@@ -8,13 +8,15 @@
 
 ### Implemented Architecture (Milestone: session-yield-orchestrator-loop)
 
-The repository uses a **bounded, semi-visible orchestration loop** with native `sessions_yield` synchronization:
+The repository uses a **bounded, semi-visible orchestration loop** with native `sessions_yield` synchronization and **automated tool-failure recovery**:
 
 **Core Model**: `oe-orchestrator` runs a multi-round loop (Assess → Plan → Dispatch → Yield → Collect → Evaluate) instead of one-shot execution.
 
 **Key Components**:
 - **Bounded Loop**: Orchestrator owns loop state (`round_index`, `max_rounds`, `pending_dispatches`). Default `max_rounds=3`, hard cap `5`.
-- **Native Synchronization**: `sessions_yield` is the turn-ending primitive for the orchestrator to wait for auto-announced worker results.
+- **Tool-Failure Recovery**: Specialized `oe-tool-recovery` worker diagnoses tool failures and suggests corrections.
+- **Recovery-Assisted Retry**: Max one recovery-assisted retry per failed step.
+- **Native Synchronization**: `sessions_yield` is the turn-ending primitive for the orchestrator to wait for auto-announced worker results (including recovery results).
 - **Semi-Visible Checkpoints**: Only `started`, `meaningful_progress`, `blocked`, and terminal states are reported to the main session.
 - **Worker Boundaries**: Workers remain single-round executors; they do NOT use `sessions_yield` or own loop state.
 - **Guardrails**: Explicit duplicate-dispatch guards (dedupe keys) and blocker escalation rules.
@@ -45,7 +47,8 @@ Results → Orchestrator synthesis → Return to main
 
 **Worker Boundaries** (each workspace has `AGENTS.md`):
 - `oe-searcher`: Web search, research — cheap model, sandbox read/write
-- `oe-syshelper`: Session introspection, grep, LSP — cheap model, strictly read-only
+- `oe-syshelper`: Session introspection, grep, LSP — cheap model, strictly read-only (no recovery)
+- `oe-tool-recovery`: Tool failure diagnosis, recovery suggestion — reasoning model, leaf-node, read-only
 - `oe-script_coder`: Code development, testing — codex-class model, requires tests
 - `oe-watchdog`: Session monitoring, timeout detection — narrow authority, runtime state only
 
@@ -133,7 +136,8 @@ Results → Orchestrator synthesis → Return to main
 ### Worker Role Boundaries (Do Not Cross)
 
 - **oe-searcher**: Read-only file access, sandbox for temp files, NO agent spawning
-- **oe-syshelper**: Strictly read-only, NO file modifications, NO agent spawning
+- **oe-syshelper**: Strictly read-only, NO file modifications, NO agent spawning, NO recovery
+- **oe-tool-recovery**: Leaf-node recovery specialist, read-only, NO file modifications, NO agent spawning
 - **oe-script_coder**: Full file access, can spawn searcher only for research, requires tests
 - **oe-watchdog**: Runtime state only, NO project file modifications, NO git, NO tests, reports to orchestrator
 
@@ -158,6 +162,16 @@ Results → Orchestrator synthesis → Return to main
   - Bounded loop controls (max_rounds, dedupe, blocker escalation).
   - Native transport docs updated for `sessions_yield` semantics.
 - Success criteria: Integration tests pass, no polling in contracts, docs aligned.
+
+**tool-failure-recovery-worker** — COMPLETE
+- Date: 2026-03-14
+- Scope: Added specialized recovery worker for tool-call failures.
+- Deliverables:
+  - `oe-tool-recovery` worker with reasoning-capable model.
+  - Recovery flow in orchestrator (detect → dispatch → yield → retry).
+  - Max one recovery-assisted retry per failed step.
+  - Clear boundary between `oe-syshelper` (read-only) and `oe-tool-recovery` (recovery).
+- Success criteria: Recovery flow documented, worker boundaries enforced, docs-check passes.
 
 **router-skill-first-alignment** — COMPLETE
 - Date: 2026-03-13
@@ -265,6 +279,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.1.0  
-**Last Updated**: 2026-03-13  
-**Milestone**: session-yield-orchestrator-loop COMPLETE
+**Version**: 1.2.0  
+**Last Updated**: 2026-03-14  
+**Milestone**: tool-failure-recovery-worker COMPLETE

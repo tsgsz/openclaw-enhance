@@ -53,6 +53,7 @@
 - `workspaces/oe-orchestrator/AGENTS.md` — full-capability planning + dispatch
 - `workspaces/oe-searcher/AGENTS.md` — read-only research, web search
 - `workspaces/oe-syshelper/AGENTS.md` — read-only introspection
+- `workspaces/oe-tool-recovery/AGENTS.md` — tool failure recovery specialist
 - `workspaces/oe-script_coder/AGENTS.md` — code development with tests
 - `workspaces/oe-watchdog/AGENTS.md` — session monitoring, narrow authority
 

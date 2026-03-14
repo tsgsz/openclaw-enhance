@@ -136,7 +136,8 @@ Synthesized output from workers
 - Fast for file system operations
 
 **Constraints**:
-- Cannot modify files
+- Strictly read-only (cannot modify files)
+- **No recovery**: Does not diagnose or fix tool failures
 - Cannot execute arbitrary bash commands
 - Cannot access network resources
 
@@ -209,16 +210,30 @@ Synthesized output from workers
 
 **Characteristics**:
 - Uses reasoning-capable model for accurate diagnosis
+- **Recovery Specialist**: Specifically designed to fix tool-usage errors
 - Read-only access (does not modify files)
 - Leaf-node specialist (cannot spawn subagents)
 - Returns structured `recovered_method` for retry
 
-**Workflow**:
-1. Receive failure context from orchestrator
-2. Analyze error message and tool contract
-3. Research external docs if needed
-4. Formulate corrected invocation
-5. Return recovery suggestion with confidence score
+**Constraints**:
+- **Max one retry**: Only one recovery-assisted retry allowed per failed step
+- **No execution**: Suggests corrections but does not execute them
+- **No business logic**: Focuses on tool mechanics, not task goals
+
+## Tool-Failure Recovery Workflow
+
+The orchestrator manages tool failures through a specialized recovery process:
+
+1. **Detection**: Orchestrator identifies a tool-usage failure (e.g., `tool_not_found`, `invalid_parameters`, `tool_execution_error`) in worker results.
+2. **Diagnosis Dispatch**: If no previous recovery attempt for this step, orchestrator spawns `oe-tool-recovery` via `sessions_spawn`.
+3. **Yield**: Orchestrator calls `sessions_yield` to wait for the recovery suggestion.
+4. **Recovery Integration**: Orchestrator receives the `RecoveredMethod` (corrected invocation, preconditions, etc.).
+5. **Assisted Retry**: Orchestrator re-dispatches the original worker using the corrected method.
+6. **Completion/Escalation**:
+   - If retry succeeds: Orchestration continues.
+   - If recovery fails or retry fails: Orchestration terminates as `escalated` to the user.
+
+**Note**: This flow ensures that complex tool failures are handled by a reasoning-capable specialist without cluttering the main orchestration logic or the read-only `oe-syshelper` worker.
 
 ## Task Routing Examples
 
@@ -522,5 +537,5 @@ See [Troubleshooting](troubleshooting.md) for:
 
 ## Version
 
-Operations Guide Version: 1.0.0
-Last Updated: 2026-03-13
+Operations Guide Version: 1.1.0
+Last Updated: 2026-03-14

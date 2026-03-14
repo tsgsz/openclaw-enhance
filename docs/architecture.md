@@ -46,12 +46,12 @@ This document describes the architecture of `openclaw-enhance`, a non-invasive c
 │  └─────────────────┘                                        │
 └──────────┬──────────┬──────────┬──────────┬─────────────────┘
            │          │          │          │
-           ▼          ▼          ▼          ▼
-┌──────────────┐ ┌────────┐ ┌────────────┐ ┌──────────────┐
-│ oe-searcher  │ │oe-sys- │ │oe-script_  │ │ oe-watchdog  │
-│ (Research)   │ │helper  │ │ coder      │ │ (Monitor)    │
-│              │ │(System)│ │ (Scripts)  │ │              │
-└──────────────┘ └────────┘ └────────────┘ └──────────────┘
+            ▼          ▼          ▼          ▼          ▼
+┌──────────────┐ ┌────────┐ ┌────────────┐ ┌──────────────┐ ┌──────────────┐
+│ oe-searcher  │ │oe-sys- │ │oe-script_  │ │ oe-watchdog  │ │oe-tool-      │
+│ (Research)   │ │helper  │ │ coder      │ │ (Monitor)    │ │recovery      │
+│              │ │(System)│ │ (Scripts)  │ │              │ │(Recovery)   │
+└──────────────┘ └────────┘ └────────────┘ └──────────────┘ └──────────────┘
 ```
 
 ## Control Flow
@@ -77,34 +77,61 @@ User Request
                                     └────────┬─────────┘
                                              │
                                              ▼
-                                    ┌──────────────────┐
-                         ┌──────────┤  Dispatch Round  │◄─────────┐
-                         │          │ (sessions_spawn) │          │
-                         │          └────────┬─────────┘          │
-                         │                   │                    │
-                         │                   ▼                    │
-                         │          ┌──────────────────┐          │
-                         │          │   Yield Turn     │          │
-                         │          │ (sessions_yield) │          │
-                         │          └────────┬─────────┘          │
-                         │                   │                    │
-                         │                   ▼                    │
-                         │          ┌──────────────────┐          │
-                         │          │ Collect Results  │          │
-                         │          │ (auto-announce)  │          │
-                         │          └────────┬─────────┘          │
-                         │                   │                    │
-                         │                   ▼                    │
-                         │          ┌──────────────────┐          │
-                         │          │ Evaluate Progress│──────────┘
-                         │          └────────┬─────────┘
-                         │                   │
-                         └───────────────────┼────────────────────┐
-                                             ▼                    ▼
-                                    ┌──────────────────┐   ┌──────────────┐
-                                    │ Synthesize       │   │ Blocked/     │
-                                    │ Return to main   │   │ Exhausted    │
-                                    └──────────────────┘   └──────────────┘
+                                     ┌──────────────────┐
+                          ┌──────────┤  Dispatch Round  │◄─────────┐
+                          │          │ (sessions_spawn) │          │
+                          │          └────────┬─────────┘          │
+                          │                   │                    │
+                          │                   ▼                    │
+                          │          ┌──────────────────┐          │
+                          │          │   Yield Turn     │          │
+                          │          │ (sessions_yield) │          │
+                          │          └────────┬─────────┘          │
+                          │                   │                    │
+                          │                   ▼                    │
+                          │          ┌──────────────────┐          │
+                          │          │ Collect Results  │          │
+                          │          │ (auto-announce)  │          │
+                          │          └────────┬─────────┘          │
+                          │                   │                    │
+                          │                   ▼                    │
+                          │          ┌──────────────────┐          │
+                          │          │ Evaluate Progress│──────────┘
+                          │          │ (Check Recovery) │
+                          │          └────────┬─────────┘
+                          │                   │
+                          └───────────────────┼────────────────────┐
+                                              ▼                    ▼
+                                     ┌──────────────────┐   ┌──────────────┐
+                                     │ Synthesize       │   │ Blocked/     │
+                                     │ Return to main   │   │ Exhausted    │
+                                     └──────────────────┘   └──────────────┘
+
+### 1.1 Tool-Failure Recovery Flow
+
+When `Evaluate Progress` detects a tool failure, it triggers the recovery branch:
+
+```
+Evaluate Progress (Failure Detected)
+    │
+    ▼
+Check Eligibility (Attempts < 1)
+    │
+    ▼
+sessions_spawn → oe-tool-recovery
+    │
+    ▼
+sessions_yield (Wait for Recovery)
+    │
+    ▼
+Collect RecoveredMethod
+    │
+    ▼
+Retry Original Worker (Max 1)
+    │
+    ▼
+Complete or Escalate
+```
 ```
 
 User Request
@@ -209,6 +236,7 @@ All workers operate via the native subagent announce chain.
 | `oe-syshelper` | System introspection (grep, ls, find) | Cheap | Read-only |
 | `oe-script_coder` | Script development and testing | Codex-class | Sandbox R/W |
 | `oe-watchdog` | Session monitoring, timeout handling | Any | Full access |
+| `oe-tool-recovery` | Tool failure diagnosis and recovery | Reasoning | Read-only |
 
 ### Hooks
 
@@ -327,5 +355,5 @@ return {
 
 ## Version
 
-Architecture Version: 1.0.0
-Last Updated: 2026-03-13
+Architecture Version: 1.1.0
+Last Updated: 2026-03-14
