@@ -1,0 +1,10 @@
+71:Assess → PlanRound → DispatchRound → YieldForResults → CollectResults → EvaluateProgress
+85:6. **EvaluateProgress**: Analyze results, update state, decide next action
+87:**Decision outcomes from EvaluateProgress:**
+91:- **Recovery Dispatch**: Tool-usage failure detected; dispatch `oe-tool-recovery`
+111:| `termination_state` | One of: `active`, `completed`, `blocked`, `exhausted`, `escalated` |
+121:- **Recovery Cap**: Max ONE recovery-assisted retry per failed step.
+129:1. **Detection**: `EvaluateProgress` identifies a tool-usage failure in worker results.
+131:3. **Recovery Dispatch**: Spawn `oe-tool-recovery` via `sessions_spawn` with the failed context.
+135:7. **Escalation**: If recovery fails, or the assisted retry fails, terminate the orchestration as `escalated`.
+167:- Receives escalated tasks from main

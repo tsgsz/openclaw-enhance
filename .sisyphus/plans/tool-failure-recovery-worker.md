@@ -220,7 +220,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `feat(recovery): define recovered method contract` | Files: contract/schema files, `tests/unit/test_recovery_contract.py`, `workspaces/oe-tool-recovery/skills/oe-tool-recovery/SKILL.md`
 
-- [ ] 4. Extend orchestrator loop state and decision rules for tool-failure recovery
+- [x] 4. Extend orchestrator loop state and decision rules for tool-failure recovery
 
   **What to do**: Update `workspaces/oe-orchestrator/AGENTS.md` so the bounded loop explicitly supports a tool-recovery branch inside `EvaluateProgress`. Define the decision trigger for tool-usage failures, add loop-state fields needed to track per-step recovery attempts and recovered methods, and lock the rule that recovery dispatch does not create worker-to-worker handoff or unlimited retries. Document that recovery-worker failure escalates rather than re-enters recovery.
   **Must NOT do**: Do not make recovery a new transport; do not let the orchestrator bypass `sessions_yield`; do not weaken the current `blocked` / `escalated` semantics.

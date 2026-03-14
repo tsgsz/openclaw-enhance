@@ -1,0 +1,17 @@
+11:- **Worker Dispatch**: Distributing work to specialized subagents via native `announce` mechanism
+25:The Orchestrator uses the native `announce` mechanism to dispatch work:
+29:    ↓ announce
+47:- **Native subagent**: Primary dispatch mechanism - use `announce` for all worker tasks
+64:The Orchestrator uses a **bounded multi-round loop** to handle complex tasks that require iterative refinement. This replaces the previous one-shot fan-out/fan-in model with an event-driven approach using `sessions_yield` as the round-boundary synchronization primitive.
+83:4. **YieldForResults**: Call `sessions_yield` to end current turn cleanly
+84:5. **CollectResults**: Receive auto-announced worker results on next turn
+103:| `max_rounds` | Maximum allowed rounds (default: 3, hard cap: 5) |
+106:| `blocked_items` | Issues requiring external intervention |
+111:| `termination_state` | One of: `active`, `completed`, `blocked`, `exhausted`, `escalated` |
+120:- **Blocker escalation**: If two consecutive evaluations show no progress, terminate as `blocked`.
+132:4. **Yield**: Call `sessions_yield` to await recovery results.
+140:- **`sessions_yield`**: End orchestrator turn to await auto-announced results
+141:- **`announce`**: Workers return results via native mechanism
+143:**Important**: `sessions_yield` is used ONLY by the orchestrator at round boundaries. Workers remain single-round executors and do not use yield.
+152:- `blocked`: Requires main decision or intervention
+172:- Dispatches via native `announce` mechanism
