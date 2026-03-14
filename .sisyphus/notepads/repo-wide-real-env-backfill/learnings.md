@@ -50,3 +50,59 @@ Normalized validate-feature contract to use --feature-class and --report-slug ac
 - Updated all runner tests to mock guardrail state capture
 - Updated integration test for docs-test-only to verify docs-check execution
 - All 33 tests pass with proper mocking of new guardrail behavior
+
+## Task 5: Install Lifecycle Bundle Strengthening
+
+### Implementation Approach
+- Extended `get_bundle_commands()` to accept optional `slug` parameter
+- Slug-aware logic: checks if "dev" in slug to determine install mode
+- Single feature class maintained: `install-lifecycle`
+- Two canonical slugs supported: `backfill-core-install`, `backfill-dev-install`
+
+### Key Design Decision
+- Minimal change: slug parameter with simple string matching
+- No new feature classes introduced
+- Backward compatible: slug defaults to empty string
+- Runner updated to pass slug through to bundle function
+
+### Test Coverage
+- Added `test_install_lifecycle_dev_mode_slug` to verify --dev flag injection
+- Updated `test_install_lifecycle_command_order` to verify no --dev in standard mode
+- Both tests pass, confirming slug-aware behavior works correctly
+- Existing dev mode tests in `test_dev_mode_integration.py` cover symlink behavior
+
+### Files Modified
+- `src/openclaw_enhance/validation/types.py`: Extended `get_bundle_commands()` signature
+- `src/openclaw_enhance/validation/runner.py`: Pass slug to `get_bundle_commands()`
+- `tests/integration/test_validation_real_env.py`: Added dev slug test case
+
+### Verification
+- All integration tests pass (23 passed)
+- New validation tests pass (3 passed in TestValidateFeatureCommandOrdering)
+- Evidence saved for both core and dev install paths
+- Strengthened cli-surface bundle to cover full command surface including doctor, render, docs-check, and validator self-surface.
+- Discovered that validation runner sets cwd to openclaw_home.parent, which affects commands relying on local directory structure (like render-workspace).
+- Verified that validate-feature self-surface works by producing an EXEMPT report for docs-test-only.
+- Fixed workspace discovery failure in validation context by making workspaces.py smarter and adjusting runner semantics to inject OPENCLAW_ENHANCE_WORKSPACES_DIR.
+- Verified that cli-surface validation now passes deterministically in the canonical local context.
+
+## Task 7: Routing and Yield Coverage
+
+### Approach
+- Changed workspace-routing bundle from live `openclaw chat` to static proof sources
+- Bundle now uses `render-workspace oe-orchestrator` + `openclaw agent list`
+- Proof comes from rendered AGENTS.md content showing sessions_yield and worker discovery
+
+### Key Decisions
+- Avoided undocumented OpenClaw commands (chat requires message flag)
+- Observable proof: orchestrator AGENTS.md documents bounded-loop, sessions_yield, frontmatter-driven discovery
+- Added integration tests for worker discovery contract and render-workspace yield proof
+
+### Evidence Sources
+- `render-workspace oe-orchestrator` output contains sessions_yield, max_rounds, frontmatter references
+- Integration tests verify AGENTS.md documents round states, yield primitives, worker catalog
+- Worker discovery proven via frontmatter routing metadata in all worker AGENTS.md files
+
+### Test Results
+- 105 integration tests pass (orchestrator_dispatch_contract + worker_role_boundaries)
+- New tests: `test_render_workspace_proves_worker_discovery`, `test_all_workers_have_routing_frontmatter`

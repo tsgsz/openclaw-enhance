@@ -397,3 +397,29 @@ class TestNoACPWorkspace(TestWorkerRoleBoundaries):
         """oe-acp directory should not exist."""
         acp_path = Path("workspaces/oe-acp")
         assert not acp_path.exists()
+
+
+class TestWorkerDiscoveryContract(TestWorkerRoleBoundaries):
+    """Test worker discovery from frontmatter."""
+
+    def test_all_workers_have_routing_frontmatter(self):
+        """All worker workspaces should have routing metadata in AGENTS.md frontmatter."""
+        from openclaw_enhance.workspaces import list_workspaces
+
+        workspaces = list_workspaces()
+        # Exclude orchestrator (it's the dispatcher, not a worker)
+        workers = [w for w in workspaces if w != "oe-orchestrator"]
+
+        for worker in workers:
+            agents = self._read_file(worker, "AGENTS.md")
+            # Should have YAML frontmatter
+            assert agents.startswith("---"), f"{worker} missing frontmatter"
+            assert "routing:" in agents, f"{worker} missing routing metadata"
+
+    def test_orchestrator_references_worker_discovery(self):
+        """Orchestrator AGENTS.md should reference worker discovery mechanism."""
+        agents = self._read_file("oe-orchestrator", "AGENTS.md")
+
+        # Should reference discovery mechanism
+        assert "discover" in agents.lower() or "frontmatter" in agents.lower()
+        assert "AGENTS.md" in agents

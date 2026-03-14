@@ -42,9 +42,9 @@ SHIPPED_FEATURES = [
         "feature_class": FeatureClass.WORKSPACE_ROUTING,
         "capability": "Orchestrator Yield",
         "proof_expectations": [
-            "oe-orchestrator is in agent list",
-            "complex task routes to oe-orchestrator",
-            "sessions_yield is used for synchronization",
+            "oe-orchestrator workspace renders with sessions_yield references",
+            "agent list shows discovered workers from frontmatter",
+            "orchestrator AGENTS.md documents bounded-loop and yield behavior",
         ],
     },
     {

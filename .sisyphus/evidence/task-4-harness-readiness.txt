@@ -1,21 +1,3 @@
-# Harness Readiness Check Test
-
-## Test: Readiness check detects missing VERSION file
-Expected: RuntimeError with "missing VERSION file" message
-Result: PASS
-
-Error output:
-RuntimeError: unsupported/missing-home: missing VERSION file under /Users/tsgsz/.openclaw
-
-This confirms the harness readiness check is working as designed - it properly validates
-the canonical ~/.openclaw shape before allowing validation to proceed.
-
-## Test: Unit and integration tests pass
-Command: pytest tests/unit/test_real_env_guardrails.py tests/unit/test_real_env_runner.py tests/integration/test_validation_real_env.py -q
-Result: 33 passed, 77 warnings in 0.07s
-
-All tests pass, confirming:
-- Harness readiness checks for VERSION, config.json, and home existence
-- Cleanup verification wired into runner for install-lifecycle
-- Docs-test-only executes docs-check and records evidence while remaining EXEMPT
-- Readiness failures distinguishable from product failures (ENVIRONMENT_FAILURE)
+guardrails-ready-ok
+version-cleanup-ok
+config-cleanup-ok

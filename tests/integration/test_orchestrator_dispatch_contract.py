@@ -878,6 +878,22 @@ class TestBoundedLoopContract:
         # Should include checkpoint terminology
         assert "meaningful_progress" in output or "blocked" in output
 
+    def test_render_workspace_proves_worker_discovery(self):
+        """Rendered workspace should prove worker discovery from frontmatter."""
+        result = subprocess.run(
+            [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", "oe-orchestrator"],
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout
+
+        # Should reference worker discovery mechanism
+        assert "frontmatter" in output.lower() or "AGENTS.md" in output
+        assert "routing" in output.lower()
+
+        # Should reference worker catalog/discovery
+        assert "discover" in output.lower() or "catalog" in output.lower()
+
 
 class TestCliIntegration:
     """Integration tests for CLI commands."""
