@@ -153,7 +153,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `feat(orchestrator): add agent manifest parser` | Files: `src/openclaw_enhance/agent_catalog.py`, `tests/unit/test_agent_catalog.py`
 
-- [ ] 2. Add closed frontmatter manifests to all built-in worker AGENTS files
+- [x] 2. Add closed frontmatter manifests to all built-in worker AGENTS files
 
   **What to do**: Add the approved frontmatter block to every built-in worker `AGENTS.md`: `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, and `oe-tool-recovery`. Each manifest must encode only routing-relevant abstractions and must match the worker's existing prose boundaries and tool authority. Preserve all current human-readable sections below the frontmatter.
   **Must NOT do**: Do not add frontmatter to root `AGENTS.md`; do not duplicate exact tool names from `TOOLS.md`; do not change worker authority or remove human-readable boundary prose.
@@ -195,7 +195,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `docs(workers): add routing frontmatter to worker manifests` | Files: `workspaces/oe-searcher/AGENTS.md`, `workspaces/oe-syshelper/AGENTS.md`, `workspaces/oe-script_coder/AGENTS.md`, `workspaces/oe-watchdog/AGENTS.md`, `workspaces/oe-tool-recovery/AGENTS.md`
 
-- [ ] 3. Extend workspace metadata and render helpers to surface parsed worker routing metadata
+- [x] 3. Extend workspace metadata and render helpers to surface parsed worker routing metadata
 
   **What to do**: Integrate the new parser into workspace helper APIs so tests and CLI rendering can inspect worker manifests without changing the native routing architecture. Add metadata accessors that expose parsed frontmatter for worker workspaces, and preserve `render-workspace` readability by intentionally rendering the raw frontmatter plus the existing markdown body.
   **Must NOT do**: Do not hide or strip frontmatter silently; do not turn `render_workspace()` into a routing engine; do not break existing metadata keys used by current tests.
@@ -235,7 +235,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `feat(workspaces): expose parsed worker routing metadata` | Files: `src/openclaw_enhance/workspaces.py`, `src/openclaw_enhance/cli.py`, `tests/unit/test_worker_workspaces.py`, `tests/unit/test_orchestrator_workspace.py`
 
-- [ ] 4. Add docs-check and validation guardrails for manifest drift
+- [x] 4. Add docs-check and validation guardrails for manifest drift
 
   **What to do**: Extend validation tooling so built-in worker manifests are checked for schema presence, enum validity, and drift against existing worker authority boundaries. Enforce the no-exact-tool-names rule in frontmatter, and make conflicting metadata render a worker ineligible. Wire the check into `docs-check` or an adjacent validation path used by `docs-check` so repo health catches drift early.
   **Must NOT do**: Do not make docs-check depend on live network access; do not make exact tool names mandatory in frontmatter; do not let conflicting metadata pass as warnings only.

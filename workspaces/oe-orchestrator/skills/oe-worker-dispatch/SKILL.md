@@ -28,72 +28,156 @@ Use this skill when:
 - Monitoring long-running tasks
 - Aggregating results from multiple sources
 
-## Agent Types
+## Discovery-First Worker Routing
 
-### searcher
-**Purpose**: Research, documentation lookup, web search
+The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter rather than using hardcoded descriptions. This enables the system to adapt as workers evolve without modifying dispatch logic.
 
-**Characteristics**:
-- Model: Cheap/fast (no code generation needed)
-- Tools: websearch, webfetch, Read (for docs)
-- Use for: Library research, API documentation, best practices
+### Worker Discovery Workflow
 
-**Example Tasks**:
-- "Find FastAPI authentication best practices"
-- "Look up Pydantic validator examples"
-- "Research Python async patterns"
+To discover worker manifests and route tasks dynamically:
 
-### syshelper
-**Purpose**: System introspection and file operations
+```
+Enumerate → Parse → Catalog → Filter → Rank → Dispatch
+```
 
-**Characteristics**:
-- Model: Cheap/fast
-- Tools: Glob, Grep, Read, Bash (read-only), session_*
-- Use for: Finding files, searching code, exploring structure
+#### 1. Enumerate Worker Manifests
 
-**Example Tasks**:
-- "Find all test files in the project"
-- "Search for 'TODO' comments"
-- "List all Python files with 'auth' in the name"
+First, discover worker manifests by scanning available workspaces:
 
-### script_coder
-**Purpose**: Script development and testing
+Discover all available workers by scanning `workspaces/*/AGENTS.md`:
 
-**Characteristics**:
-- Model: Codex-class (code generation)
-- Tools: Read, Write, Bash, Glob
-- Use for: Writing scripts, small utilities, automation
+```python
+# Pseudocode for discovery
+workspaces = list_workspaces()  # ['oe-searcher', 'oe-syshelper', ...]
+manifests = [parse_agent_manifest(read(f"workspaces/{w}/AGENTS.md")) 
+             for w in workspaces]
+```
 
-**Example Tasks**:
-- "Create a script to validate project structure"
-- "Write a Python utility for git statistics"
-- "Generate test data script"
+**Note**: `oe-orchestrator` is excluded from worker selection (it's the dispatcher, not a worker).
 
-### watchdog
-**Purpose**: Session monitoring and diagnostics
+#### 2. Parse Frontmatter
 
-**Characteristics**:
-- Model: Any (judgment tasks)
-- Tools: session_list, session_read, session_info, call_omo_agent
-- Use for: Monitoring timeouts, checking session health, recovery
+Each worker's `AGENTS.md` contains YAML frontmatter with routing metadata:
 
-**Example Tasks**:
-- "Monitor session sess_abc123 for completion"
-- "Check if any sessions have timed out"
-- "Alert on hung sessions"
+```yaml
+---
+schema_version: 1
+agent_id: oe-searcher
+workspace: oe-searcher
+routing:
+  description: "Research-focused agent for web search and documentation"
+  capabilities: [research, documentation]
+  accepts: [research_tasks, documentation_queries]
+  rejects: [file_modifications, code_implementation]
+  mutation_mode: read_only
+  can_spawn: false
+  requires_tests: false
+  cost_tier: cheap
+  model_tier: cheap
+  tool_classes: [web_search, web_fetch, code_search]
+---
+```
 
-### tool_recovery
-**Purpose**: Tool-call failure diagnosis and recovery method generation
+#### 3. Build Candidate Catalog
 
-**Characteristics**:
-- Model: Reasoning-capable (e.g., GPT-4o, Claude 3.5 Sonnet)
-- Tools: Read, Glob, Grep, websearch, webfetch, context7_query-docs, Bash (read-only)
-- Use for: tool_not_found, invalid_parameters, permission_denied, tool_execution_error
+Parse all manifests into a catalog of eligible workers:
 
-**Example Tasks**:
-- "Diagnose why 'git commit' failed with exit code 128"
-- "Find correct parameters for 'websearch_web_search_exa'"
-- "Verify if 'src/main.py' exists before retrying Read"
+```python
+catalog = [manifest for manifest in manifests if manifest.is_valid]
+```
+
+Invalid manifests (missing required fields, unknown enum values) are excluded from selection.
+
+#### 4. Hard-Filter by Constraints
+
+Apply hard constraints based on task requirements:
+
+| Task Requirement | Filter Criteria |
+|------------------|-----------------|
+| Need file write | `mutation_mode: repo_write` only |
+| Read-only safe | `mutation_mode: read_only` or `none` |
+| Session access | `session_access: read_only` or `runtime_only` |
+| Can spawn subagents | `can_spawn: true` |
+| Requires tests | `requires_tests: true` |
+| Network research | `network_access: web_research` |
+
+**Example**: For a "find all TODO comments" task:
+- Must support: `read_only` or `none` mutation
+- Prefers: `code_search` tool class
+- Excludes: workers with `mutation_mode: repo_write`
+
+#### 5. Rank by Least-Privilege Rules
+
+Apply least-privilege ranking to select the narrowest capable worker:
+
+For remaining candidates, rank by narrowest scope first:
+
+**Priority Order:**
+1. **Narrowest mutation scope**: `read_only` > `sandbox_write` > `repo_write`
+2. **Lowest cost**: `cheap` > `standard` > `premium`
+3. **Fewest capabilities**: Single-purpose workers > general workers
+4. **Tool class match**: Exact match > partial match
+
+**Example Rankings:**
+- "Find TODOs in codebase": `oe-syshelper` (read-only, code search) > `oe-script_coder` (repo write)
+- "Research async patterns": `oe-searcher` (web research) > `oe-script_coder` (can do it but overkill)
+- "Fix bug and add tests": `oe-script_coder` (repo write, requires_tests)
+
+#### 6. Special-Case Branches
+
+Some workers have dedicated routing paths outside normal scoring:
+
+##### Tool Recovery Branch
+**Trigger**: Tool-usage failure (`tool_not_found`, `invalid_parameters`, `permission_denied`, `tool_execution_error`)
+
+**Flow**:
+1. Detect failure in worker results
+2. Check recovery eligibility (max 1 retry per failed step)
+3. Dispatch `oe-tool-recovery` with failure context
+4. Receive `RecoveredMethod` with corrected invocation
+5. Retry original worker OR escalate if recovery fails
+
+**Note**: `oe-tool-recovery` is never selected through normal ranking—it's only dispatched for recovery scenarios.
+
+##### Watchdog Branch
+**Trigger**: Timeout monitoring, session health checks
+
+**Flow**:
+1. Long-running task detected
+2. Spawn `oe-watchdog` to monitor progress
+3. Watchdog alerts on timeout or issues
+4. Orchestrator handles timeout response
+
+**Note**: `oe-watchdog` is typically spawned alongside main workers, not as primary task executor.
+
+### Dispatch Decision Examples
+
+**Example 1: Research task**
+```
+Task: "Find best practices for Python logging"
+Enumerate: All 5 workers
+Filter: None require write access
+Rank: oe-searcher (research, cheap) > oe-syshelper (can search but less focused)
+Dispatch: oe-searcher
+```
+
+**Example 2: Code modification**
+```
+Task: "Fix the auth bug and add tests"
+Enumerate: All 5 workers
+Filter: Requires mutation_mode: repo_write, requires_tests: true
+Rank: oe-script_coder (only match)
+Dispatch: oe-script_coder
+```
+
+**Example 3: Exploration task**
+```
+Task: "What files import the database module?"
+Enumerate: All 5 workers
+Filter: Read-only sufficient
+Rank: oe-syshelper (introspection, read-only, cheap) > oe-searcher (could grep but not its focus)
+Dispatch: oe-syshelper
+```
 
 ## Dispatch Patterns
 
