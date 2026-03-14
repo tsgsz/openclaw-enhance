@@ -32,6 +32,9 @@ def mock_managed_root(tmp_path):
 
 def test_capture_baseline_state_not_installed(mock_openclaw_home):
     """Test capturing baseline when not installed."""
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
+    (mock_openclaw_home / "config.json").write_text("{}\n")
+
     with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
         mock_root.return_value = mock_openclaw_home / "openclaw-enhance"
         with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
@@ -46,7 +49,9 @@ def test_capture_baseline_state_not_installed(mock_openclaw_home):
 
 def test_capture_baseline_state_installed_owned(mock_openclaw_home, mock_managed_root):
     """Test capturing baseline when installed and owned."""
-    # Create symlink to indicate dev mode
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
+    (mock_openclaw_home / "config.json").write_text("{}\n")
+
     workspaces_dir = mock_managed_root / "workspaces"
     workspaces_dir.mkdir()
     workspace_link = workspaces_dir / "oe-orchestrator"
@@ -66,7 +71,9 @@ def test_capture_baseline_state_installed_owned(mock_openclaw_home, mock_managed
 
 def test_capture_baseline_state_installed_foreign(mock_openclaw_home, mock_managed_root):
     """Test capturing baseline when installed but foreign."""
-    # No symlinks, indicates production install from different checkout
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
+    (mock_openclaw_home / "config.json").write_text("{}\n")
+
     workspaces_dir = mock_managed_root / "workspaces"
     workspaces_dir.mkdir()
     (workspaces_dir / "oe-orchestrator").mkdir()
@@ -85,6 +92,7 @@ def test_capture_baseline_state_installed_foreign(mock_openclaw_home, mock_manag
 
 def test_capture_config_state_exists(mock_openclaw_home):
     """Test capturing config state when config exists."""
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
     config_path = mock_openclaw_home / "config.json"
     config_path.write_text('{"openclawEnhance": {"agents": {"enabled": true}}}')
 
@@ -97,6 +105,45 @@ def test_capture_config_state_exists(mock_openclaw_home):
 
             assert state.config_state["exists"]
             assert state.config_state["has_enhance_namespace"]
+
+
+def test_harness_readiness_missing_home(tmp_path):
+    """Test harness readiness fails when home missing."""
+    missing_home = tmp_path / "nonexistent"
+
+    with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
+        mock_root.return_value = tmp_path / "openclaw-enhance"
+        with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
+            mock_load.return_value = None
+
+            with pytest.raises(RuntimeError, match="unsupported/missing-home"):
+                capture_baseline_state(missing_home)
+
+
+def test_harness_readiness_missing_version(mock_openclaw_home):
+    """Test harness readiness fails when VERSION missing."""
+    (mock_openclaw_home / "config.json").write_text("{}\n")
+
+    with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
+        mock_root.return_value = mock_openclaw_home / "openclaw-enhance"
+        with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
+            mock_load.return_value = None
+
+            with pytest.raises(RuntimeError, match="missing VERSION file"):
+                capture_baseline_state(mock_openclaw_home)
+
+
+def test_harness_readiness_missing_config(mock_openclaw_home):
+    """Test harness readiness fails when config.json missing."""
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
+
+    with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
+        mock_root.return_value = mock_openclaw_home / "openclaw-enhance"
+        with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
+            mock_load.return_value = None
+
+            with pytest.raises(RuntimeError, match="missing config.json"):
+                capture_baseline_state(mock_openclaw_home)
 
 
 def test_verify_ownership_owned(mock_openclaw_home):

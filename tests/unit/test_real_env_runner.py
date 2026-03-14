@@ -58,11 +58,21 @@ class TestExecuteCommand:
 class TestRunScenario:
     @patch("openclaw_enhance.validation.runner.execute_command")
     @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.guardrails.capture_baseline_state")
     @patch("openclaw_enhance.validation.runner.verify_ownership")
-    def test_run_scenario_all_pass(self, mock_verify, mock_baseline, mock_execute):
+    def test_run_scenario_all_pass(self, mock_verify, mock_guardrail, mock_baseline, mock_execute):
         mock_baseline.return_value = BaselineState(
             openclaw_home=Path("/tmp/.openclaw"),
             is_installed=False,
+        )
+        from openclaw_enhance.validation.guardrails import BaselineState as GuardrailState
+
+        mock_guardrail.return_value = GuardrailState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+            owned_by_checkout=True,
+            config_state={},
+            managed_root_state={},
         )
         mock_execute.return_value = CommandResult(
             command="test",
@@ -85,11 +95,23 @@ class TestRunScenario:
 
     @patch("openclaw_enhance.validation.runner.execute_command")
     @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.guardrails.capture_baseline_state")
     @patch("openclaw_enhance.validation.runner.verify_ownership")
-    def test_run_scenario_product_failure(self, mock_verify, mock_baseline, mock_execute):
+    def test_run_scenario_product_failure(
+        self, mock_verify, mock_guardrail, mock_baseline, mock_execute
+    ):
         mock_baseline.return_value = BaselineState(
             openclaw_home=Path("/tmp/.openclaw"),
             is_installed=False,
+        )
+        from openclaw_enhance.validation.guardrails import BaselineState as GuardrailState
+
+        mock_guardrail.return_value = GuardrailState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+            owned_by_checkout=True,
+            config_state={},
+            managed_root_state={},
         )
         mock_execute.return_value = CommandResult(
             command="test",
@@ -110,11 +132,23 @@ class TestRunScenario:
 
     @patch("openclaw_enhance.validation.runner.execute_command")
     @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.guardrails.capture_baseline_state")
     @patch("openclaw_enhance.validation.runner.verify_ownership")
-    def test_run_scenario_environment_failure(self, mock_verify, mock_baseline, mock_execute):
+    def test_run_scenario_environment_failure(
+        self, mock_verify, mock_guardrail, mock_baseline, mock_execute
+    ):
         mock_baseline.return_value = BaselineState(
             openclaw_home=Path("/tmp/.openclaw"),
             is_installed=False,
+        )
+        from openclaw_enhance.validation.guardrails import BaselineState as GuardrailState
+
+        mock_guardrail.return_value = GuardrailState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+            owned_by_checkout=True,
+            config_state={},
+            managed_root_state={},
         )
         mock_execute.return_value = CommandResult(
             command="test",
@@ -133,7 +167,16 @@ class TestRunScenario:
 
         assert report.conclusion == ValidationConclusion.ENVIRONMENT_FAILURE
 
-    def test_run_scenario_exempt(self):
+    @patch("openclaw_enhance.validation.runner.execute_command")
+    def test_run_scenario_exempt(self, mock_execute):
+        mock_execute.return_value = CommandResult(
+            command="python -m openclaw_enhance.cli docs-check",
+            exit_code=0,
+            stdout="ok",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
         report = run_scenario(
             FeatureClass.DOCS_TEST_ONLY,
             "test-slug",
@@ -142,7 +185,54 @@ class TestRunScenario:
         )
 
         assert report.conclusion == ValidationConclusion.EXEMPT
-        assert len(report.results) == 0
+        assert len(report.results) == 1
+        assert "docs-check" in report.results[0].command
+
+    @patch("openclaw_enhance.validation.runner.execute_command")
+    @patch("openclaw_enhance.validation.runner._capture_baseline")
+    @patch("openclaw_enhance.validation.guardrails.capture_baseline_state")
+    @patch("openclaw_enhance.validation.runner.verify_ownership")
+    def test_run_scenario_cleanup_verification_install_lifecycle(
+        self, mock_verify, mock_guardrail, mock_baseline, mock_execute
+    ):
+        mock_baseline.return_value = BaselineState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+        )
+        from openclaw_enhance.validation.guardrails import BaselineState as GuardrailState
+
+        initial_state = GuardrailState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+            owned_by_checkout=True,
+            config_state={},
+            managed_root_state={},
+        )
+        final_state = GuardrailState(
+            openclaw_home=Path("/tmp/.openclaw"),
+            is_installed=False,
+            owned_by_checkout=True,
+            config_state={},
+            managed_root_state={},
+        )
+        mock_guardrail.side_effect = [initial_state, final_state]
+        mock_execute.return_value = CommandResult(
+            command="test",
+            exit_code=0,
+            stdout="ok",
+            stderr="",
+            duration_seconds=0.1,
+        )
+
+        report = run_scenario(
+            FeatureClass.INSTALL_LIFECYCLE,
+            "test-slug",
+            Path("/tmp/.openclaw"),
+            Path("/tmp/reports"),
+        )
+
+        assert report.conclusion == ValidationConclusion.PASS
+        assert mock_guardrail.call_count == 2
 
 
 class TestBuildReportPath:

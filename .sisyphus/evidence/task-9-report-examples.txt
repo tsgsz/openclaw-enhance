@@ -1,0 +1,97 @@
+docs-test-only-example.md
+install-lifecycle-example.md
+workspace-routing-example.md
+# Validation Report: Fix Path Management in Install
+
+- **Date**: 2026-03-14
+- **Feature Class**: install-lifecycle
+- **Environment**: macOS 15.3, default ~/.openclaw
+- **Conclusion**: PASS
+
+## Baseline State
+
+- OpenClaw Home: `/Users/user/.openclaw`
+- Installed: true
+- Version: 1.0.2
+- Config Exists: true
+
+## Execution Log
+
+### Command 1: ✓ PASS
+
+```bash
+python -m openclaw_enhance.cli uninstall
+```
+
+- Exit Code: 0
+- Duration: 1.24s
+
+**stdout:**
+```
+Uninstallation successful. Removed 12 components.
+```
+
+### Command 2: ✓ PASS
+
+```bash
+python -m openclaw_enhance.cli install
+```
+
+- Exit Code: 0
+- Duration: 2.45s
+
+**stdout:**
+```
+Installation successful.
+```
+
+### Command 3: ✓ PASS
+
+```bash
+python -m openclaw_enhance.cli status
+```
+
+- Exit Code: 0
+- Duration: 0.15s
+
+**stdout:**
+```
+{
+  "installed": true,
+  "version": "1.0.3",
+  "openclaw_home": "/Users/user/.openclaw"
+}
+```
+
+### Command 4: ✓ PASS
+
+```bash
+python -m openclaw_enhance.cli doctor
+```
+
+- Exit Code: 0
+- Duration: 0.89s
+
+**stdout:**
+```
+All checks passed.
+```
+
+### Command 5: ✓ PASS
+
+```bash
+python -m openclaw_enhance.cli uninstall
+```
+
+- Exit Code: 0
+- Duration: 1.10s
+
+**stdout:**
+```
+Uninstallation successful.
+```
+
+## Findings
+
+- Installation was faster than previous versions.
+- Path resolution correctly handles symlinks in `~/.openclaw`.

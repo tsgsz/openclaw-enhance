@@ -1,0 +1,121 @@
+  --dev                      Development mode: use symlinks instead of copying
+.......                                                                                                                                                                                                                                               [100%]
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_creates_symlinks_in_dev_mode
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_removes_existing_symlink
+  <string>:4: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_creates_symlinks_in_dev_mode
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_removes_existing_symlink
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_creates_symlinks_in_dev_mode
+tests/unit/test_install_dev_mode.py::TestSyncWorkspaces::test_sync_workspaces_removes_existing_symlink
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:228: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/unit/test_install_dev_mode.py::TestComponentInstall::test_component_install_default_is_symlink_false
+  /Users/tsgsz/workspace/openclaw-enhance/tests/unit/test_install_dev_mode.py:172: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/unit/test_install_dev_mode.py::TestComponentInstall::test_component_install_can_set_is_symlink_true
+  /Users/tsgsz/workspace/openclaw-enhance/tests/unit/test_install_dev_mode.py:184: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/unit/test_install_dev_mode.py::TestComponentInstall::test_component_install_serialization_includes_is_symlink
+  /Users/tsgsz/workspace/openclaw-enhance/tests/unit/test_install_dev_mode.py:197: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+7 passed, 275 deselected, 9 warnings in 0.12s
+......                                                                                                                                                                                                                                                [100%]
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/lock.py:157: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  <string>:4: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_dev_mode_integration.py: 36 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:228: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py: 18 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/main_skill_sync.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:304: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:119: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:126: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:358: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:390: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_dev_mode_integration.py: 72 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 194 warnings in 0.38s
+199:For active development of openclaw-enhance itself, use **development mode** (`--dev`). This creates symbolic links instead of copying files, allowing changes to source code to take effect immediately without reinstalling.
+214:# Install with --dev flag
+215:python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --dev
+273:python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --dev

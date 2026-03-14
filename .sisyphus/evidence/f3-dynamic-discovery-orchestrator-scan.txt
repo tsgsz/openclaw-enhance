@@ -1,0 +1,8 @@
+12:- **Project Discovery**: Identifying and cataloging projects within the workspace
+44:2. **Parse**: Extract routing metadata (capabilities, constraints, cost) from YAML frontmatter to build candidate catalog
+46:4. **Rank**: Select by least-privilege rules (narrowest scope, lowest cost, best capability match)
+1385:To discover worker manifests and route tasks dynamically:
+1393:First, discover worker manifests by scanning available workspaces:
+1431:Parse all manifests into a catalog of eligible workers:
+1434:catalog = [manifest for manifest in manifests if manifest.is_valid]
+1459:Apply least-privilege ranking to select the narrowest capable worker:

@@ -1,0 +1,6 @@
+OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py::TestHarnessRealEnvironmentValidation::test_real_env_validation_install_lifecycle -v
+
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0
+tests/e2e/test_openclaw_harness.py::TestHarnessRealEnvironmentValidation::test_real_env_validation_install_lifecycle PASSED [100%]
+===================================================================================================================== 1 passed in 0.49s =====================================================================================================================

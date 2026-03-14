@@ -21,7 +21,7 @@ from openclaw_enhance.validation.types import FeatureClass, ValidationConclusion
 
 @pytest.fixture
 def mock_openclaw_home(tmp_path: Path) -> Path:
-    """Create a mock OpenClaw home directory."""
+    """Create a mock OpenClaw home directory with harness readiness."""
     openclaw_home = tmp_path / ".openclaw"
     openclaw_home.mkdir(parents=True)
 
@@ -189,12 +189,16 @@ class TestValidateFeatureCommandOrdering:
 class TestValidateFeatureExemptions:
     """Tests for exemption handling (docs-test-only)."""
 
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_docs_test_only_exempt(
         self,
+        mock_run: MagicMock,
         mock_openclaw_home: Path,
         reports_dir: Path,
     ):
-        """Docs-test-only feature class should be exempt."""
+        """Docs-test-only feature class should be exempt with docs-check evidence."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="docs-check ok", stderr="")
+
         runner = CliRunner()
         result = runner.invoke(
             cli,
@@ -213,20 +217,22 @@ class TestValidateFeatureExemptions:
 
         assert result.exit_code == 0
 
-        # Check report shows exemption
         report_files = list(reports_dir.glob("*-exempt-test-docs-test-only.md"))
         assert len(report_files) == 1
 
         content = report_files[0].read_text()
         assert "EXEMPT" in content or "exempt" in content
+        assert "docs-check" in content
 
-    def test_docs_test_only_no_subprocess_calls(
+    def test_docs_test_only_executes_docs_check(
         self,
         mock_openclaw_home: Path,
         reports_dir: Path,
     ):
-        """Docs-test-only should not execute subprocess commands."""
+        """Docs-test-only should execute docs-check for evidence."""
         with patch("openclaw_enhance.validation.runner.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
+
             runner = CliRunner()
             runner.invoke(
                 cli,
@@ -235,7 +241,7 @@ class TestValidateFeatureExemptions:
                     "--feature-class",
                     "docs-test-only",
                     "--report-slug",
-                    "no-exec",
+                    "docs-check-exec",
                     "--openclaw-home",
                     str(mock_openclaw_home),
                     "--reports-dir",
@@ -243,8 +249,8 @@ class TestValidateFeatureExemptions:
                 ],
             )
 
-            # Should not call subprocess
-            mock_run.assert_not_called()
+            mock_run.assert_called_once()
+            assert "docs-check" in mock_run.call_args[0][0]
 
 
 class TestValidateFeatureFailureClassification:

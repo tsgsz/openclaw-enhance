@@ -83,13 +83,17 @@ def run_scenario(
     """
     if feature_class == FeatureClass.DOCS_TEST_ONLY:
         baseline = BaselineState(openclaw_home=openclaw_home, is_installed=False)
+        docs_check_result = execute_command(
+            "python -m openclaw_enhance.cli docs-check", openclaw_home
+        )
         return ValidationReport(
             feature_name=slug,
             feature_class=feature_class,
             conclusion=ValidationConclusion.EXEMPT,
             environment=f"macOS {openclaw_home}",
             baseline=baseline,
-            findings=["Exempt from real-environment testing"],
+            results=[docs_check_result],
+            findings=["Exempt from real-environment testing (docs-check executed for evidence)"],
         )
 
     baseline = _capture_baseline(openclaw_home)
@@ -97,10 +101,11 @@ def run_scenario(
     try:
         from openclaw_enhance.validation.guardrails import (
             capture_baseline_state as capture_guardrail_state,
+            verify_cleanup_success,
         )
 
-        guardrail_state = capture_guardrail_state(openclaw_home)
-        verify_ownership(guardrail_state)
+        initial_guardrail_state = capture_guardrail_state(openclaw_home)
+        verify_ownership(initial_guardrail_state)
     except Exception as e:
         return ValidationReport(
             feature_name=slug,
@@ -108,10 +113,9 @@ def run_scenario(
             conclusion=ValidationConclusion.ENVIRONMENT_FAILURE,
             environment=f"macOS {openclaw_home}",
             baseline=baseline,
-            findings=[f"Ownership verification failed: {e}"],
+            findings=[f"Readiness check failed: {e}"],
         )
 
-    # Execute command bundle
     commands = get_bundle_commands(feature_class)
     results = []
 
@@ -119,7 +123,6 @@ def run_scenario(
         result = execute_command(cmd, openclaw_home)
         results.append(result)
 
-        # Check for environment failures (exit code 127 = command not found)
         if result.exit_code == 127:
             return ValidationReport(
                 feature_name=slug,
@@ -131,7 +134,31 @@ def run_scenario(
                 findings=[f"Environment failure: {cmd} not found"],
             )
 
-    # Determine conclusion
+    if feature_class == FeatureClass.INSTALL_LIFECYCLE:
+        try:
+            final_guardrail_state = capture_guardrail_state(openclaw_home)
+            cleanup_ok = verify_cleanup_success(initial_guardrail_state, final_guardrail_state)
+            if not cleanup_ok:
+                return ValidationReport(
+                    feature_name=slug,
+                    feature_class=feature_class,
+                    conclusion=ValidationConclusion.PRODUCT_FAILURE,
+                    environment=f"macOS {openclaw_home}",
+                    baseline=baseline,
+                    results=results,
+                    findings=["Cleanup verification failed: state not restored"],
+                )
+        except Exception as e:
+            return ValidationReport(
+                feature_name=slug,
+                feature_class=feature_class,
+                conclusion=ValidationConclusion.ENVIRONMENT_FAILURE,
+                environment=f"macOS {openclaw_home}",
+                baseline=baseline,
+                results=results,
+                findings=[f"Cleanup verification error: {e}"],
+            )
+
     all_passed = all(r.is_success for r in results)
     conclusion = ValidationConclusion.PASS if all_passed else ValidationConclusion.PRODUCT_FAILURE
 

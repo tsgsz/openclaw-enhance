@@ -40,7 +40,13 @@ def capture_baseline_state(openclaw_home: Path) -> BaselineState:
 
     Returns:
         BaselineState with captured information.
+
+    Raises:
+        RuntimeError: If harness readiness checks fail.
     """
+    # Harness readiness checks for canonical ~/.openclaw
+    _verify_harness_readiness(openclaw_home)
+
     target_root = managed_root()
 
     # Check if installed
@@ -123,6 +129,29 @@ def _capture_managed_root_state(target_root: Path) -> dict[str, Any]:
         state["readable"] = False
 
     return state
+
+
+def _verify_harness_readiness(openclaw_home: Path) -> None:
+    """Verify canonical harness target readiness.
+
+    Args:
+        openclaw_home: Path to OpenClaw home directory.
+
+    Raises:
+        RuntimeError: If harness readiness checks fail.
+    """
+    if not openclaw_home.exists():
+        raise RuntimeError(
+            f"unsupported/missing-home: OpenClaw home {openclaw_home} does not exist"
+        )
+
+    version_file = openclaw_home / "VERSION"
+    if not version_file.exists():
+        raise RuntimeError(f"unsupported/missing-home: missing VERSION file under {openclaw_home}")
+
+    config_file = openclaw_home / "config.json"
+    if not config_file.exists():
+        raise RuntimeError(f"unsupported/missing-home: missing config.json under {openclaw_home}")
 
 
 def verify_ownership(state: BaselineState) -> bool:

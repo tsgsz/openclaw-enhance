@@ -1,0 +1,1 @@
+dynamic-discovery-scope-ok
