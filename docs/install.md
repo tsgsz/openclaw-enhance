@@ -38,7 +38,7 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw"
 python -m openclaw_enhance.cli status
 
 # Run post-install validation (mandatory for new environments)
-python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug post-install-check
+python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install
 ```
 
 ## Detailed Installation
@@ -371,7 +371,7 @@ After installation, verify:
 
 - [ ] `python -m openclaw_enhance.cli doctor` passes
 - [ ] `python -m openclaw_enhance.cli status` shows all components
-- [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug post-install-check` passes
+- [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install` passes
 - [ ] All 5 worker agents registered in OpenClaw
 - [ ] Main skills copied to main workspace
 - [ ] Hook enabled in OpenClaw config

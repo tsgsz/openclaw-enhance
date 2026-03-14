@@ -196,6 +196,21 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Documentation alignment across all docs
 - Success criteria: 77 tests passing, no router API in source, all docs reference native execution
 
+**repo-wide-real-env-backfill** — COMPLETE
+- Date: 2026-03-14
+- Scope: Executed canonical backfill scenarios to establish a baseline of real-environment validation reports.
+- Deliverables:
+  - Six canonical PASS reports in `docs/reports/`:
+    - `backfill-core-install` (install-lifecycle)
+    - `backfill-dev-install` (install-lifecycle)
+    - `backfill-cli-surface` (cli-surface)
+    - `backfill-routing-yield` (workspace-routing)
+    - `backfill-recovery-worker` (workspace-routing)
+    - `backfill-watchdog-reminder` (runtime-watchdog)
+  - Report inventory recorded in durable state.
+  - Validation of all core enhancement primitives in a clean environment.
+- Success criteria: All six canonical slugs conclude PASS, `docs-check` passes.
+
 **real-environment-testing-loop** — COMPLETE
 - Date: 2026-03-14
 - Scope: Implemented mandatory real-environment validation loop for all features.

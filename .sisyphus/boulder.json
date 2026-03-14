@@ -2,20 +2,20 @@
   "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/repo-wide-real-env-backfill.md",
   "completed_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/dev-install-mode.md",
   "started_at": "2026-03-14T13:20:30Z",
-  "completed_at": null,
+  "completed_at": "2026-03-14T15:12:55Z",
   "session_ids": [
     "ses_31d1f8671ffeKAr2VaoYv3NdMU"
   ],
   "plan_name": "repo-wide-real-env-backfill",
   "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance",
-  "status": "active",
-  "tasks_completed": 10,
+  "status": "completed",
+  "tasks_completed": 11,
   "tasks_total": 11,
   "final_verification": {
-    "F1": null,
-    "F2": null,
-    "F3": null,
-    "F4": null
+    "F1": "APPROVE",
+    "F2": "APPROVE",
+    "F3": "APPROVE",
+    "F4": "APPROVE"
   },
   "commit": null,
   "agent": "atlas"

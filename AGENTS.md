@@ -78,7 +78,7 @@ Before implementing any code:
 
 ## Current Architecture Milestone
 
-**Completed**: `session-yield-orchestrator-loop` — bounded multi-round orchestration loop using native `sessions_yield`.
+**Completed**: `repo-wide-real-env-backfill` — Canonical real-environment validation baseline established for all core enhancement primitives.
 
 **See handbook for full current state, orchestration loop rules, and invariants.**
 

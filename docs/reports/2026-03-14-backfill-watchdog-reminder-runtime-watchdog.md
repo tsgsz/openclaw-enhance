@@ -3,13 +3,13 @@
 - **Date**: 2026-03-14
 - **Feature Class**: runtime-watchdog
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- **Conclusion**: PASS
+- Conclusion: PASS
 
 ## Baseline State
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
 - Installed: False
-- Config Exists: False
+- Config Exists: True
 
 ## Execution Log
 
@@ -20,7 +20,7 @@ cd /Users/tsgsz/workspace/openclaw-enhance && python -m pytest tests/integration
 ```
 
 - Exit Code: 0
-- Duration: 0.29s
+- Duration: 0.30s
 
 **stdout:**
 ```

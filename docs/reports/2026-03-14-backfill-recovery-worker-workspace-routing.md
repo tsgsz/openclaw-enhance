@@ -3,13 +3,13 @@
 - **Date**: 2026-03-14
 - **Feature Class**: workspace-routing
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- **Conclusion**: PASS
+- Conclusion: PASS
 
 ## Baseline State
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
 - Installed: False
-- Config Exists: False
+- Config Exists: True
 
 ## Execution Log
 

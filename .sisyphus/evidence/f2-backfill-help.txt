@@ -1,0 +1,12 @@
+Usage: python -m openclaw_enhance.cli validate-feature [OPTIONS]
+
+  Run real-environment validation for a feature.
+
+Options:
+  --feature-class [install-lifecycle|cli-surface|workspace-routing|runtime-watchdog|docs-test-only]
+                                  Feature class to validate  [required]
+  --report-slug TEXT              Short identifier for this validation run
+                                  [required]
+  --openclaw-home DIRECTORY       Path to OpenClaw home directory
+  --reports-dir DIRECTORY         Directory to write reports to
+  --help                          Show this message and exit.

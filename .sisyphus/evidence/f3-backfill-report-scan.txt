@@ -1,0 +1,19 @@
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:- **Feature Class**: cli-surface
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:## Execution Log
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:Conclusion: EXEMPT
+docs/reports/2026-03-14-backfill-core-install-install-lifecycle.md:- **Feature Class**: install-lifecycle
+docs/reports/2026-03-14-backfill-core-install-install-lifecycle.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-core-install-install-lifecycle.md:## Execution Log
+docs/reports/2026-03-14-backfill-dev-install-install-lifecycle.md:- **Feature Class**: install-lifecycle
+docs/reports/2026-03-14-backfill-dev-install-install-lifecycle.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-dev-install-install-lifecycle.md:## Execution Log
+docs/reports/2026-03-14-backfill-recovery-worker-workspace-routing.md:- **Feature Class**: workspace-routing
+docs/reports/2026-03-14-backfill-recovery-worker-workspace-routing.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-recovery-worker-workspace-routing.md:## Execution Log
+docs/reports/2026-03-14-backfill-routing-yield-workspace-routing.md:- **Feature Class**: workspace-routing
+docs/reports/2026-03-14-backfill-routing-yield-workspace-routing.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-routing-yield-workspace-routing.md:## Execution Log
+docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md:- **Feature Class**: runtime-watchdog
+docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md:- **Conclusion**: PASS
+docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md:## Execution Log

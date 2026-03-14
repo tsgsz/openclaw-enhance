@@ -558,7 +558,7 @@ PY` exits `0`
 
   **Commit**: YES | Message: `test(e2e): capture live evidence for backfill scenarios` | Files: `tests/e2e/test_openclaw_harness.py`, `tests/integration/test_validation_real_env.py`, `tests/fixtures/__init__.py` (if reusable harness helpers are needed), `docs/testing-playbook.md`
 
-- [ ] 11. Execute the repo-wide backfill and record durable PASS reports plus durable workflow state
+- [x] 11. Execute the repo-wide backfill and record durable PASS reports plus durable workflow state
 
   **What to do**: Run the canonical backfill scenarios against the prepared harness-backed `~/.openclaw`, generate and commit the six PASS reports, then update durable workflow state so future work can rely on the backfill. Record the completed backfill milestone in `docs/opencode-iteration-handbook.md`, point durable docs to the coverage matrix/report inventory, and ensure `AGENTS.md`/workflow docs reference the backfilled contract as the default expectation.
   **Must NOT do**: Do not leave the backfill only as uncommitted local evidence. Do not claim completion if any canonical slug is missing or still ends in `PRODUCT_FAILURE` / `ENVIRONMENT_FAILURE`.
@@ -601,7 +601,7 @@ PY` exits `0`
   **Commit**: YES | Message: `docs(validation): record repo-wide backfill reports` | Files: `docs/reports/*.md`, `docs/opencode-iteration-handbook.md`, `AGENTS.md`, `docs/install.md`, `docs/operations.md`, `docs/testing-playbook.md`
 
 ## Final Verification Wave (4 parallel agents, ALL must APPROVE)
-- [ ] F1. Plan Compliance Audit - oracle
+- [x] F1. Plan Compliance Audit - oracle
 
   **What to do**: Verify the finished change set matches this plan only: full current-branch shipped-set coverage via a matrix-to-bundle model, repaired validator contract, strengthened existing feature classes (not new ones), six canonical PASS backfill reports, and no CI/OpenClaw-core scope drift.
   **Verification**:
@@ -625,7 +625,7 @@ PY` exits `0`
 
   **Pass Condition**: The implementation matches the matrix-based backfill plan, produces canonical reports, and stays within the repo-owned validation scope.
 
-- [ ] F2. Validation Implementation Review - unspecified-high
+- [x] F2. Validation Implementation Review - unspecified-high
 
   **What to do**: Review the validation matrix, runner/guardrails changes, strengthened bundles, and their unit/integration coverage for determinism, cleanup safety, and bundle completeness.
   **Verification**:
@@ -648,7 +648,7 @@ PY` exits `0`
 
   **Pass Condition**: The validation implementation is deterministic, fully tested, and safe for canonical harness execution.
 
-- [ ] F3. Real Local Workflow QA - unspecified-high
+- [x] F3. Real Local Workflow QA - unspecified-high
 
   **What to do**: Execute the canonical backfill scenarios in the prepared harness environment and confirm that the full report inventory is produced with PASS conclusions and observable proof for routing, recovery, and watchdog reminder delivery.
   **Verification**:
@@ -672,7 +672,7 @@ PY` exits `0`
 
   **Pass Condition**: The backfill works end to end in the canonical harness environment and leaves a complete PASS report inventory.
 
-- [ ] F4. Scope Fidelity Check - deep
+- [x] F4. Scope Fidelity Check - deep
 
   **What to do**: Verify the repo now has a bounded, matrix-driven real-environment backfill for all shipped current-branch capabilities without drifting into OpenClaw-core changes, new feature-class taxonomies, or platform-wide CI work.
   **Verification**:

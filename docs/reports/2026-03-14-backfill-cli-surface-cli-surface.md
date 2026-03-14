@@ -3,7 +3,7 @@
 - **Date**: 2026-03-14
 - **Feature Class**: cli-surface
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- **Conclusion**: PASS
+- Conclusion: PASS
 
 ## Baseline State
 
@@ -70,7 +70,7 @@ python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
 
 - Exit Code: 0
-- Duration: 0.07s
+- Duration: 0.08s
 
 **stdout:**
 ```
@@ -2210,7 +2210,7 @@ python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only -
 ```
 
 - Exit Code: 0
-- Duration: 0.16s
+- Duration: 0.17s
 
 **stdout:**
 ```

@@ -3,7 +3,7 @@
 - **Date**: 2026-03-14
 - **Feature Class**: install-lifecycle
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- **Conclusion**: PASS
+- Conclusion: PASS
 
 ## Baseline State
 
@@ -20,7 +20,7 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.09s
 
 **stdout:**
 ```
@@ -39,7 +39,7 @@ python -m openclaw_enhance.cli install
 **stdout:**
 ```
 Success: openclaw-enhance v0.1.0 installed successfully
-Installed components: main-skill:oe-eta-estimator, main-skill:oe-toolcall-router, main-skill:oe-timeout-state-sync, agents:registry, hooks:subagent-spawn-enrich, runtime:state
+Installed components: workspace:oe-watchdog, workspace:oe-orchestrator, workspace:oe-syshelper, workspace:oe-searcher, workspace:oe-tool-recovery, workspace:oe-script_coder, main-skill:oe-eta-estimator, main-skill:oe-toolcall-router, main-skill:oe-timeout-state-sync, agents:registry, hooks:subagent-spawn-enrich, runtime:state
 ```
 
 ### Command 3: ✓ PASS
@@ -56,8 +56,14 @@ python -m openclaw_enhance.cli status
 Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 0.1.0
-Install Time: 2026-03-14T13:39:58.994566
-Components (6):
+Install Time: 2026-03-14T15:00:01.720905
+Components (12):
+  - workspace:oe-watchdog
+  - workspace:oe-orchestrator
+  - workspace:oe-syshelper
+  - workspace:oe-searcher
+  - workspace:oe-tool-recovery
+  - workspace:oe-script_coder
   - main-skill:oe-eta-estimator
   - main-skill:oe-toolcall-router
   - main-skill:oe-timeout-state-sync
@@ -73,7 +79,7 @@ python -m openclaw_enhance.cli doctor
 ```
 
 - Exit Code: 0
-- Duration: 0.07s
+- Duration: 0.08s
 
 **stdout:**
 ```
@@ -87,10 +93,10 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.09s
 
 **stdout:**
 ```
 Result: openclaw-enhance uninstalled successfully
-Removed components: hooks:subagent-spawn-enrich, agents:registry, main-skill:oe-eta-estimator, main-skill:oe-toolcall-router, main-skill:oe-timeout-state-sync, runtime:state, manifest, lock, managed_root
+Removed components: hooks:subagent-spawn-enrich, agents:registry, main-skill:oe-eta-estimator, main-skill:oe-toolcall-router, main-skill:oe-timeout-state-sync, workspaces, runtime:state, manifest, lock, managed_root
 ```
