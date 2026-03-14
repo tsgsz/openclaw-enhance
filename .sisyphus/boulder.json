@@ -1,9 +1,21 @@
 {
-  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/session-yield-orchestrator-loop.md",
-  "started_at": "2026-03-13T15:28:35.669Z",
+  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/tool-failure-recovery-worker.md",
+  "completed_plan": null,
+  "started_at": "2026-03-14T06:09:26.254Z",
+  "completed_at": null,
   "session_ids": [
     "ses_31d1f8671ffeKAr2VaoYv3NdMU"
   ],
-  "plan_name": "session-yield-orchestrator-loop",
-  "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance"
+  "plan_name": "tool-failure-recovery-worker",
+  "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance",
+  "status": "active",
+  "tasks_completed": 0,
+  "tasks_total": 46,
+  "final_verification": {
+    "F1": null,
+    "F2": null,
+    "F3": null,
+    "F4": null
+  },
+  "commit": null
 }

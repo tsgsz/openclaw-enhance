@@ -1,0 +1,5 @@
+workspaces/oe-tool-recovery/AGENTS.md:23:1. **Business Task Execution**: Cannot take over the original task the worker was performing
+workspaces/oe-tool-recovery/AGENTS.md:25:3. **Agent Spawning**: Cannot spawn subagents (`call_omo_agent` or `sessions_spawn`)
+workspaces/oe-tool-recovery/AGENTS.md:59:- **call_omo_agent**: Cannot spawn subagents
+workspaces/oe-tool-recovery/AGENTS.md:60:- **sessions_spawn**: Cannot dispatch tasks
+workspaces/oe-tool-recovery/skills/oe-tool-recovery/SKILL.md:65:- **Leaf Node**: Do not spawn other agents or skills.
