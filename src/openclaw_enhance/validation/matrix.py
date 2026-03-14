@@ -52,8 +52,9 @@ SHIPPED_FEATURES = [
         "feature_class": FeatureClass.WORKSPACE_ROUTING,
         "capability": "Recovery Worker",
         "proof_expectations": [
-            "oe-tool-recovery is in agent list",
-            "recovery worker handles tool failures",
+            "tool 'websearch' not found triggers recovery dispatch",
+            "oe-tool-recovery recommends websearch_web_search_exa",
+            "integration test verifies recovery contract",
         ],
     },
     {

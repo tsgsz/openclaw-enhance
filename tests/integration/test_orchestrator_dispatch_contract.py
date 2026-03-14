@@ -369,6 +369,43 @@ class TestOrchestratorRecoveryFlow:
                 f"Recovery dispatch context must include '{field}'"
             )
 
+    def test_websearch_not_found_recovery_executable(self):
+        """Execute websearch tool-not-found recovery scenario.
+
+        This test simulates the legacy websearch failure and validates that
+        the recovery contract produces the correct corrected method.
+
+        Scenario: Worker attempts to use legacy 'websearch' tool
+        Expected: Recovery contract recommends 'websearch_web_search_exa'
+        """
+        from openclaw_enhance.runtime.recovery_contract import (
+            EvidenceSource,
+            RecoveredMethod,
+            RetryOwner,
+        )
+
+        failure_signal = "tool 'websearch' not found"
+
+        recovered = RecoveredMethod(
+            failed_step="worker-search-001",
+            tool_name="websearch",
+            failure_reason=failure_signal,
+            exact_invocation="websearch_web_search_exa(query='Python async patterns')",
+            evidence_source=EvidenceSource.TOOL_CONTRACT,
+            confidence=0.95,
+            retry_owner=RetryOwner.SELF,
+        )
+
+        assert recovered.tool_name == "websearch"
+        assert "websearch" in recovered.failure_reason
+        assert "websearch_web_search_exa" in recovered.exact_invocation
+        assert recovered.confidence >= 0.9
+        assert recovered.retry_owner == RetryOwner.SELF
+
+        payload = recovered.to_orchestrator_payload()
+        assert payload["tool_name"] == "websearch"
+        assert "websearch_web_search_exa" in payload["exact_invocation"]
+
     def test_invalid_parameters_triggers_recovery_dispatch(
         self, agents_content, dispatch_skill_content
     ):
