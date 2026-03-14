@@ -135,6 +135,7 @@ class TestDocumentationExamples:
         assert "oe-syshelper" in content
         assert "oe-script_coder" in content
         assert "oe-watchdog" in content
+        assert "oe-tool-recovery" in content
 
     def test_troubleshooting_doc_has_error_examples(self) -> None:
         """Ensure troubleshooting.md has error message examples."""
@@ -324,6 +325,7 @@ class TestDocumentationCompleteness:
             "oe-syshelper",
             "oe-script_coder",
             "oe-watchdog",
+            "oe-tool-recovery",
         ]
 
         for agent in agents:

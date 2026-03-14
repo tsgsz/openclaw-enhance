@@ -257,6 +257,11 @@ def _register_agents(
                         "description": "Session monitoring and timeout handling",
                         "version": VERSION,
                     },
+                    "oe-tool-recovery": {
+                        "workspace": "oe-tool-recovery",
+                        "description": "Tool failure recovery and retry agent",
+                        "version": VERSION,
+                    },
                 },
             },
         },

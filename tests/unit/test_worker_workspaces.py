@@ -21,6 +21,7 @@ class TestWorkerWorkspaceStructure:
         "oe-syshelper",
         "oe-script_coder",
         "oe-watchdog",
+        "oe-tool-recovery",
     ]
 
     def test_all_worker_workspaces_exist(self):
@@ -119,6 +120,21 @@ class TestWatchdogWorkspace:
         assert metadata["name"] == "oe-watchdog"
         assert "oe-timeout-alarm" in metadata["skills"]
         assert "oe-session-status" in metadata["skills"]
+
+
+class TestToolRecoveryWorkspace:
+    """Test oe-tool-recovery workspace specifics."""
+
+    def test_tool_recovery_has_recovery_skill(self):
+        """Tool recovery should have tool recovery skill."""
+        skills = get_workspace_skills("oe-tool-recovery")
+        assert "oe-tool-recovery" in skills
+
+    def test_tool_recovery_metadata(self):
+        """Tool recovery metadata should be correct."""
+        metadata = get_workspace_metadata("oe-tool-recovery")
+        assert metadata["name"] == "oe-tool-recovery"
+        assert "oe-tool-recovery" in metadata["skills"]
 
 
 class TestWorkspaceRendering:

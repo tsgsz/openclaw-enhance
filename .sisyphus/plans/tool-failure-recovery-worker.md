@@ -140,7 +140,7 @@ Wave 3: integration QA + durable docs alignment + drift cleanup
 
   **Commit**: YES | Message: `feat(recovery): add tool recovery workspace contract` | Files: `workspaces/oe-tool-recovery/**`
 
-- [ ] 2. Register and surface `oe-tool-recovery` in install/discovery/render paths
+- [x] 2. Register and surface `oe-tool-recovery` in install/discovery/render paths
 
   **What to do**: Update workspace discovery/installation surfaces so the new worker is discoverable, installable, and renderable through existing CLI paths. At minimum update `src/openclaw_enhance/install/installer.py` agent registry entry and any tests/docs that assert known worker sets. Verify `render-workspace oe-tool-recovery` works without special cases.
   **Must NOT do**: Do not introduce a custom registry outside existing installer/discovery mechanisms; do not rename existing workers.

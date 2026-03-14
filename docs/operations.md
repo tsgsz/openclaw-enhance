@@ -190,6 +190,36 @@ Synthesized output from workers
 - ❌ Modify non-owned config
 - ❌ Access user credentials
 
+### oe-tool-recovery
+
+**Purpose**: Tool failure diagnosis and recovery suggestion
+
+**When to use**:
+- A tool call returns an error (syntax, schema, or logic)
+- A tool call fails due to missing preconditions
+- The orchestrator needs a precise correction for a failed step
+- Diagnosing why a specific tool invocation failed
+
+**Example**:
+```
+"The Write tool failed with 'oldString not found'"
+"Why is the Bash command returning exit code 1?"
+"Diagnose the failed Edit operation"
+```
+
+**Characteristics**:
+- Uses reasoning-capable model for accurate diagnosis
+- Read-only access (does not modify files)
+- Leaf-node specialist (cannot spawn subagents)
+- Returns structured `recovered_method` for retry
+
+**Workflow**:
+1. Receive failure context from orchestrator
+2. Analyze error message and tool contract
+3. Research external docs if needed
+4. Formulate corrected invocation
+5. Return recovery suggestion with confidence score
+
 ## Task Routing Examples
 
 ### Example 1: Simple Task (Stays on Main)
