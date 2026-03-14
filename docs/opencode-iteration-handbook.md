@@ -45,12 +45,21 @@ sessions_spawn → oe-orchestrator
 Results → Orchestrator synthesis → Return to main
 ```
 
-**Worker Boundaries** (each workspace has `AGENTS.md`):
-- `oe-searcher`: Web search, research — cheap model, sandbox read/write
-- `oe-syshelper`: Session introspection, grep, LSP — cheap model, strictly read-only (no recovery)
-- `oe-tool-recovery`: Tool failure diagnosis, recovery suggestion — reasoning model, leaf-node, read-only
-- `oe-script_coder`: Code development, testing — codex-class model, requires tests
-- `oe-watchdog`: Session monitoring, timeout detection — narrow authority, runtime state only
+**Worker Discovery and Routing** (AGENTS.md frontmatter):
+
+Worker routing is now **catalog-driven** from YAML frontmatter in each worker's `AGENTS.md`:
+- `oe-searcher`: Research capabilities — cheap model, read-only, web search tools
+- `oe-syshelper`: Introspection capabilities — cheap model, strictly read-only (no recovery)
+- `oe-tool-recovery`: Recovery capabilities — reasoning model, leaf-node, read-only
+- `oe-script_coder`: Code generation capabilities — standard model, repo write, requires tests
+- `oe-watchdog`: Monitoring capabilities — narrow authority, runtime state only
+
+**Source of Truth**:
+- **Routing metadata**: Worker `AGENTS.md` frontmatter (capabilities, constraints, cost model)
+- **Exact tool definitions**: Worker `TOOLS.md` (parameter schemas, examples)
+- **Dispatch policy**: `oe-worker-dispatch` skill (least-privilege ranking, hard filters)
+
+The Orchestrator discovers workers by parsing frontmatter at runtime, not from hardcoded lists.
 
 ### What This Means for Future Work
 

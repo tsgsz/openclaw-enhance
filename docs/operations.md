@@ -91,6 +91,10 @@ Synthesized output from workers
 
 ## Worker Roles
 
+Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator reads routing metadata (capabilities, constraints, cost) from each worker's frontmatter to select the best match for your task.
+
+**Current Built-in Workers** (capabilities defined in `workspaces/*/AGENTS.md`):
+
 ### oe-searcher
 
 **Purpose**: Research, web search, documentation lookup

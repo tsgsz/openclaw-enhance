@@ -228,15 +228,22 @@ Skills are markdown contracts stored in `skills/` directories. The router skill 
 
 ### Worker Agents
 
-All workers operate via the native subagent announce chain.
+All workers operate via the native subagent announce chain. Worker capabilities are **discovered dynamically** from AGENTS.md frontmatter (routing metadata) and `TOOLS.md` (exact tool definitions).
 
-| Worker | Role | Model | Access |
-|--------|------|-------|--------|
-| `oe-searcher` | Research, web search, documentation | Cheap | Sandbox R/W |
-| `oe-syshelper` | System introspection (grep, ls, find) | Cheap | Read-only |
-| `oe-script_coder` | Script development and testing | Codex-class | Sandbox R/W |
-| `oe-watchdog` | Session monitoring, timeout handling | Any | Full access |
-| `oe-tool-recovery` | Tool failure diagnosis and recovery | Reasoning | Read-only |
+| Worker | Role | Model | Access | Routing Metadata Source |
+|--------|------|-------|--------|-------------------------|
+| `oe-searcher` | Research, web search, documentation | Cheap | Read-only | `workspaces/oe-searcher/AGENTS.md` frontmatter |
+| `oe-syshelper` | System introspection (grep, ls, find) | Cheap | Read-only | `workspaces/oe-syshelper/AGENTS.md` frontmatter |
+| `oe-script_coder` | Script development and testing | Standard | Repo write | `workspaces/oe-script_coder/AGENTS.md` frontmatter |
+| `oe-watchdog` | Session monitoring, timeout handling | Standard | Runtime only | `workspaces/oe-watchdog/AGENTS.md` frontmatter |
+| `oe-tool-recovery` | Tool failure diagnosis and recovery | Standard | Read-only | `workspaces/oe-tool-recovery/AGENTS.md` frontmatter |
+
+**Worker Discovery Flow**:
+1. Orchestrator enumerates `workspaces/*/AGENTS.md` files
+2. Parses YAML frontmatter to extract routing metadata (capabilities, constraints, cost)
+3. Applies hard filters (e.g., `mutation_mode: read_only` for safe tasks)
+4. Ranks candidates by least-privilege rules
+5. Dispatches selected worker via `sessions_spawn`
 
 ### Hooks
 

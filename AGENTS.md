@@ -34,6 +34,8 @@
 | Watchdog authority | `docs/adr/0003-watchdog-authority.md` |
 | Current design status | `docs/opencode-iteration-handbook.md` |
 | Workspace-specific rules | `workspaces/{name}/AGENTS.md` |
+| Worker routing metadata | AGENTS.md frontmatter in each workspace |
+| Worker tool definitions | `workspaces/{name}/TOOLS.md` |
 
 ## Session State vs Permanent Memory
 

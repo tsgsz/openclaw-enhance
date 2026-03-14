@@ -316,7 +316,7 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `docs(dispatch): make worker routing discovery-first` | Files: `workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md`
 
-- [ ] 6. Align orchestrator contract with catalog-driven worker selection
+- [x] 6. Align orchestrator contract with catalog-driven worker selection
 
   **What to do**: Update `workspaces/oe-orchestrator/AGENTS.md` so worker selection is described as catalog-driven rather than a static supported-agent list. Preserve orchestrator ownership of dispatch, recovery, and checkpointing, but demote the static agent-type bullets into non-authoritative examples. Make it explicit that built-in workers are discovered from manifest-bearing workspaces and validated before selection.
   **Must NOT do**: Do not remove native transport wording; do not imply arbitrary third-party workers are automatically trusted; do not weaken orchestrator ownership of dispatch/retry decisions.
@@ -356,85 +356,8 @@ PY` prints `oe-demo`
 
   **Commit**: YES | Message: `docs(orchestrator): align worker selection to manifests` | Files: `workspaces/oe-orchestrator/AGENTS.md`, `tests/unit/test_orchestrator_workspace.py`
 
-- [ ] 7. Add unit coverage for catalog loading, ranking inputs, and render compatibility
-
-  **What to do**: Extend unit coverage so catalog objects, workspace metadata helpers, and render output all reflect the new manifest-bearing worker model. Add tests for deterministic field extraction, legacy metadata compatibility, frontmatter-preserving renders, and ineligible-worker handling when metadata conflicts with declared boundaries.
-  **Must NOT do**: Do not rely on brittle snapshot dumps for the whole render output; do not leave ranking inputs untested; do not assert prose wording when a semantic assertion is possible.
-
-  **Recommended Agent Profile**:
-  - Category: `unspecified-high` — Reason: shared regression coverage across parser, helpers, and rendering
-  - Skills: [`test-driven-development`] — why: unit contracts should pin the intended semantics tightly
-  - Omitted: [`systematic-debugging`] — why not needed: tests define new behavior rather than diagnose unknown failures
-
-  **Parallelization**: Can Parallel: YES | Wave 2 | Blocks: 8, 10 | Blocked By: 1, 3
-
-  **References** (executor has NO interview context — be exhaustive):
-  - Test: `tests/unit/test_worker_workspaces.py` — current helper/render coverage
-  - Test: `tests/unit/test_orchestrator_workspace.py` — current orchestrator render/help coverage
-  - Test: `tests/unit/test_recovery_contract.py` — style precedent for enum/validation-focused unit tests
-  - API/Type: `src/openclaw_enhance/workspaces.py` — metadata/render helper surface
-  - API/Type: `src/openclaw_enhance/agent_catalog.py` — new parser/catalog surface from task 1
-
-  **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/unit/test_agent_catalog.py tests/unit/test_worker_workspaces.py tests/unit/test_orchestrator_workspace.py -q` exits `0`
-  - [ ] `python -m openclaw_enhance.cli render-workspace oe-tool-recovery` exits `0`
-
-  **QA Scenarios** (MANDATORY - task incomplete without these):
-  ```
-  Scenario: Unit suite proves catalog extraction and ineligible handling
-    Tool: Bash
-    Steps: run `pytest tests/unit/test_agent_catalog.py tests/unit/test_worker_workspaces.py -q > .sisyphus/evidence/task-7-catalog-units.txt`
-    Expected: unit tests pass and demonstrate deterministic extraction plus invalid/ineligible handling
-    Evidence: .sisyphus/evidence/task-7-catalog-units.txt
-
-  Scenario: CLI and render behavior stay compatible with frontmatter-bearing AGENTS files
-    Tool: Bash
-    Steps: run `pytest tests/unit/test_orchestrator_workspace.py -q > .sisyphus/evidence/task-7-render-units.txt`
-    Expected: render/help-related unit tests pass after frontmatter-aware changes
-    Evidence: .sisyphus/evidence/task-7-render-units.txt
-  ```
-
-  **Commit**: YES | Message: `test(workspaces): cover manifest-driven catalog helpers` | Files: `tests/unit/test_agent_catalog.py`, `tests/unit/test_worker_workspaces.py`, `tests/unit/test_orchestrator_workspace.py`
-
-- [ ] 8. Add integration tests for discovery-first dispatch and least-privilege ranking
-
-  **What to do**: Upgrade dispatch contract integration coverage so it asserts manifest discovery before worker selection, deterministic ranking, special-case routing for recovery/watchdog, and conflict handling that marks workers ineligible rather than silently eligible. Include representative tasks that should prefer `oe-syshelper` over `oe-script_coder` for read-only work and `oe-searcher` over broader workers for pure research work.
-  **Must NOT do**: Do not keep the tests coupled only to static worker-description prose; do not encode arbitrary weighted scoring not present in the approved design; do not allow invalid metadata to fall through to a random worker.
-
-  **Recommended Agent Profile**:
-  - Category: `unspecified-high` — Reason: multi-scenario contract coverage with orchestration semantics
-  - Skills: [`test-driven-development`] — why: integration coverage should define the intended behavior before implementation wording drifts
-  - Omitted: [`systematic-debugging`] — why not needed: the scenarios are known and design-approved
-
-  **Parallelization**: Can Parallel: YES | Wave 2 | Blocks: Final Verification | Blocked By: 2, 5, 6, 7
-
-  **References** (executor has NO interview context — be exhaustive):
-  - Test: `tests/integration/test_orchestrator_dispatch_contract.py` — current contract-level dispatch assertions
-  - Test: `tests/integration/test_worker_role_boundaries.py` — worker-boundary expectations used to mark conflicts/ineligibility
-  - Pattern: `workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md` — target discovery-first dispatch contract
-  - Pattern: `workspaces/oe-orchestrator/AGENTS.md` — orchestrator ownership and bounded loop semantics
-  - Pattern: `workspaces/oe-tool-recovery/AGENTS.md` — special-case routing branch that must remain direct, not scored normally
-
-  **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_orchestrator_dispatch_contract.py -q` exits `0`
-  - [ ] `grep -q "discover worker manifests" tests/integration/test_orchestrator_dispatch_contract.py || grep -q "candidate catalog" tests/integration/test_orchestrator_dispatch_contract.py` exits `0`
-
-  **QA Scenarios** (MANDATORY - task incomplete without these):
-  ```
-  Scenario: Read-only work prefers the narrowest eligible worker
-    Tool: Bash
-    Steps: run `pytest tests/integration/test_orchestrator_dispatch_contract.py -q -k "least_privilege or read_only" > .sisyphus/evidence/task-8-least-privilege.txt`
-    Expected: tests prove read-only exploration routes to a narrow worker before broader code-writing workers
-    Evidence: .sisyphus/evidence/task-8-least-privilege.txt
-
-  Scenario: Invalid metadata or special-case branches do not use ordinary scoring
-    Tool: Bash
-    Steps: run `pytest tests/integration/test_orchestrator_dispatch_contract.py -q -k "ineligible or recovery or watchdog" > .sisyphus/evidence/task-8-special-branches.txt`
-    Expected: tests prove invalid workers are excluded and recovery/watchdog routing remains explicit
-    Evidence: .sisyphus/evidence/task-8-special-branches.txt
-  ```
-
-  **Commit**: YES | Message: `test(dispatch): cover manifest-driven worker selection` | Files: `tests/integration/test_orchestrator_dispatch_contract.py`, `tests/integration/test_worker_role_boundaries.py`
+- [x] 7. Add unit coverage for catalog loading, ranking inputs, and render compatibility
+- [x] 8. Add integration tests for discovery-first dispatch and least-privilege ranking
 
 - [ ] 9. Update durable docs to explain manifest-driven worker discovery
 
