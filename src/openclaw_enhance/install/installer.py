@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -122,6 +123,7 @@ def _load_openclaw_config(config_path: Path) -> dict[str, Any]:
 def preflight_checks(
     openclaw_home: Path,
     user_home: Path | None = None,
+    dev_mode: bool = False,
 ) -> PreflightResult:
     """Run preflight checks before installation.
 
@@ -140,6 +142,14 @@ def preflight_checks(
         validate_environment(openclaw_home)
     except SupportError as exc:
         errors.append(f"Environment validation failed: {exc}")
+        return PreflightResult(passed=False, errors=errors, warnings=warnings)
+
+    # Check dev mode compatibility (Windows not supported)
+    if dev_mode and sys.platform == "win32":
+        errors.append(
+            "Development mode (--dev) is not supported on Windows. "
+            "Use macOS or Linux for development installations."
+        )
         return PreflightResult(passed=False, errors=errors, warnings=warnings)
 
     # Check if OpenClaw CLI is available
@@ -181,10 +191,11 @@ def preflight_checks(
 def _sync_workspaces(
     manifest: InstallManifest,
     target_root: Path,
+    dev_mode: bool = False,
 ) -> list[ComponentInstall]:
     """Sync workspace configurations to managed directory.
 
-    Copies workspace definitions from the package to the managed directory.
+    Copies or symlinks workspace definitions from the package to the managed directory.
     """
     components: list[ComponentInstall] = []
 
@@ -198,9 +209,18 @@ def _sync_workspaces(
         source_path = WORKSPACES_DIR / workspace_name
         target_path = workspaces_target / workspace_name
 
-        if target_path.exists():
-            shutil.rmtree(target_path)
-        shutil.copytree(source_path, target_path)
+        if target_path.exists() or target_path.is_symlink():
+            if target_path.is_symlink():
+                target_path.unlink()
+            else:
+                shutil.rmtree(target_path)
+
+        if dev_mode:
+            # Development mode: create symlink
+            target_path.symlink_to(source_path.absolute())
+        else:
+            # Production mode: copy files
+            shutil.copytree(source_path, target_path)
 
         component = ComponentInstall(
             name=f"workspace:{workspace_name}",
@@ -208,6 +228,7 @@ def _sync_workspaces(
             install_time=datetime.utcnow(),
             source_path=str(source_path.absolute()),
             target_path=str(target_path.absolute()),
+            is_symlink=dev_mode,
         )
         components.append(component)
 
@@ -375,6 +396,7 @@ def install(
     openclaw_home: Path,
     user_home: Path | None = None,
     force: bool = False,
+    dev_mode: bool = False,
 ) -> InstallResult:
     """Install openclaw-enhance.
 
@@ -382,6 +404,7 @@ def install(
         openclaw_home: Path to OpenClaw home directory.
         user_home: Optional override for user home directory.
         force: If True, reinstall even if already installed.
+        dev_mode: If True, use symlinks instead of copying files.
 
     Returns:
         InstallResult with success status and details.
@@ -389,7 +412,7 @@ def install(
     target_root = managed_root(user_home)
 
     # Step 1: Preflight checks
-    preflight = preflight_checks(openclaw_home, user_home)
+    preflight = preflight_checks(openclaw_home, user_home, dev_mode=dev_mode)
     if not preflight.passed:
         return InstallResult(
             success=False,
@@ -425,7 +448,7 @@ def install(
 
         # Step 4: Sync workspaces
         try:
-            workspace_components = _sync_workspaces(manifest, target_root)
+            workspace_components = _sync_workspaces(manifest, target_root, dev_mode=dev_mode)
             all_components.extend(workspace_components)
         except Exception as exc:
             errors.append(f"Workspace sync failed: {exc}")
@@ -438,6 +461,7 @@ def install(
                 openclaw_home=openclaw_home,
                 config=config,
                 env=os.environ,
+                dev_mode=dev_mode,
             )
             all_components.extend(main_skill_components)
         except Exception as exc:

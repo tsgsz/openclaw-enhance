@@ -166,9 +166,12 @@ def _remove_workspaces(target_root: Path) -> list[str]:
     removed: list[str] = []
     workspaces_dir = target_root / "workspaces"
 
-    if workspaces_dir.exists():
+    if workspaces_dir.exists() or workspaces_dir.is_symlink():
         try:
-            shutil.rmtree(workspaces_dir)
+            if workspaces_dir.is_symlink():
+                workspaces_dir.unlink()
+            else:
+                shutil.rmtree(workspaces_dir)
             removed.append("workspaces")
         except OSError as exc:
             raise UninstallError(f"Failed to remove workspaces: {exc}") from exc
@@ -193,7 +196,9 @@ def _remove_main_skills(manifest: InstallManifest | None) -> list[str]:
         skill_dir = skill_file.parent
 
         try:
-            if skill_dir.exists():
+            if skill_file.is_symlink():
+                skill_file.unlink()
+            elif skill_dir.exists():
                 shutil.rmtree(skill_dir)
             removed.append(component.name)
         except OSError as exc:

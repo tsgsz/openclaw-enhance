@@ -21,6 +21,7 @@ def sync_main_skills(
     openclaw_home: Path,
     config: Mapping[str, Any] | None,
     env: Mapping[str, str] | None,
+    dev_mode: bool = False,
 ) -> list[ComponentInstall]:
     workspace_path = resolve_main_workspace(openclaw_home, config=config, env=env)
     workspace_path.mkdir(parents=True, exist_ok=True)
@@ -36,7 +37,14 @@ def sync_main_skills(
 
         target_path = skills_dir / skill_id / "SKILL.md"
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source_path, target_path)
+
+        if target_path.exists() or target_path.is_symlink():
+            target_path.unlink()
+
+        if dev_mode:
+            target_path.symlink_to(source_path.absolute())
+        else:
+            shutil.copy2(source_path, target_path)
 
         components.append(
             ComponentInstall(
@@ -45,6 +53,7 @@ def sync_main_skills(
                 install_time=datetime.utcnow(),
                 source_path=str(source_path.absolute()),
                 target_path=str(target_path.absolute()),
+                is_symlink=dev_mode,
             )
         )
 

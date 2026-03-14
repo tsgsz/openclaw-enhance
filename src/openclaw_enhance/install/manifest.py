@@ -27,6 +27,7 @@ class ComponentInstall:
     source_path: str | None = None
     target_path: str | None = None
     checksum: str | None = None
+    is_symlink: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -37,6 +38,7 @@ class ComponentInstall:
             "source_path": self.source_path,
             "target_path": self.target_path,
             "checksum": self.checksum,
+            "is_symlink": self.is_symlink,
         }
 
     @classmethod
@@ -49,6 +51,7 @@ class ComponentInstall:
             source_path=data.get("source_path"),
             target_path=data.get("target_path"),
             checksum=data.get("checksum"),
+            is_symlink=data.get("is_symlink", False),
         )
 
 
