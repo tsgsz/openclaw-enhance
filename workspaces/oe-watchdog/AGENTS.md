@@ -1,3 +1,24 @@
+---
+schema_version: 1
+routing:
+  description: Monitoring agent for timeout detection, status tracking, and reminder delivery.
+  capabilities: [timeout_detection, status_monitoring, reminder_delivery, health_checks]
+  accepts: [monitoring_tasks, health_check_requests]
+  rejects: [file_modifications, code_changes, test_execution, git_operations]
+  output_kind: monitoring_report
+  mutation_mode: runtime_write
+  can_spawn: false
+  requires_tests: false
+  session_access: full
+  network_access: none
+  repo_scope: read
+  cost_tier: low
+  model_tier: fast
+  duration_band: short
+  parallel_safe: true
+  priority_boost: 2
+  tool_classes: [session_management, file_system]
+---
 # Watchdog Agent Configuration
 
 This AGENTS.md defines the capabilities and constraints for the `oe-watchdog` workspace.

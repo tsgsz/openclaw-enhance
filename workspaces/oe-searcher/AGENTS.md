@@ -1,3 +1,24 @@
+---
+schema_version: 1
+routing:
+  description: Research-focused agent for web search, documentation lookup, and code examples.
+  capabilities: [web_search, documentation_lookup, code_examples, research_synthesis]
+  accepts: [research_tasks, documentation_queries, library_discovery]
+  rejects: [file_modifications, code_implementation, subagent_spawning]
+  output_kind: research_report
+  mutation_mode: none
+  can_spawn: false
+  requires_tests: false
+  session_access: read
+  network_access: full
+  repo_scope: read
+  cost_tier: low
+  model_tier: fast
+  duration_band: medium
+  parallel_safe: true
+  priority_boost: 0
+  tool_classes: [web_search, documentation, github_search]
+---
 # Searcher Agent Configuration
 
 This AGENTS.md defines the capabilities and constraints for the `oe-searcher` workspace.

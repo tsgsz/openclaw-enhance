@@ -1,3 +1,24 @@
+---
+schema_version: 1
+routing:
+  description: Development-focused agent for script writing, test creation, and debugging.
+  capabilities: [script_writing, test_development, code_implementation, debugging, refactoring]
+  accepts: [coding_tasks, test_creation, bug_fixes]
+  rejects: [system_level_changes, session_inspection, background_task_management]
+  output_kind: code_and_tests
+  mutation_mode: repo_write
+  can_spawn: true
+  requires_tests: true
+  session_access: none
+  network_access: limited
+  repo_scope: write
+  cost_tier: medium
+  model_tier: reasoning
+  duration_band: long
+  parallel_safe: false
+  priority_boost: 1
+  tool_classes: [file_system, lsp, bash, subagent_dispatch]
+---
 # Script Coder Agent Configuration
 
 This AGENTS.md defines the capabilities and constraints for the `oe-script_coder` workspace.

@@ -1,3 +1,24 @@
+---
+schema_version: 1
+routing:
+  description: System introspection agent for file exploration, session analysis, and code search.
+  capabilities: [system_discovery, session_analysis, code_navigation, search_operations]
+  accepts: [introspection_tasks, session_summaries, symbol_lookups]
+  rejects: [file_modifications, state_changes, subagent_spawning]
+  output_kind: introspection_report
+  mutation_mode: none
+  can_spawn: false
+  requires_tests: false
+  session_access: full
+  network_access: none
+  repo_scope: read
+  cost_tier: low
+  model_tier: fast
+  duration_band: short
+  parallel_safe: true
+  priority_boost: 0
+  tool_classes: [file_system, session_management, lsp]
+---
 # Syshelper Agent Configuration
 
 This AGENTS.md defines the capabilities and constraints for the `oe-syshelper` workspace.
