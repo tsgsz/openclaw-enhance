@@ -14,7 +14,6 @@ from typing import Any, cast
 from openclaw_enhance.paths import ensure_managed_directories, runtime_state_file
 from openclaw_enhance.runtime.schema import RuntimeState
 from openclaw_enhance.watchdog.detector import (
-    RuntimeStore as RuntimeStoreProtocol,
     SessionStatus,
     TimeoutEvent,
 )

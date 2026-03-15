@@ -8,9 +8,8 @@ the watchdog should take.
 from dataclasses import dataclass, field
 from datetime import timedelta
 from enum import Enum, auto
-from typing import Callable
 
-from openclaw_enhance.watchdog.detector import SessionStatus, TimeoutEvent
+from openclaw_enhance.watchdog.detector import TimeoutEvent
 
 
 class ActionType(Enum):
