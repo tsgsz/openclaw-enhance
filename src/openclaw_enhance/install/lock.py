@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import IO, Any
 
@@ -94,7 +94,6 @@ class InstallLock:
     def _is_lock_holder_alive(self, info: LockInfo) -> bool:
         """Check if the process holding the lock is still alive."""
         import os
-        import signal
 
         try:
             # Check if process exists
