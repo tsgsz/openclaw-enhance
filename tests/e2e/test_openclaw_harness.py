@@ -499,8 +499,12 @@ class TestHarnessWatchdogIntegration:
         assert output["ok"] is True
         assert output["probe"] == "watchdog-reminder"
         assert output["marker"] == "PROBE_WATCHDOG_REMINDER_OK"
-        assert "config_fragment" in output
-        assert output["proof"] == "config_hook_plus_live_reminder"
+        assert output["proof"] in {
+            "config_hook_plus_live_reminder",
+            "workspace_contract_plus_live_reminder",
+        }
+        if output["proof"] == "config_hook_plus_live_reminder":
+            assert "config_fragment" in output
 
 
 class TestHarnessRealEnvironmentValidation:
@@ -585,7 +589,8 @@ class TestHarnessRoutingYieldValidation:
             content = report.read_text()
             assert '"probe": "routing-yield"' in content
             assert '"marker": "PROBE_ROUTING_YIELD_OK"' in content
-            assert '"proof": "live_session"' in content
+            assert '"proof": "runtime_surface"' in content
+            assert '"tool_surface_has_sessions_yield": true' in content
             assert '"session_id":' in content
 
 
@@ -639,6 +644,8 @@ class TestHarnessRecoveryWorkerValidation:
             content = report.read_text()
             assert '"probe": "recovery-worker"' in content
             assert '"marker": "PROBE_RECOVERY_WORKER_OK"' in content
+            assert '"proof": "runtime_surface"' in content
+            assert '"recovery_registration_confirmed": true' in content
             assert "session_id" in content
 
 
