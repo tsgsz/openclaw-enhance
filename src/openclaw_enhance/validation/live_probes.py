@@ -44,7 +44,6 @@ def _require_openclaw_home(probe: str, openclaw_home: Path) -> Path:
 def _probe_env(openclaw_home: Path) -> dict[str, str]:
     """Build subprocess environment with explicit OpenClaw paths."""
     env = os.environ.copy()
-    env["OPENCLAW_HOME"] = str(openclaw_home)
     env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
     return env
 
@@ -99,7 +98,7 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
         _fail("routing-yield", "openclaw_cli_not_found", "openclaw command not in PATH")
 
     chat_result = subprocess.run(
-        ["openclaw", "agent", "-m", message],
+        ["openclaw", "agent", "--agent", "oe-orchestrator", "-m", message, "--json"],
         capture_output=True,
         text=True,
         env=env,
@@ -107,23 +106,28 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
     if chat_result.returncode != 0:
         _fail("routing-yield", "openclaw_agent_failed", chat_result.stderr.strip())
 
-    session_id = None
-    for line in chat_result.stdout.splitlines():
-        if "session" in line.lower() and "ses_" in line:
-            parts = line.split()
-            for part in parts:
-                if part.startswith("ses_"):
-                    session_id = part.strip(",:;")
-                    break
-            if session_id:
-                break
+    combined_output = chat_result.stdout + chat_result.stderr
+    json_start = combined_output.find("{")
+    json_end = combined_output.rfind("}") + 1
+
+    try:
+        if json_start >= 0 and json_end > json_start:
+            json_str = combined_output[json_start:json_end]
+            agent_output = json.loads(json_str)
+            session_id = (
+                agent_output.get("result", {}).get("meta", {}).get("agentMeta", {}).get("sessionId")
+            )
+        else:
+            session_id = None
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        session_id = None
 
     if not session_id:
         _fail("routing-yield", "missing_session_id", "No session ID found in agent output")
 
     assert session_id is not None
     sessions_result = subprocess.run(
-        ["openclaw", "sessions", "--json"],
+        ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
         capture_output=True,
         text=True,
         env=env,
@@ -131,15 +135,36 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
     if sessions_result.returncode != 0:
         _fail("routing-yield", "sessions_list_failed", sessions_result.stderr.strip())
 
+    # Parse JSON from mixed output (plugin logs + JSON)
+    combined = sessions_result.stdout + sessions_result.stderr
+    lines = combined.split("\n")
+    json_lines = []
+    depth = 0
+    started = False
+
+    for line in lines:
+        if line.strip().startswith("{") and not started:
+            started = True
+
+        if started:
+            json_lines.append(line)
+            depth += line.count("{") - line.count("}")
+            if depth == 0 and len(json_lines) > 1:
+                break
+
     try:
-        sessions_data = json.loads(sessions_result.stdout)
+        if json_lines:
+            sessions_obj = json.loads("\n".join(json_lines))
+            sessions_data = sessions_obj.get("sessions", [])
+        else:
+            sessions_data = []
     except json.JSONDecodeError as exc:
         _fail("routing-yield", "sessions_json_invalid", str(exc))
         return
 
     session_info = None
     for session in sessions_data if isinstance(sessions_data, list) else []:
-        if session.get("session_id") == session_id:
+        if session.get("sessionId") == session_id:
             session_info = session
             break
 
@@ -189,7 +214,7 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
         _fail("recovery-worker", "missing_recovery_registration")
 
     chat_result = subprocess.run(
-        ["openclaw", "agent", "-m", message],
+        ["openclaw", "agent", "--agent", "oe-orchestrator", "-m", message, "--json"],
         capture_output=True,
         text=True,
         env=env,
@@ -197,23 +222,28 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
     if chat_result.returncode != 0:
         _fail("recovery-worker", "agent_failed", chat_result.stderr.strip())
 
-    session_id = None
-    for line in chat_result.stdout.splitlines():
-        if "ses_" in line:
-            parts = line.split()
-            for part in parts:
-                if part.startswith("ses_"):
-                    session_id = part.strip(",:;")
-                    break
-            if session_id:
-                break
+    combined_output = chat_result.stdout + chat_result.stderr
+    json_start = combined_output.find("{")
+    json_end = combined_output.rfind("}") + 1
+
+    try:
+        if json_start >= 0 and json_end > json_start:
+            json_str = combined_output[json_start:json_end]
+            agent_output = json.loads(json_str)
+            session_id = (
+                agent_output.get("result", {}).get("meta", {}).get("agentMeta", {}).get("sessionId")
+            )
+        else:
+            session_id = None
+    except (json.JSONDecodeError, KeyError, AttributeError):
+        session_id = None
 
     if not session_id:
         _fail("recovery-worker", "missing_session_id", "No session ID in agent output")
 
     assert session_id is not None
     sessions_result = subprocess.run(
-        ["openclaw", "sessions", "--json"],
+        ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
         capture_output=True,
         text=True,
         env=env,
@@ -221,15 +251,35 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
     if sessions_result.returncode != 0:
         _fail("recovery-worker", "sessions_list_failed", sessions_result.stderr.strip())
 
+    combined = sessions_result.stdout + sessions_result.stderr
+    lines = combined.split("\n")
+    json_lines = []
+    depth = 0
+    started = False
+
+    for line in lines:
+        if line.strip().startswith("{") and not started:
+            started = True
+
+        if started:
+            json_lines.append(line)
+            depth += line.count("{") - line.count("}")
+            if depth == 0 and len(json_lines) > 1:
+                break
+
     try:
-        sessions_data = json.loads(sessions_result.stdout)
+        if json_lines:
+            sessions_obj = json.loads("\n".join(json_lines))
+            sessions_data = sessions_obj.get("sessions", [])
+        else:
+            sessions_data = []
     except json.JSONDecodeError as exc:
         _fail("recovery-worker", "sessions_json_invalid", str(exc))
         return
 
     session_info = None
     for session in sessions_data if isinstance(sessions_data, list) else []:
-        if session.get("session_id") == session_id:
+        if session.get("sessionId") == session_id:
             session_info = session
             break
 

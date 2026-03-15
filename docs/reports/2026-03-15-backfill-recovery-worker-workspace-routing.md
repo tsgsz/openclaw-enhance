@@ -21,9 +21,9 @@ python -m openclaw_enhance.validation.live_probes recovery-worker --openclaw-hom
 ```
 
 - Exit Code: 2
-- Duration: 0.78s
+- Duration: 20.34s
 
 **stderr:**
 ```
-{"detail": "Invalid config at /Users/tsgsz/.openclaw/openclaw.json:\\n- <root>: Unrecognized key: \"openclawEnhance\"\nerror: required option '-m, --message <text>' not specified", "ok": false, "probe": "recovery-worker", "reason": "agent_list_failed"}
+{"detail": "Session aa83229c-8edc-4e61-95a8-5b645b809635 not in sessions list", "ok": false, "probe": "recovery-worker", "reason": "session_not_found"}
 ```

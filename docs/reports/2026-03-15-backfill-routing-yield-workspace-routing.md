@@ -21,9 +21,9 @@ python -m openclaw_enhance.validation.live_probes routing-yield --openclaw-home 
 ```
 
 - Exit Code: 2
-- Duration: 0.70s
+- Duration: 15.46s
 
 **stderr:**
 ```
-{"detail": "Invalid config at /Users/tsgsz/.openclaw/openclaw.json:\\n- <root>: Unrecognized key: \"openclawEnhance\"\nerror: unknown command 'chat'", "ok": false, "probe": "routing-yield", "reason": "openclaw_chat_failed"}
+{"detail": "Session aa83229c-8edc-4e61-95a8-5b645b809635 not in sessions list", "ok": false, "probe": "routing-yield", "reason": "session_not_found"}
 ```

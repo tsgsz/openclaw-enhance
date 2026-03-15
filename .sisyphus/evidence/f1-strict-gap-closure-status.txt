@@ -1,0 +1,2 @@
+COMMAND: grep -R "validate-feature --class\|config.json\|Current branch shipped set" AGENTS.md docs src tests --include='*.md' --include='*.py' > .sisyphus/evidence/f1-strict-gap-closure.txt
+EXIT_CODE: 0

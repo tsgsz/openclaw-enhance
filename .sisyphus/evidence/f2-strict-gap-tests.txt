@@ -1,0 +1,237 @@
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 123 items
+
+tests/unit/test_real_env_guardrails.py::test_capture_baseline_state_not_installed PASSED                                                                                                                                                              [  0%]
+tests/unit/test_real_env_guardrails.py::test_capture_baseline_state_installed_owned PASSED                                                                                                                                                            [  1%]
+tests/unit/test_real_env_guardrails.py::test_capture_baseline_state_installed_foreign PASSED                                                                                                                                                          [  2%]
+tests/unit/test_real_env_guardrails.py::test_capture_config_state_exists PASSED                                                                                                                                                                       [  3%]
+tests/unit/test_real_env_guardrails.py::test_harness_readiness_missing_home PASSED                                                                                                                                                                    [  4%]
+tests/unit/test_real_env_guardrails.py::test_harness_readiness_missing_version PASSED                                                                                                                                                                 [  4%]
+tests/unit/test_real_env_guardrails.py::test_harness_readiness_missing_config PASSED                                                                                                                                                                  [  5%]
+tests/unit/test_real_env_guardrails.py::test_verify_ownership_owned PASSED                                                                                                                                                                            [  6%]
+tests/unit/test_real_env_guardrails.py::test_verify_ownership_foreign_raises PASSED                                                                                                                                                                   [  7%]
+tests/unit/test_real_env_guardrails.py::test_verify_cleanup_success_not_installed PASSED                                                                                                                                                              [  8%]
+tests/unit/test_real_env_guardrails.py::test_verify_cleanup_success_owned_cleaned PASSED                                                                                                                                                              [  8%]
+tests/unit/test_real_env_guardrails.py::test_verify_cleanup_success_foreign_unchanged PASSED                                                                                                                                                          [  9%]
+tests/unit/test_validation_matrix.py::test_canonical_slugs_present PASSED                                                                                                                                                                             [ 10%]
+tests/unit/test_validation_matrix.py::test_feature_class_mapping PASSED                                                                                                                                                                               [ 11%]
+tests/unit/test_validation_matrix.py::test_get_feature_entry_by_slug PASSED                                                                                                                                                                           [ 12%]
+tests/unit/test_validation_matrix.py::test_get_feature_entry_missing PASSED                                                                                                                                                                           [ 13%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureReportCreation::test_report_file_created PASSED                                                                                                                                     [ 13%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureReportCreation::test_report_contains_baseline PASSED                                                                                                                                [ 14%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_install_lifecycle_command_order PASSED                                                                                                                        [ 15%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_install_lifecycle_dev_mode_slug PASSED                                                                                                                        [ 16%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_workspace_routing_uses_routing_probe PASSED                                                                                                                   [ 17%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_workspace_routing_uses_recovery_probe PASSED                                                                                                                  [ 17%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_runtime_watchdog_uses_watchdog_probe PASSED                                                                                                                   [ 18%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_cli_surface_command_order PASSED                                                                                                                              [ 19%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureExemptions::test_docs_test_only_exempt PASSED                                                                                                                                       [ 20%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureExemptions::test_docs_test_only_executes_docs_check PASSED                                                                                                                          [ 21%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_environment_failure_exit_127 PASSED                                                                                                                     [ 21%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_product_failure_nonzero_exit PASSED                                                                                                                     [ 22%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_pass_all_commands_succeed PASSED                                                                                                                        [ 23%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureCleanupVerification::test_baseline_captured_before_execution PASSED                                                                                                                 [ 24%]
+tests/integration/test_validation_real_env.py::TestValidateFeatureRecoveryDispatch::test_recovery_dispatch_verified PASSED                                                                                                                            [ 25%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_install_creates_managed_root PASSED                                                                                                                                   [ 26%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_install_creates_manifest PASSED                                                                                                                                       [ 26%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_install_registers_components PASSED                                                                                                                                   [ 27%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_status_reports_installed PASSED                                                                                                                                       [ 28%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_uninstall_removes_components PASSED                                                                                                                                   [ 29%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_uninstall_removes_only_manifest_owned_main_skills PASSED                                                                                                              [ 30%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_uninstall_removes_manifest PASSED                                                                                                                                     [ 30%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_status_reports_not_installed_after_uninstall PASSED                                                                                                                   [ 31%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_install_uninstall_symmetry PASSED                                                                                                                                     [ 32%]
+tests/integration/test_install_uninstall.py::TestInstallUninstallSymmetry::test_complete_lifecycle_cli_style PASSED                                                                                                                                   [ 33%]
+tests/integration/test_install_uninstall.py::TestInstallBackupAndRollback::test_install_creates_backup PASSED                                                                                                                                         [ 34%]
+tests/integration/test_install_uninstall.py::TestInstallBackupAndRollback::test_manifest_tracks_rollback_points PASSED                                                                                                                                [ 34%]
+tests/integration/test_install_uninstall.py::TestUninstallEdgeCases::test_uninstall_when_not_installed PASSED                                                                                                                                         [ 35%]
+tests/integration/test_install_uninstall.py::TestUninstallEdgeCases::test_uninstall_with_force_flag PASSED                                                                                                                                            [ 36%]
+tests/integration/test_install_uninstall.py::TestInstallPreflightPythonValidation::test_preflight_validates_python_version_via_validate_environment PASSED                                                                                            [ 37%]
+tests/integration/test_install_uninstall.py::TestInstallPreflightPythonValidation::test_preflight_fails_on_unsupported_python_version PASSED                                                                                                          [ 38%]
+tests/integration/test_install_uninstall.py::TestInstallPreflightPythonValidation::test_preflight_error_message_is_actionable PASSED                                                                                                                  [ 39%]
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_install_creates_symlinks PASSED                                                                                                                                     [ 39%]
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_dev_mode_manifest_records_symlinks PASSED                                                                                                                                    [ 40%]
+tests/integration/test_dev_mode_integration.py::TestDevModeInstall::test_normal_mode_manifest_records_no_symlinks PASSED                                                                                                                              [ 41%]
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_removes_symlinks_not_sources PASSED                                                                                                                              [ 42%]
+tests/integration/test_dev_mode_integration.py::TestDevModeUninstall::test_uninstall_after_dev_mode_is_symmetric PASSED                                                                                                                               [ 43%]
+tests/integration/test_dev_mode_integration.py::TestDevModeChangesReflectImmediately::test_workspace_changes_reflect_without_reinstall PASSED                                                                                                         [ 43%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchContractEndToEnd::test_render_workspace_cli_success PASSED                                                                                                                      [ 44%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchContractEndToEnd::test_render_workspace_includes_all_components PASSED                                                                                                          [ 45%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchContractEndToEnd::test_render_workspace_invalid_name_fails PASSED                                                                                                               [ 46%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSkillContractIntegration::test_all_workspace_skills_have_valid_files PASSED                                                                                                             [ 47%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSkillContractIntegration::test_skill_contracts_have_valid_frontmatter PASSED                                                                                                            [ 47%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestWorkspaceDiscoveryIntegration::test_workspace_directory_structure_complete PASSED                                                                                                       [ 48%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestWorkspaceDiscoveryIntegration::test_agents_md_references_all_skills PASSED                                                                                                              [ 49%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestWorkspaceDiscoveryIntegration::test_tools_md_covers_agent_management PASSED                                                                                                             [ 50%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchWorkflowIntegration::test_worker_dispatch_skill_defines_agents PASSED                                                                                                           [ 51%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchWorkflowIntegration::test_worker_dispatch_skill_defines_patterns PASSED                                                                                                         [ 52%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchWorkflowIntegration::test_project_registry_skill_defines_project_types PASSED                                                                                                   [ 52%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchWorkflowIntegration::test_agentos_practice_skill_defines_patterns PASSED                                                                                                        [ 53%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestDispatchWorkflowIntegration::test_git_context_skill_defines_readonly_operations PASSED                                                                                                  [ 54%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSubagentContractIntegration::test_searcher_agent_defined PASSED                                                                                                                         [ 55%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSubagentContractIntegration::test_syshelper_agent_defined PASSED                                                                                                                        [ 56%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSubagentContractIntegration::test_script_coder_agent_defined PASSED                                                                                                                     [ 56%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestSubagentContractIntegration::test_watchdog_agent_defined PASSED                                                                                                                         [ 57%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestResultSynthesisIntegration::test_worker_dispatch_defines_synthesis PASSED                                                                                                               [ 58%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestResultSynthesisIntegration::test_synthesis_template_defined PASSED                                                                                                                      [ 59%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestErrorHandlingIntegration::test_worker_dispatch_defines_error_handling PASSED                                                                                                            [ 60%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestErrorHandlingIntegration::test_worker_dispatch_defines_recovery_strategies PASSED                                                                                                       [ 60%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorEndToEndWorkflow::test_complete_render_pipeline PASSED                                                                                                                      [ 61%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorEndToEndWorkflow::test_workspace_components_integrated PASSED                                                                                                               [ 62%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_tool_not_found_triggers_recovery_dispatch PASSED                                                                                                         [ 63%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_websearch_not_found_recovery_executable PASSED                                                                                                           [ 64%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_invalid_parameters_triggers_recovery_dispatch PASSED                                                                                                     [ 65%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_permission_denied_triggers_recovery_dispatch PASSED                                                                                                      [ 65%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_tool_execution_error_triggers_recovery_dispatch PASSED                                                                                                   [ 66%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_all_tool_failure_types_route_to_recovery[tool_not_found] PASSED                                                                                          [ 67%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_all_tool_failure_types_route_to_recovery[invalid_parameters] PASSED                                                                                      [ 68%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_all_tool_failure_types_route_to_recovery[permission_denied] PASSED                                                                                       [ 69%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_all_tool_failure_types_route_to_recovery[tool_execution_error] PASSED                                                                                    [ 69%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_consumes_recovered_method PASSED                                                                                                                [ 70%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_validates_exact_invocation_no_placeholders PASSED                                                                                               [ 71%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_one_recovery_assisted_retry_per_step PASSED                                                                                                              [ 72%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_failure_escalates PASSED                                                                                                                        [ 73%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_assisted_retry_success_completes_step PASSED                                                                                                             [ 73%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_assisted_retry_failure_escalates PASSED                                                                                                                  [ 74%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_during_bounded_loop_respects_max_rounds PASSED                                                                                                  [ 75%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_eligibility_checks_prevent_nested_recovery PASSED                                                                                               [ 76%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_worker_is_leaf_node PASSED                                                                                                                      [ 77%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovery_uses_sessions_spawn_and_yield PASSED                                                                                                            [ 78%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_recovered_method_schema_enforces_bounded_retries PASSED                                                                                                  [ 78%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_no_worker_to_worker_handoff_in_recovery PASSED                                                                                                           [ 79%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_references_sessions_yield PASSED                                                                                                                    [ 80%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_round_states PASSED                                                                                                                         [ 81%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_max_rounds PASSED                                                                                                                           [ 82%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_checkpoint_types PASSED                                                                                                                     [ 82%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_duplicate_dispatch_guard PASSED                                                                                                             [ 83%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_no_sessions_history_polling PASSED                                                                                                                  [ 84%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_references_sessions_yield PASSED                                                                                                               [ 85%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_iterative_round_pattern PASSED                                                                                                         [ 86%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_dispatch_identity PASSED                                                                                                               [ 86%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_no_polling_guidance PASSED                                                                                                                     [ 87%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_failure_classification PASSED                                                                                                          [ 88%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_render_workspace_includes_bounded_loop_docs PASSED                                                                                                            [ 89%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_render_workspace_proves_worker_discovery PASSED                                                                                                               [ 90%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestCliIntegration::test_cli_help_includes_render_workspace PASSED                                                                                                                          [ 91%]
+tests/integration/test_orchestrator_dispatch_contract.py::TestCliIntegration::test_render_workspace_help_shows_workspace_argument PASSED                                                                                                              [ 91%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_detector_emits_to_store PASSED                                                                                                                                                          [ 92%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_watchdog_reads_and_confirms PASSED                                                                                                                                                      [ 93%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_policy_evaluation_flow PASSED                                                                                                                                                           [ 94%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_escalation_flow PASSED                                                                                                                                                                  [ 95%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_clear_confirmed_timeouts PASSED                                                                                                                                                         [ 95%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle PASSED                                                                                                                                                      [ 96%]
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking PASSED                                                                                                                                                       [ 97%]
+tests/integration/test_timeout_flow.py::TestRuntimeStoreAdapter::test_adapter_emits_event PASSED                                                                                                                                                      [ 98%]
+tests/integration/test_timeout_flow.py::TestRuntimeStoreAdapter::test_adapter_get_session_activity_returns_none PASSED                                                                                                                                [ 99%]
+tests/integration/test_timeout_flow.py::TestWatchdogConfigProof::test_config_fragment_plus_reminder_proof PASSED                                                                                                                                      [100%]
+
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/integration/test_validation_real_env.py: 15 warnings
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_validation_real_env.py: 66 warnings
+  <string>:8: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_validation_real_env.py: 15 warnings
+  <string>:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_install_uninstall.py: 19 warnings
+tests/integration/test_dev_mode_integration.py: 8 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/lock.py:157: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  <string>:4: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_install_uninstall.py: 78 warnings
+tests/integration/test_dev_mode_integration.py: 36 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/installer.py:217: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 39 warnings
+tests/integration/test_dev_mode_integration.py: 18 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/main_skill_sync.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/installer.py:293: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 26 warnings
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/manifest.py:119: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/integration/test_install_uninstall.py: 26 warnings
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/manifest.py:126: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/installer.py:347: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+tests/integration/test_timeout_flow.py: 9 warnings
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/installer.py:379: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 156 warnings
+tests/integration/test_dev_mode_integration.py: 72 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/install/manifest.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_detector_emits_to_store
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_policy_evaluation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestWatchdogConfigProof::test_config_fragment_plus_reminder_proof
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/watchdog/detector.py:115: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_detector_emits_to_store
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_policy_evaluation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestWatchdogConfigProof::test_config_fragment_plus_reminder_proof
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/watchdog/detector.py:138: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/watchdog/state_sync.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_watchdog_reads_and_confirms
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_escalation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_clear_confirmed_timeouts
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/watchdog/state_sync.py:220: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_escalation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+  <string>:6: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_clear_confirmed_timeouts
+  /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/src/openclaw_enhance/watchdog/state_sync.py:246: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================================================================= 123 passed, 751 warnings in 2.09s =============================================================================================================

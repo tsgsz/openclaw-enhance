@@ -1,6 +1,6 @@
 # Validation Report Inventory
 
-This document tracks canonical and superseded validation reports for openclaw-enhance.
+This document tracks canonical and superseded validation reports for openclaw-enhance, including the Canonical Current-Branch Backfill.
 
 ## Canonical Reports
 

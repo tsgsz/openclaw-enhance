@@ -8,7 +8,8 @@
 ## Baseline State
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
-- Installed: False
+- Installed: True
+- Version: 0.1.0
 - Config Exists: True (openclaw.json)
 
 ## Execution Log
@@ -20,7 +21,7 @@ python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-h
 ```
 
 - Exit Code: 0
-- Duration: 0.19s
+- Duration: 0.17s
 
 **stdout:**
 ```

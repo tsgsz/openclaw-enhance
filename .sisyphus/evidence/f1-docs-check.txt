@@ -1,0 +1,6 @@
+COMMAND: python -m openclaw_enhance.cli docs-check
+EXIT_CODE: 0
+--- STDOUT ---
+Docs check passed.
+
+--- STDERR ---

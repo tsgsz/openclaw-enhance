@@ -1,0 +1,7 @@
+Command: python -m openclaw_enhance.cli docs-check
+Working directory: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+
+Output:
+Docs check passed.
+
+Exit status: 0
