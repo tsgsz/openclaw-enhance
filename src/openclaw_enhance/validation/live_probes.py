@@ -135,29 +135,10 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
     if sessions_result.returncode != 0:
         _fail("routing-yield", "sessions_list_failed", sessions_result.stderr.strip())
 
-    # Parse JSON from mixed output (plugin logs + JSON)
-    combined = sessions_result.stdout + sessions_result.stderr
-    lines = combined.split("\n")
-    json_lines = []
-    depth = 0
-    started = False
-
-    for line in lines:
-        if line.strip().startswith("{") and not started:
-            started = True
-
-        if started:
-            json_lines.append(line)
-            depth += line.count("{") - line.count("}")
-            if depth == 0 and len(json_lines) > 1:
-                break
-
+    # Parse JSON from stdout only (stderr may contain duplicate output)
     try:
-        if json_lines:
-            sessions_obj = json.loads("\n".join(json_lines))
-            sessions_data = sessions_obj.get("sessions", [])
-        else:
-            sessions_data = []
+        sessions_obj = json.loads(sessions_result.stdout)
+        sessions_data = sessions_obj.get("sessions", [])
     except json.JSONDecodeError as exc:
         _fail("routing-yield", "sessions_json_invalid", str(exc))
         return
@@ -251,28 +232,10 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
     if sessions_result.returncode != 0:
         _fail("recovery-worker", "sessions_list_failed", sessions_result.stderr.strip())
 
-    combined = sessions_result.stdout + sessions_result.stderr
-    lines = combined.split("\n")
-    json_lines = []
-    depth = 0
-    started = False
-
-    for line in lines:
-        if line.strip().startswith("{") and not started:
-            started = True
-
-        if started:
-            json_lines.append(line)
-            depth += line.count("{") - line.count("}")
-            if depth == 0 and len(json_lines) > 1:
-                break
-
+    # Parse JSON from stdout only (stderr may contain duplicate output)
     try:
-        if json_lines:
-            sessions_obj = json.loads("\n".join(json_lines))
-            sessions_data = sessions_obj.get("sessions", [])
-        else:
-            sessions_data = []
+        sessions_obj = json.loads(sessions_result.stdout)
+        sessions_data = sessions_obj.get("sessions", [])
     except json.JSONDecodeError as exc:
         _fail("recovery-worker", "sessions_json_invalid", str(exc))
         return
