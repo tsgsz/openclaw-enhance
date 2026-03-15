@@ -78,8 +78,8 @@ def clean_managed_root(tmp_path: Path) -> Generator[Path, None, None]:
     Yields:
         Path to the managed root directory.
     """
-    from openclaw_enhance.paths import managed_root
     from openclaw_enhance.install import uninstall
+    from openclaw_enhance.paths import managed_root
 
     user_home = tmp_path / "test_user"
     target_root = managed_root(user_home)
@@ -103,6 +103,7 @@ def sample_manifest_data() -> dict:
         Dictionary with sample manifest data.
     """
     from datetime import datetime
+
     from openclaw_enhance.constants import VERSION
 
     return {
