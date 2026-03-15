@@ -36,7 +36,7 @@ def test_dev_symlink_probe_fails_when_no_symlinks(mock_openclaw_home: Path):
     )
 
     assert result.exit_code != 0
-    assert "not a symlink" in result.output.lower()
+    assert '"reason": "workspace_not_symlink"' in result.output
 
 
 def test_dev_symlink_probe_succeeds_with_symlink(mock_openclaw_home: Path, tmp_path: Path):
