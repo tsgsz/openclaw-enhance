@@ -6,8 +6,6 @@ tool restrictions and authority boundaries.
 
 from pathlib import Path
 
-import pytest
-
 
 class TestWorkerRoleBoundaries:
     """Test that workers have correct role boundaries."""
@@ -112,7 +110,6 @@ class TestScriptCoderBoundaries(TestWorkerRoleBoundaries):
 
     def test_script_coder_has_full_file_access(self):
         """Script coder should have full file access (read/write/edit)."""
-        agents = self._read_file("oe-script_coder", "AGENTS.md")
         tools = self._read_file("oe-script_coder", "TOOLS.md")
 
         assert "Read" in tools
@@ -288,7 +285,6 @@ class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
     def test_tool_recovery_recommends_only(self):
         """Tool recovery returns recommendations, does not execute."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
-        tools = self._read_file("oe-tool-recovery", "TOOLS.md")
 
         # Should emphasize recommendation-only role
         assert "Advisory Role" in agents or "recommendation" in agents.lower()
