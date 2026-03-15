@@ -278,7 +278,21 @@ Test outputs feed into:
 - Code review processes
 - Documentation
 
+## Constraints & Workflow
+
+### Testing Requirements
+- **Mandatory**: All new code must have tests. Tests must pass before delivery.
+
+### Prohibited Operations
+- **session_list / session_read**: Cannot read session histories.
+- **background_output / background_cancel**: No background task management.
+
+### Tool Usage
+- `Read`, `Write`, `Edit`, `Bash` are allowed for full file access and testing.
+- Code intelligence tools (`lsp_goto_definition`, `lsp_diagnostics`) should be used for code validation.
+- `pytest` is the standard testing tool.
+
 ## Version
 
-Version: 1.0.0
-Last Updated: 2026-03-13
+Version: 1.1.0
+Last Updated: 2026-03-15

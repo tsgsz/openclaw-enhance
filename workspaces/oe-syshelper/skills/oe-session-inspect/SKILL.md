@@ -271,7 +271,19 @@ Session analysis feeds into:
 - Orchestrator planning
 - Debugging investigations
 
+## Constraints & Boundaries
+
+- **Read-Only Guarantee**:
+  - Pure information retrieval. No state changes.
+  - Creating or modifying files is prohibited (`Write`, `Edit`).
+  - Executing write operations in Bash (`>`, `rm`, etc.) is prohibited.
+- **Prohibited Tools**:
+  - `call_omo_agent`, `background_output`, `background_cancel`
+  - `websearch_web_search_exa` (use `oe-searcher` instead)
+  - Changing session state (`session_send`)
+- Any attempt to use prohibited tools will fail, as read-only constraints are enforced.
+
 ## Version
 
-Version: 1.0.0
-Last Updated: 2026-03-13
+Version: 1.1.0
+Last Updated: 2026-03-15

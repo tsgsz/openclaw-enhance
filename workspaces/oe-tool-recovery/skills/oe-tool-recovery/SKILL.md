@@ -65,3 +65,8 @@ The result should include:
 - Read-only investigation and documentation lookup only
 - No file edits, git actions, or agent spawning
 - Return one narrow recovery method instead of multiple speculative options
+
+### Tool Restrictions
+
+- **Read-Only**: Allowed tools include `Read`, `Glob`, `Grep`, `Bash` (read-only), `websearch_web_search_exa`, `webfetch`, `context7_query-docs`.
+- **Prohibited Tools**: `Write`, `Edit`, `call_omo_agent`, `sessions_spawn`, `background_output`, `background_cancel`.

@@ -346,7 +346,19 @@ This skill is designed for the oe-watchdog agent:
 - Does NOT make recovery decisions
 - Escalates to orchestrator
 
+## Constraints & Workflow
+
+### Write Access
+- **Runtime State**: The only write access allowed is to runtime state store (`.runtime/` or equivalent). 
+- **Project Files**: Cannot write to or modify project files (`Write`, `Edit` prohibited).
+
+### Tool Usage
+- `session_list`, `session_read`, `session_info`, `session_search`: Allowed for timeout detection.
+- `Read`: Allowed for runtime state and config only.
+- `Bash`: Read-only commands only (status checks).
+- `call_omo_agent`, `websearch_web_search_exa`: Prohibited. No agent spawning. No web searches.
+
 ## Version
 
-Version: 1.0.0
-Last Updated: 2026-03-13
+Version: 1.1.0
+Last Updated: 2026-03-15

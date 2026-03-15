@@ -264,7 +264,22 @@ Research outputs feed into:
 - Architecture planning (orchestrator)
 - Problem solving (any agent)
 
+## Constraints & Boundaries
+
+- **Prohibited Operations**:
+  - Cannot modify files (`Write` / `Edit`).
+  - Cannot spawn subagents (`call_omo_agent` / `sessions_spawn`).
+  - Read-only commands only for `Bash`.
+  - `LSP` not available.
+- **Rate Limits**:
+  - Be mindful of search API usage. Cache results when possible.
+  - Use specific queries to reduce result volume.
+- **Sandbox Access**:
+  - Full read access to temporary research storage.
+  - Can write research notes and downloaded content to temporary storage.
+  - No access to modify project source code.
+
 ## Version
 
-Version: 1.0.0
-Last Updated: 2026-03-13
+Version: 1.1.0
+Last Updated: 2026-03-15
