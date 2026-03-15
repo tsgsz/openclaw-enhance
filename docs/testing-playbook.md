@@ -153,6 +153,6 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Proof**: `openclaw agent info oe-tool-recovery` shows "Recovery capabilities".
 
 #### `backfill-watchdog-reminder`
-- **Command**: `python -m openclaw_enhance.cli status`
-- **Expectation**: Shows hook registration status.
-- **Proof**: `grep "openclawEnhance" ~/.openclaw/config.json` returns matches.
+- **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`
+- **Expectation**: Verifies openclaw.json hook config (or workspace contract fallback) and live reminder delivery.
+- **Proof**: JSON output with `marker: PROBE_WATCHDOG_REMINDER_OK`, `proof: config_hook_plus_live_reminder` or `workspace_contract_plus_live_reminder`, and session_id evidence.

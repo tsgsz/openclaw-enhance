@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 import click
@@ -237,16 +236,23 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
 
 @cli.command("watchdog-reminder")
 @click.option("--openclaw-home", type=click.Path(path_type=Path), required=True)
-def watchdog_reminder(openclaw_home: Path) -> None:
-    """Verify watchdog reminder prerequisites from config or workspace contract."""
-    home = _require_openclaw_home("watchdog-reminder", openclaw_home)
-    config_path = _resolve_config_path(home)
+@click.option("--config-path", type=click.Path(path_type=Path), default=None)
+@click.option("--session-id", default="strict-watchdog-probe")
+def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id: str) -> None:
+    """Verify openclaw.json hook config and live reminder delivery."""
+    from datetime import timedelta
 
-    if not config_path.exists():
-        _fail("watchdog-reminder", "missing_openclaw_config", str(config_path))
+    from openclaw_enhance.watchdog.detector import DetectionConfig, TimeoutDetector
+    from openclaw_enhance.watchdog.state_sync import RuntimeStoreAdapter, StateSync
+
+    home = _require_openclaw_home("watchdog-reminder", openclaw_home)
+    resolved_config = Path(config_path) if config_path else _resolve_config_path(home)
+
+    if not resolved_config.exists():
+        _fail("watchdog-reminder", "missing_openclaw_config", str(resolved_config))
 
     try:
-        config_data = json.loads(config_path.read_text(encoding="utf-8"))
+        config_data = json.loads(resolved_config.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         _fail("watchdog-reminder", "invalid_openclaw_config_json", str(exc))
         return
@@ -254,31 +260,57 @@ def watchdog_reminder(openclaw_home: Path) -> None:
         _fail("watchdog-reminder", "config_read_error", str(exc))
         return
 
-    serialized = json.dumps(config_data, sort_keys=True)
+    enhance_fragment = config_data.get("openclawEnhance")
+    proof_type = (
+        "config_hook_plus_live_reminder"
+        if enhance_fragment
+        else "workspace_contract_plus_live_reminder"
+    )
 
-    proof = "config_hook"
-    if "openclawEnhance" not in serialized:
+    if not enhance_fragment:
         result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
+            ["python", "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
             capture_output=True,
             text=True,
             env=_probe_env(home),
         )
-        if result.returncode != 0:
-            _fail("watchdog-reminder", "watchdog_workspace_unavailable", result.stderr.strip())
-        if "oe-watchdog" not in result.stdout:
-            _fail("watchdog-reminder", "missing_watchdog_workspace_signature")
-        proof = "workspace_contract"
+        if result.returncode != 0 or "oe-watchdog" not in result.stdout:
+            _fail("watchdog-reminder", "missing_watchdog_workspace_and_config")
+            return
 
-    _emit(
-        {
-            "ok": True,
-            "probe": "watchdog-reminder",
-            "marker": "PROBE_WATCHDOG_REMINDER_OK",
-            "config_path": str(config_path),
-            "proof": proof,
-        }
+    state_sync = StateSync(user_home=home)
+    store_adapter = RuntimeStoreAdapter(state_sync)
+    detector = TimeoutDetector(
+        store=store_adapter,
+        config=DetectionConfig(
+            default_timeout=timedelta(seconds=0),
+            grace_period=timedelta(seconds=0),
+            min_session_duration=timedelta(seconds=0),
+        ),
     )
+
+    detector.start_monitoring(session_id)
+    events = detector.check_timeouts()
+
+    if not events or not any(e.session_id == session_id for e in events):
+        _fail("watchdog-reminder", "no_timeout_event_generated")
+
+    pending = state_sync.get_pending_suspected_events()
+    if not any(e.session_id == session_id for e in pending):
+        _fail("watchdog-reminder", "no_reminder_delivery_evidence")
+
+    payload = {
+        "ok": True,
+        "probe": "watchdog-reminder",
+        "marker": "PROBE_WATCHDOG_REMINDER_OK",
+        "config_path": str(resolved_config),
+        "session_id": session_id,
+        "proof": proof_type,
+    }
+    if enhance_fragment:
+        payload["config_fragment"] = json.dumps(enhance_fragment, sort_keys=True)
+
+    _emit(payload)
 
 
 def main() -> None:

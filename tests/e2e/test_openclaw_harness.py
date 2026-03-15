@@ -466,6 +466,42 @@ class TestHarnessWatchdogIntegration:
         assert "runtime-watchdog" in result.stdout
         assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
 
+    def test_watchdog_config_fragment_and_reminder_markers(self):
+        """Verify watchdog probe captures config fragment and reminder evidence."""
+        import json
+        import os
+        from pathlib import Path
+
+        openclaw_home = Path(os.environ.get("OPENCLAW_HOME", Path.home() / ".openclaw"))
+        config_path = openclaw_home / "openclaw.json"
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.validation.live_probes",
+                "watchdog-reminder",
+                "--openclaw-home",
+                str(openclaw_home),
+                "--config-path",
+                str(config_path),
+                "--session-id",
+                "e2e-config-proof",
+            ],
+            capture_output=True,
+            text=True,
+            env=_local_src_env(),
+        )
+
+        assert result.returncode == 0, f"Probe failed: {result.stderr}"
+
+        output = json.loads(result.stdout)
+        assert output["ok"] is True
+        assert output["probe"] == "watchdog-reminder"
+        assert output["marker"] == "PROBE_WATCHDOG_REMINDER_OK"
+        assert "config_fragment" in output
+        assert output["proof"] == "config_hook_plus_live_reminder"
+
 
 class TestHarnessRealEnvironmentValidation:
     """E2E tests for real-environment validation via CLI."""
