@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,20 @@ pytestmark = pytest.mark.skipif(
     os.environ.get("OPENCLAW_HARNESS") != "1",
     reason="E2E tests require OPENCLAW_HARNESS=1 environment variable",
 )
+
+
+def _latest_report(paths: list[Path]) -> Path | None:
+    if not paths:
+        return None
+    return max(paths, key=lambda path: path.stat().st_mtime)
+
+
+def _local_src_env() -> dict[str, str]:
+    env = os.environ.copy()
+    src_path = str(Path(__file__).resolve().parents[2] / "src")
+    python_path = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = f"{src_path}:{python_path}" if python_path else src_path
+    return env
 
 
 class TestHarnessAvailability:
@@ -57,8 +72,8 @@ class TestHarnessInstallFlow:
     @pytest.fixture
     def clean_managed_root(self):
         """Ensure managed root is clean before test."""
-        from openclaw_enhance.paths import managed_root
         from openclaw_enhance.install import uninstall
+        from openclaw_enhance.paths import managed_root
 
         user_home = Path.home()
         target_root = managed_root(user_home)
@@ -75,8 +90,9 @@ class TestHarnessInstallFlow:
 
     def test_install_in_harness_environment(self, clean_managed_root):
         """Test installation in actual OpenClaw environment."""
-        from openclaw_enhance.cli import cli
         from click.testing import CliRunner
+
+        from openclaw_enhance.cli import cli
 
         runner = CliRunner()
         result = runner.invoke(cli, ["install", "--dry-run"])
@@ -102,22 +118,24 @@ class TestHarnessRuntimeIntegration:
     def test_runtime_bridge_can_initialize(self):
         """Test that runtime bridge can be initialized."""
         try:
-            from extensions.openclaw_enhance_runtime.src.runtime_bridge import (
-                RuntimeBridge,
+            runtime_bridge_module = import_module(
+                "extensions.openclaw_enhance_runtime.src.runtime_bridge"
             )
+            RuntimeBridge = runtime_bridge_module.RuntimeBridge
 
             bridge = RuntimeBridge()
             assert bridge is not None
             assert bridge.getConfig() is not None
-        except ImportError:
+        except ModuleNotFoundError:
             pytest.skip("Runtime bridge not available")
 
     def test_runtime_bridge_handles_spawn_event(self):
         """Test runtime bridge can handle spawn events."""
         try:
-            from extensions.openclaw_enhance_runtime.src.runtime_bridge import (
-                RuntimeBridge,
+            runtime_bridge_module = import_module(
+                "extensions.openclaw_enhance_runtime.src.runtime_bridge"
             )
+            RuntimeBridge = runtime_bridge_module.RuntimeBridge
 
             bridge = RuntimeBridge()
 
@@ -142,7 +160,7 @@ class TestHarnessRuntimeIntegration:
             assert result is True
             assert bridge.getTask("task_test_harness_001") is not None
 
-        except ImportError:
+        except ModuleNotFoundError:
             pytest.skip("Runtime bridge not available")
 
 
@@ -261,8 +279,8 @@ class TestHarnessEndToEndWorkflow:
     @pytest.fixture
     def isolated_test_env(self, tmp_path):
         """Create an isolated test environment."""
-        from openclaw_enhance.paths import managed_root
         from openclaw_enhance.install import uninstall
+        from openclaw_enhance.paths import managed_root
 
         user_home = tmp_path / "test_user"
         target_root = managed_root(user_home)
@@ -441,11 +459,52 @@ class TestHarnessWatchdogIntegration:
             ],
             capture_output=True,
             text=True,
+            env=_local_src_env(),
         )
 
         assert result.returncode == 0, f"Watchdog validation failed: {result.stderr}"
         assert "runtime-watchdog" in result.stdout
         assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
+
+    def test_watchdog_config_fragment_and_reminder_markers(self):
+        """Verify watchdog probe captures config fragment and reminder evidence."""
+        import json
+        import os
+        from pathlib import Path
+
+        openclaw_home = Path(os.environ.get("OPENCLAW_HOME", Path.home() / ".openclaw"))
+        config_path = openclaw_home / "openclaw.json"
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.validation.live_probes",
+                "watchdog-reminder",
+                "--openclaw-home",
+                str(openclaw_home),
+                "--config-path",
+                str(config_path),
+                "--session-id",
+                "e2e-config-proof",
+            ],
+            capture_output=True,
+            text=True,
+            env=_local_src_env(),
+        )
+
+        assert result.returncode == 0, f"Probe failed: {result.stderr}"
+
+        output = json.loads(result.stdout)
+        assert output["ok"] is True
+        assert output["probe"] == "watchdog-reminder"
+        assert output["marker"] == "PROBE_WATCHDOG_REMINDER_OK"
+        assert output["proof"] in {
+            "config_hook_plus_live_reminder",
+            "workspace_contract_plus_live_reminder",
+        }
+        if output["proof"] == "config_hook_plus_live_reminder":
+            assert "config_fragment" in output
 
 
 class TestHarnessRealEnvironmentValidation:
@@ -533,6 +592,7 @@ class TestHarnessRoutingYieldValidation:
             ],
             capture_output=True,
             text=True,
+            env=_local_src_env(),
         )
 
         assert result.returncode == 0, f"Routing validation failed: {result.stderr}"
@@ -540,7 +600,7 @@ class TestHarnessRoutingYieldValidation:
         assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
 
     def test_routing_yield_report_contains_evidence(self):
-        """Routing yield report should contain deterministic evidence."""
+        """Routing yield report should contain live session evidence."""
         subprocess.run(
             [
                 sys.executable,
@@ -554,15 +614,20 @@ class TestHarnessRoutingYieldValidation:
             ],
             capture_output=True,
             text=True,
+            env=_local_src_env(),
         )
 
         reports_dir = Path("docs/reports")
         report_files = list(reports_dir.glob("*harness-routing-evidence-workspace-routing.md"))
 
-        if report_files:
-            content = report_files[0].read_text()
-            assert "sessions_yield" in content or "bounded-loop" in content
-            assert "oe-orchestrator" in content
+        report = _latest_report(report_files)
+        if report:
+            content = report.read_text()
+            assert '"probe": "routing-yield"' in content
+            assert '"marker": "PROBE_ROUTING_YIELD_OK"' in content
+            assert '"proof": "runtime_surface"' in content
+            assert '"tool_surface_has_sessions_yield": true' in content
+            assert '"session_id":' in content
 
 
 class TestHarnessRecoveryWorkerValidation:
@@ -583,13 +648,14 @@ class TestHarnessRecoveryWorkerValidation:
             ],
             capture_output=True,
             text=True,
+            env=_local_src_env(),
         )
 
         assert result.returncode == 0, f"Recovery validation failed: {result.stderr}"
         assert "workspace-routing" in result.stdout
 
     def test_recovery_worker_report_contains_executable_proof(self):
-        """Recovery worker report should contain executable test proof."""
+        """Recovery worker report should contain dispatch and corrected method proof."""
         subprocess.run(
             [
                 sys.executable,
@@ -603,12 +669,48 @@ class TestHarnessRecoveryWorkerValidation:
             ],
             capture_output=True,
             text=True,
+            env=_local_src_env(),
         )
 
         reports_dir = Path("docs/reports")
         report_files = list(reports_dir.glob("*backfill-recovery-worker-workspace-routing.md"))
 
-        if report_files:
-            content = report_files[0].read_text()
-            assert "websearch" in content or "RecoveredMethod" in content
-            assert "test_websearch_not_found_recovery_executable" in content or "PASSED" in content
+        report = _latest_report(report_files)
+        if report:
+            content = report.read_text()
+            assert '"probe": "recovery-worker"' in content
+            assert '"marker": "PROBE_RECOVERY_WORKER_OK"' in content
+            assert '"proof": "runtime_surface"' in content
+            assert '"recovery_registration_confirmed": true' in content
+            assert "session_id" in content
+
+
+class TestHarnessLiveProbeOutputs:
+    """E2E tests for deterministic live-probe output markers."""
+
+    def test_watchdog_probe_report_contains_stable_marker(self):
+        """Watchdog probe marker should appear in report output."""
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "runtime-watchdog",
+                "--report-slug",
+                "harness-watchdog-evidence",
+            ],
+            capture_output=True,
+            text=True,
+            env=_local_src_env(),
+        )
+
+        reports_dir = Path("docs/reports")
+        report_files = list(reports_dir.glob("*harness-watchdog-evidence-runtime-watchdog.md"))
+
+        report = _latest_report(report_files)
+        if report:
+            content = report.read_text()
+            assert '"probe": "watchdog-reminder"' in content
+            assert '"marker": "PROBE_WATCHDOG_REMINDER_OK"' in content

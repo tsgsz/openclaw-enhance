@@ -9,7 +9,7 @@
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
 - Installed: False
-- Config Exists: True
+- Config Exists: True (openclaw.json)
 
 ## Execution Log
 
@@ -70,13 +70,13 @@ python -m openclaw_enhance.cli render-workspace oe-orchestrator
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.07s
 
 **stdout:**
 ```
 # Workspace: oe-orchestrator
 
-**Path:** `/Users/tsgsz/workspace/openclaw-enhance/workspaces/oe-orchestrator`
+**Path:** `/Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/workspaces/oe-orchestrator`
 
 # Orchestrator Agent Configuration
 
@@ -2196,7 +2196,7 @@ python -m openclaw_enhance.cli docs-check
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.09s
 
 **stdout:**
 ```
@@ -2210,7 +2210,7 @@ python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only -
 ```
 
 - Exit Code: 0
-- Duration: 0.16s
+- Duration: 0.18s
 
 **stdout:**
 ```

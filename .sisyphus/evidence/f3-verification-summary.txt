@@ -1,0 +1,17 @@
+=== VERIFICATION SUMMARY ===
+
+E2E Test Results (with OPENCLAW_HARNESS=1):
+FAILED tests/e2e/test_openclaw_harness.py::TestHarnessRoutingYieldValidation::test_routing_yield_validation_passes - AssertionError: Routing validation failed: 
+FAILED tests/e2e/test_openclaw_harness.py::TestHarnessRoutingYieldValidation::test_routing_yield_report_contains_evidence - assert '"marker": "PROBE_ROUTING_YIELD_OK"' in '# Validation Report: harness-routing-evidence\n\n- **Date**: 2026-03-15\n- **F...
+FAILED tests/e2e/test_openclaw_harness.py::TestHarnessRecoveryWorkerValidation::test_recovery_worker_validation_passes - AssertionError: Recovery validation failed: 
+FAILED tests/e2e/test_openclaw_harness.py::TestHarnessRecoveryWorkerValidation::test_recovery_worker_report_contains_executable_proof - assert '"marker": "PROBE_RECOVERY_WORKER_OK"' in '# Validation Report: backfill-recovery-worker\n\n- **Date**: 202...
+5 failed, 8 passed, 20 deselected, 33 warnings in 8.74s
+
+Harness Gating (without OPENCLAW_HARNESS):
+13 skipped, 20 deselected in 0.01s
+
+Live Proof Marker Counts:
+- sessions_yield: 32
+- oe-tool-recovery: 48
+- openclaw.json: 9
+- Reminder: 0

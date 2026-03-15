@@ -2,8 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
-
 from openclaw_enhance.watchdog.detector import SessionStatus, TimeoutEvent
 from openclaw_enhance.watchdog.policy import (
     ActionType,

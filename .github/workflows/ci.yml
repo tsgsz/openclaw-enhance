@@ -71,7 +71,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run TypeScript tests
-        run: npm test -- --runInBand
+        run: npm test
 
       - name: Run ESLint
         run: npm run lint

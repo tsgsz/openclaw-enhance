@@ -6,10 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing import TYPE_CHECKING
 
 
 class FeatureClass(Enum):
@@ -122,28 +118,22 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             ]
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
-        project_root = Path(__file__).parent.parent.parent.parent
-
         if "recovery" in slug:
-            pytest_cmd = (
-                f"cd {project_root} && pytest "
-                "tests/integration/test_orchestrator_dispatch_contract.py::"
-                "TestOrchestratorRecoveryFlow::test_websearch_not_found_recovery_executable "
-                "-xvs"
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes recovery-worker "
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--message "请先尝试使用 websearch 工具搜索 Python async patterns；'
+                '若失败，继续完成任务并报告最终采用的方法"'
             )
         else:
-            pytest_cmd = (
-                f"cd {project_root} && pytest "
-                "tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract "
-                "-q --tb=no"
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes routing-yield "
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--message "帮我规划一个复杂任务，先并行搜索两个方向，再汇总一个执行计划"'
             )
 
-        return [
-            "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
-            pytest_cmd,
-        ]
+        return [live_probe_cmd]
 
-    project_root = Path(__file__).parent.parent.parent.parent
     bundles = {
         FeatureClass.CLI_SURFACE: [
             "python -m openclaw_enhance.cli status",
@@ -160,9 +150,10 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
             (
-                f"cd {project_root} && python -m pytest "
-                "tests/integration/test_timeout_flow.py::TestTimeoutFlow::"
-                "test_end_to_end_monitoring_cycle -xvs"
+                "python -m openclaw_enhance.validation.live_probes watchdog-reminder "
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--config-path "$OPENCLAW_CONFIG_PATH" '
+                "--session-id strict-watchdog-probe"
             ),
         ],
         FeatureClass.DOCS_TEST_ONLY: [

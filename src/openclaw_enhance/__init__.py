@@ -1,4 +1,7 @@
-"""OpenClaw Enhance - Hybrid Python/TypeScript toolchain for OpenClaw-native hooks and extensions."""
+"""OpenClaw Enhance.
+
+Hybrid Python/TypeScript toolchain for OpenClaw-native hooks and extensions.
+"""
 
 from openclaw_enhance.constants import PACKAGE_NAME, VERSION
 

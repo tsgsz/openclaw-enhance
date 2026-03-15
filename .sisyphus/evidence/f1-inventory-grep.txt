@@ -1,0 +1,5 @@
+COMMAND: grep -q Canonical Current-Branch Backfill docs/reports/INVENTORY.md
+EXIT_CODE: 1
+--- STDOUT ---
+
+--- STDERR ---

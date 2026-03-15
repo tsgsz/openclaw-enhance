@@ -7,7 +7,7 @@ timeouts are suspected or confirmed, via the OpenClaw session_send mechanism.
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from typing import Callable, Protocol
+from typing import Protocol
 
 from openclaw_enhance.watchdog.detector import TimeoutEvent
 

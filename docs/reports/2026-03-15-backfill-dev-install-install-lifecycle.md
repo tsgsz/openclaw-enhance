@@ -9,7 +9,7 @@
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
 - Installed: False
-- Config Exists: True
+- Config Exists: True (openclaw.json)
 
 ## Execution Log
 
@@ -34,7 +34,7 @@ python -m openclaw_enhance.cli install --dev
 ```
 
 - Exit Code: 0
-- Duration: 0.20s
+- Duration: 0.19s
 
 **stdout:**
 ```
@@ -53,8 +53,7 @@ python -m openclaw_enhance.validation.live_probes dev-symlink --openclaw-home "$
 
 **stdout:**
 ```
-Symlink: /Users/tsgsz/.openclaw/openclaw-enhance/workspaces/oe-orchestrator
-Target: /Users/tsgsz/workspace/openclaw-enhance/workspaces/oe-orchestrator
+{"marker": "PROBE_DEV_SYMLINK_OK", "ok": true, "path": "/Users/tsgsz/.openclaw/openclaw-enhance/workspaces/oe-orchestrator", "probe": "dev-symlink", "target": "/Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure/workspaces/oe-orchestrator", "workspace": "oe-orchestrator"}
 ```
 
 ### Command 4: ✓ PASS
@@ -71,7 +70,7 @@ python -m openclaw_enhance.cli status
 Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 0.1.0
-Install Time: 2026-03-15T06:49:53.704999
+Install Time: 2026-03-15T07:01:38.838196
 Components (12):
   - workspace:oe-watchdog
   - workspace:oe-orchestrator
@@ -108,7 +107,7 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.09s
 
 **stdout:**
 ```

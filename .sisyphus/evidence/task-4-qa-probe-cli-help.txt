@@ -1,0 +1,5 @@
+Usage: python -m openclaw_enhance.validation.live_probes [OPTIONS] COMMAND
+                                                         [ARGS]...
+Try 'python -m openclaw_enhance.validation.live_probes --help' for help.
+
+Error: No such command 'routing-yield'.

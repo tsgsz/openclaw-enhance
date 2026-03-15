@@ -1,0 +1,19 @@
+Scope Fidelity Verification - strict-gap-closure
+Date: 2026-03-15
+
+Check 1: AGENTS.md contains required boundary text
+- Pattern: No OpenClaw source code edits
+- Result: PASS
+- Match: AGENTS.md line 9
+
+Check 2: docs contain required phrase
+- Pattern: Current branch shipped set
+- Result: PASS
+- Match: docs/testing-playbook.md line 106
+
+Check 3: docs reference required config artifact
+- Pattern: openclaw.json
+- Result: PASS
+- Result detail: 31 matches found across docs (including docs/testing-playbook.md)
+
+Scope script verdict: PASS

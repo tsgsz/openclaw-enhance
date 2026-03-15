@@ -1,0 +1,8 @@
+COMMAND: grep -n 'config.json' docs/testing-playbook.md docs/troubleshooting.md docs/adr/0001-managed-namespace.md
+EXIT_CODE: 0
+--- STDOUT ---
+docs/testing-playbook.md:58:1. **Hook Verification**: `cat ~/.openclaw/config.json | grep "openclawEnhance"`
+docs/testing-playbook.md:104:- Never modify `~/.openclaw/config.json` manually; use the CLI.
+docs/testing-playbook.md:117:| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+
+--- STDERR ---

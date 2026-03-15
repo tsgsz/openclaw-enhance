@@ -1,0 +1,9 @@
+Usage: python -m openclaw_enhance.validation.live_probes routing-yield 
+           [OPTIONS]
+
+  Verify orchestrator routing via live openclaw chat session.
+
+Options:
+  --openclaw-home PATH  [required]
+  --message TEXT        Message to send to openclaw chat  [required]
+  --help                Show this message and exit.

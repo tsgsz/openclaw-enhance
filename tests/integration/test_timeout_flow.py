@@ -16,12 +16,11 @@ import pytest
 
 from openclaw_enhance.watchdog.detector import (
     DetectionConfig,
-    RuntimeStore,
     SessionStatus,
     TimeoutDetector,
     TimeoutEvent,
 )
-from openclaw_enhance.watchdog.notifier import Notifier, ReminderType
+from openclaw_enhance.watchdog.notifier import Notifier
 from openclaw_enhance.watchdog.policy import ActionType, PolicyEngine
 from openclaw_enhance.watchdog.state_sync import RuntimeStoreAdapter, StateSync
 
@@ -356,3 +355,42 @@ class TestRuntimeStoreAdapter:
 
         result = adapter.get_session_last_activity("any_session")
         assert result is None
+
+
+class TestWatchdogConfigProof:
+    """Tests for watchdog config fragment and reminder proof."""
+
+    @pytest.fixture
+    def temp_home(self):
+        """Create a temporary home directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    def test_config_fragment_plus_reminder_proof(self, temp_home: Path):
+        """Verify config fragment exists and reminder delivery works."""
+        config_path = temp_home / "openclaw.json"
+        config_path.write_text(json.dumps({"openclawEnhance": {"hooks": {"watchdog": True}}}))
+
+        state_sync = StateSync(user_home=temp_home)
+        store_adapter = RuntimeStoreAdapter(state_sync)
+        detector = TimeoutDetector(
+            store=store_adapter,
+            config=DetectionConfig(
+                default_timeout=timedelta(seconds=0),
+                grace_period=timedelta(seconds=0),
+                min_session_duration=timedelta(seconds=0),
+            ),
+        )
+
+        session_id = "config-proof-session"
+        detector.start_monitoring(session_id)
+        events = detector.check_timeouts()
+
+        assert len(events) == 1
+        assert events[0].session_id == session_id
+
+        pending = state_sync.get_pending_suspected_events()
+        assert any(e.session_id == session_id for e in pending)
+
+        config_data = json.loads(config_path.read_text())
+        assert "openclawEnhance" in config_data

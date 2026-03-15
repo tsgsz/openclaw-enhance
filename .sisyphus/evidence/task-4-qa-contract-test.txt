@@ -1,0 +1,23 @@
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 13 items
+
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_references_sessions_yield PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_round_states PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_max_rounds PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_checkpoint_types PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_defines_duplicate_dispatch_guard PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_agents_md_no_sessions_history_polling PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_references_sessions_yield PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_iterative_round_pattern PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_dispatch_identity PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_no_polling_guidance PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_dispatch_skill_defines_failure_classification PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_render_workspace_includes_bounded_loop_docs PASSED
+tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract::test_render_workspace_proves_worker_discovery PASSED
+
+==================================================================================================================== 13 passed in 0.16s =====================================================================================================================

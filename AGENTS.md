@@ -78,7 +78,7 @@ Before implementing any code:
 
 ## Current Architecture Milestone
 
-**Completed**: `strict-proof-contract-alignment` — Aligned all durable documentation and validation tools with the strict proof contract and `openclaw.json`.
+**Completed**: `real-environment-testing-loop` — Mandatory real-environment validation and report generation is the merge gate for all features.
 
 **See handbook for full current state, orchestration loop rules, and invariants.**
 

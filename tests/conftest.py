@@ -17,4 +17,4 @@ if str(fixtures_path) not in sys.path:
     sys.path.insert(0, str(fixtures_path))
 
 # Import all fixtures from fixtures module
-from fixtures import *  # noqa: F401, F403
+from fixtures import *  # noqa: E402, F401, F403

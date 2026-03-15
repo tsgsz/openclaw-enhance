@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from openclaw_enhance.workspaces import (
     get_workspace_metadata,
     get_workspace_skills,

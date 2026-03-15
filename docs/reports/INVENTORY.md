@@ -1,25 +1,35 @@
 # Validation Report Inventory
 
-This document tracks the canonical validation reports for the current branch and maintains a record of superseded reports.
+This document tracks canonical and superseded validation reports for openclaw-enhance, including the Canonical Current-Branch Backfill.
 
 ## Canonical Current-Branch Backfill
 
-These reports represent the baseline validation for core primitives in the current branch.
+These are the authoritative validation reports for each feature slug:
 
-| Feature Capability | Canonical Slug | Feature Class | Report File | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| Core Installation | `backfill-core-install` | `install-lifecycle` | `2026-03-15-backfill-core-install-install-lifecycle.md` | PASS |
-| Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `2026-03-15-backfill-dev-install-install-lifecycle.md` | PASS |
-| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `2026-03-15-backfill-cli-surface-cli-surface.md` | PASS |
-| Orchestrator Yield | `backfill-routing-yield` | `workspace-routing` | `2026-03-15-backfill-routing-yield-workspace-routing.md` | PASS |
-| Recovery Worker | `backfill-recovery-worker` | `workspace-routing` | `2026-03-15-backfill-recovery-worker-workspace-routing.md` | PASS |
-| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md` | PASS |
+| Slug | Report File | Date | Conclusion |
+|------|-------------|------|------------|
+| backfill-core-install | [2026-03-14-backfill-core-install-install-lifecycle.md](./2026-03-14-backfill-core-install-install-lifecycle.md) | 2026-03-14 | PASS |
+| backfill-dev-install | [2026-03-14-backfill-dev-install-install-lifecycle.md](./2026-03-14-backfill-dev-install-install-lifecycle.md) | 2026-03-14 | PASS |
+| backfill-cli-surface | [2026-03-14-backfill-cli-surface-cli-surface.md](./2026-03-14-backfill-cli-surface-cli-surface.md) | 2026-03-14 | PASS |
+| backfill-routing-yield | [2026-03-15-backfill-routing-yield-workspace-routing.md](./2026-03-15-backfill-routing-yield-workspace-routing.md) | 2026-03-15 | PASS |
+| backfill-recovery-worker | [2026-03-15-backfill-recovery-worker-workspace-routing.md](./2026-03-15-backfill-recovery-worker-workspace-routing.md) | 2026-03-15 | PASS |
+| backfill-watchdog-reminder | [2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-15 | PASS |
 
 ## Superseded Reports
 
-These reports have been replaced by newer versions or are from previous architectural milestones.
+These reports have been replaced by newer canonical versions:
 
-| Date | Slug | Feature Class | Reason for Supersession |
-| :--- | :--- | :--- | :--- |
-| 2026-03-13 | `initial-install-test` | `install-lifecycle` | Replaced by canonical backfill |
-| 2026-03-13 | `router-smoke-test` | `workspace-routing` | Replaced by canonical backfill |
+| Report File | Date | Superseded By | Reason |
+|-------------|------|---------------|--------|
+| [2026-03-15-backfill-core-install-install-lifecycle.md](./2026-03-15-backfill-core-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-core-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-dev-install-install-lifecycle.md](./2026-03-15-backfill-dev-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-dev-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-cli-surface-cli-surface.md](./2026-03-15-backfill-cli-surface-cli-surface.md) | 2026-03-15 | 2026-03-14-backfill-cli-surface-cli-surface.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-14-backfill-routing-yield-workspace-routing.md](./2026-03-14-backfill-routing-yield-workspace-routing.md) | 2026-03-14 | 2026-03-15-backfill-routing-yield-workspace-routing.md | Replaced by live runtime-surface proof using real OpenClaw agent/session metadata |
+| [2026-03-14-backfill-recovery-worker-workspace-routing.md](./2026-03-14-backfill-recovery-worker-workspace-routing.md) | 2026-03-14 | 2026-03-15-backfill-recovery-worker-workspace-routing.md | Replaced by live runtime-surface proof using real OpenClaw agent/session metadata |
+| [2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-14 | 2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md | Replaced by regenerated live watchdog proof on the current runtime contract |
+
+## Notes
+
+- The canonical routing/recovery reports use the strongest honest runtime-backed proof available in the current OpenClaw environment: real session creation, live tool surface, transcript-path discovery, and initialized runtime identity.
+- The superseded 2026-03-14 routing/recovery reports relied on static render-oriented proof instead of runtime-backed OpenClaw evidence.
+- The canonical watchdog report is now the regenerated 2026-03-15 runtime-watchdog PASS report.

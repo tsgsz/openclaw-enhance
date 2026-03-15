@@ -18,15 +18,22 @@ from openclaw_enhance.validation.types import (
 )
 
 
+def _resolve_config_path(openclaw_home: Path) -> Path:
+    openclaw_json = openclaw_home / "openclaw.json"
+    if openclaw_json.exists():
+        return openclaw_json
+    return openclaw_home / "config.json"
+
+
 def _capture_baseline(openclaw_home: Path) -> BaselineState:
     from openclaw_enhance.install.manifest import load_manifest
     from openclaw_enhance.paths import managed_root
 
-    target_root = managed_root()
+    target_root = managed_root(openclaw_home.parent)
     manifest = load_manifest(target_root)
     is_installed = manifest is not None
     version = manifest.version if manifest else None
-    config_path = openclaw_home / "config.json"
+    config_path = _resolve_config_path(openclaw_home)
 
     return BaselineState(
         openclaw_home=openclaw_home,
@@ -48,12 +55,11 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
     """
     start = time.time()
 
-    # Ensure we can find workspaces during validation even if not installed
-    # by pointing to the repository's workspaces directory.
     env = os.environ.copy()
     project_root = Path(__file__).parent.parent.parent.parent
     env["OPENCLAW_ENHANCE_WORKSPACES_DIR"] = str(project_root / "workspaces")
     env["OPENCLAW_HOME"] = str(openclaw_home)
+    env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
 
     result = subprocess.run(
         cmd,

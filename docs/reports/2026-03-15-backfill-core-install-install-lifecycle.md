@@ -9,7 +9,7 @@
 
 - OpenClaw Home: `/Users/tsgsz/.openclaw`
 - Installed: False
-- Config Exists: True
+- Config Exists: True (openclaw.json)
 
 ## Execution Log
 
@@ -20,7 +20,7 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.11s
+- Duration: 0.10s
 
 **stdout:**
 ```
@@ -34,7 +34,7 @@ python -m openclaw_enhance.cli install
 ```
 
 - Exit Code: 0
-- Duration: 0.26s
+- Duration: 0.23s
 
 **stdout:**
 ```
@@ -49,14 +49,14 @@ python -m openclaw_enhance.cli status
 ```
 
 - Exit Code: 0
-- Duration: 0.10s
+- Duration: 0.09s
 
 **stdout:**
 ```
 Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 0.1.0
-Install Time: 2026-03-15T04:21:56.411580
+Install Time: 2026-03-15T07:01:38.263235
 Components (12):
   - workspace:oe-watchdog
   - workspace:oe-orchestrator
@@ -79,7 +79,7 @@ python -m openclaw_enhance.cli doctor
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.07s
 
 **stdout:**
 ```

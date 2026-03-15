@@ -1,13 +1,9 @@
 """Tests for development mode install functionality."""
 
 import sys
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import patch
 
 from openclaw_enhance.install.installer import _sync_workspaces, preflight_checks
-from openclaw_enhance.install.main_skill_sync import sync_main_skills
 from openclaw_enhance.install.manifest import ComponentInstall, InstallManifest
 
 

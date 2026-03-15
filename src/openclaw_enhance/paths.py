@@ -62,3 +62,18 @@ def resolve_main_workspace(
 
 def main_workspace_skills_dir(workspace_path: Path) -> Path:
     return workspace_path / "skills"
+
+
+def resolve_openclaw_config_path(openclaw_home: Path) -> Path:
+    """Resolve OpenClaw config path, preferring openclaw.json over config.json.
+
+    Args:
+        openclaw_home: Path to OpenClaw home directory.
+
+    Returns:
+        Path to openclaw.json if it exists, otherwise config.json.
+    """
+    openclaw_json = openclaw_home / "openclaw.json"
+    if openclaw_json.exists():
+        return openclaw_json
+    return openclaw_home / "config.json"

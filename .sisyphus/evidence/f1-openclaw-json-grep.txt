@@ -1,0 +1,5 @@
+COMMAND: grep -q openclaw.json docs/testing-playbook.md docs/troubleshooting.md docs/adr/0001-managed-namespace.md
+EXIT_CODE: 0
+--- STDOUT ---
+
+--- STDERR ---

@@ -238,7 +238,7 @@ The repository is in **stable maintenance mode** for the bounded-loop orchestrat
 - Core routing: skill contracts + native `sessions_spawn`.
 - Installer: syncs main skills, symmetric uninstall.
 - Validation: `docs-check` enforces alignment.
-- Workers: 4 specialized agents with strict boundaries.
+- Workers: 5 specialized agents with strict boundaries.
 - No planned breaking changes to architecture.
 
 ### Where to Record Future Progress
@@ -325,6 +325,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.3.0  
-**Last Updated**: 2026-03-14  
+**Version**: 1.3.1  
+**Last Updated**: 2026-03-15  
 **Milestone**: real-environment-testing-loop COMPLETE

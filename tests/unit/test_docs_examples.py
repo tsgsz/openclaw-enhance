@@ -3,7 +3,6 @@
 This module tests that code examples in documentation are valid and executable.
 """
 
-import json
 import re
 import subprocess
 from pathlib import Path

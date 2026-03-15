@@ -33,8 +33,8 @@ def mock_openclaw_home(tmp_path: Path) -> Path:
     version_file = openclaw_home / "VERSION"
     version_file.write_text("2026.3.1\n")
 
-    # Create a minimal config file
-    config_file = openclaw_home / "config.json"
+    # Create openclaw.json (canonical config)
+    config_file = openclaw_home / "openclaw.json"
     config_file.write_text(json.dumps({"test": True}) + "\n")
 
     return openclaw_home
@@ -50,8 +50,8 @@ def mock_openclaw_home_with_agents(tmp_path: Path) -> Path:
     version_file = openclaw_home / "VERSION"
     version_file.write_text("2026.3.1\n")
 
-    # Create config file
-    config_file = openclaw_home / "config.json"
+    # Create openclaw.json (canonical config)
+    config_file = openclaw_home / "openclaw.json"
     config_file.write_text(json.dumps({"test": True}) + "\n")
 
     # Create AGENTS.md
@@ -78,8 +78,8 @@ def clean_managed_root(tmp_path: Path) -> Generator[Path, None, None]:
     Yields:
         Path to the managed root directory.
     """
-    from openclaw_enhance.paths import managed_root
     from openclaw_enhance.install import uninstall
+    from openclaw_enhance.paths import managed_root
 
     user_home = tmp_path / "test_user"
     target_root = managed_root(user_home)
@@ -103,6 +103,7 @@ def sample_manifest_data() -> dict:
         Dictionary with sample manifest data.
     """
     from datetime import datetime
+
     from openclaw_enhance.constants import VERSION
 
     return {

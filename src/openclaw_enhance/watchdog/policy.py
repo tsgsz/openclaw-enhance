@@ -8,9 +8,8 @@ the watchdog should take.
 from dataclasses import dataclass, field
 from datetime import timedelta
 from enum import Enum, auto
-from typing import Callable
 
-from openclaw_enhance.watchdog.detector import SessionStatus, TimeoutEvent
+from openclaw_enhance.watchdog.detector import TimeoutEvent
 
 
 class ActionType(Enum):
@@ -133,7 +132,7 @@ class PolicyEngine:
     appropriate actions for the watchdog to take.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the policy engine with default policies."""
         self._policies: dict[str, TimeoutPolicy] = {}
         self._session_policies: dict[str, str] = {}

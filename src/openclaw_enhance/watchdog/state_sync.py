@@ -9,12 +9,11 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openclaw_enhance.paths import ensure_managed_directories, runtime_state_file
 from openclaw_enhance.runtime.schema import RuntimeState
 from openclaw_enhance.watchdog.detector import (
-    RuntimeStore as RuntimeStoreProtocol,
     SessionStatus,
     TimeoutEvent,
 )
@@ -98,7 +97,10 @@ class StateSync:
             return RuntimeState().model_dump()
 
         try:
-            return json.loads(self._state_path.read_text(encoding="utf-8"))
+            raw_state = json.loads(self._state_path.read_text(encoding="utf-8"))
+            if isinstance(raw_state, dict):
+                return cast(dict[str, Any], raw_state)
+            return RuntimeState().model_dump()
         except (json.JSONDecodeError, FileNotFoundError):
             return RuntimeState().model_dump()
 

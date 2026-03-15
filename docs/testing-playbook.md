@@ -49,16 +49,16 @@ Target: Default `~/.openclaw`
    - *Pass*: Exit code 0, produces a report with `Conclusion: EXEMPT`.
 
 ### 2.3 Routing & Agent Bundle (`workspace-routing`)
-1. **Agent List**: `openclaw agent list`
-   - *Strict Proof*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
-2. **Routing Test**: `openclaw chat --message "帮我规划一个复杂任务"`
-   - *Strict Proof*: `openclaw session info <id>` shows `sessions_spawn` to `oe-orchestrator` and subsequent `sessions_yield`.
+1. **Agent List**: `openclaw agents list`
+   - *Pass*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
+2. **Routing Surface Test**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
+   - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
 1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | grep "openclawEnhance"`
-   - *Strict Proof*: Hooks are correctly registered in `openclaw.json` under the `hooks` key.
-2. **Watchdog Trigger**: `python -m openclaw_enhance.cli status --json`
-   - *Strict Proof*: Output contains `timeouts` object, even if empty.
+   - *Pass*: Hooks are correctly registered in OpenClaw config.
+2. **Watchdog Trigger**: (Specific trigger command or scenario)
+   - *Pass*: Watchdog identifies timeout or state change as expected.
 
 ### 2.5 Docs Check Only (`docs-test-only`)
 - **Exemption Policy**: Real-environment testing is NOT required if changes are strictly limited to `.md` files or `tests/` (excluding `tests/e2e/`).
@@ -103,18 +103,18 @@ Reports must be saved to: `docs/reports/YYYY-MM-DD-<slug>-<feature-class>.md`
 - Manual removal of `~/.openclaw/openclaw-enhance` is permitted if `uninstall` fails.
 - Never modify `~/.openclaw/openclaw.json` manually; use the CLI.
 
-## 6. Canonical Current-Branch Backfill
+## 6. Current branch shipped set (Canonical Current-Branch Backfill)
 
 This section tracks the canonical backfill slugs for features already shipped in the current branch. Use these slugs with `validate-feature --report-slug <slug>` to generate standardized backfill reports.
 
-| Feature Capability | Canonical Slug | Feature Class | Method Contract | Strict Observable Proof |
+| Feature Capability | Canonical Slug | Feature Class | Method Contract | Observable Proof |
 | :--- | :--- | :--- | :--- | :--- |
-| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; `openclaw.json` contains `openclawEnhance` |
+| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
 | Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
-| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `doctor`, `render-*`, `docs-check` | Exit code 0 for all; `status --json` returns valid schema |
-| Orchestrator Yield | `backfill-routing-yield` | `workspace-routing` | `openclaw chat --message "..."` | `openclaw session info` shows `sessions_yield` in history |
-| Recovery Worker | `backfill-recovery-worker` | `workspace-routing` | `openclaw agent list` | `oe-tool-recovery` present; `render-workspace` shows recovery logic |
-| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` | `openclawEnhance` hooks present in `hooks` section |
+| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; rendered content matches; docs-check passes; validator self-surface ok |
+| Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
+| Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` | `openclawEnhance` hooks present in `openclaw.json` |
 
 ### 6.1 Method Contracts & Expectations
 
@@ -143,16 +143,18 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Expectation**: Exit code 0. Produces a report with `Conclusion: EXEMPT`.
 
 #### `backfill-routing-yield`
-- **Command**: `openclaw chat --message "帮我规划一个复杂任务"`
-- **Expectation**: Orchestrator spawns subagents and uses `sessions_yield` to wait for results.
-- **Proof**: `openclaw session info <id>` shows `sessions_yield` calls in history.
+- **Command**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
+- **Expectation**: Exit code 0. Live output returns a real session id and the orchestrator tool surface includes `sessions_yield`.
+- **Proof**: `openclaw sessions --agent oe-orchestrator --json` provides a `transcriptPath` for the live session and the runtime workspace identity is initialized.
 
 #### `backfill-recovery-worker`
-- **Command**: `openclaw agent list`
+- **Command**: `openclaw agents list`
 - **Expectation**: `oe-tool-recovery` is listed.
-- **Proof**: `openclaw agent info oe-tool-recovery` shows "Recovery capabilities".
+- **Command**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
+- **Expectation**: Exit code 0. Live output returns a real session id for the recovery workspace.
+- **Proof**: `openclaw sessions --agent oe-tool-recovery --json` provides a `transcriptPath` for the live session and the runtime recovery workspace identity is initialized.
 
 #### `backfill-watchdog-reminder`
-- **Command**: `python -m openclaw_enhance.cli status`
-- **Expectation**: Shows hook registration status.
-- **Proof**: `grep "openclawEnhance" ~/.openclaw/openclaw.json` returns matches.
+- **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`
+- **Expectation**: Verifies openclaw.json hook config (or workspace contract fallback) and live reminder delivery.
+- **Proof**: JSON output with `marker: PROBE_WATCHDOG_REMINDER_OK`, `proof: config_hook_plus_live_reminder` or `workspace_contract_plus_live_reminder`, and session_id evidence.

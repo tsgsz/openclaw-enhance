@@ -1,0 +1,15 @@
+....................                                                                                                                                                                                                                                  [100%]
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/unit/test_real_env_validation.py: 2 warnings
+tests/integration/test_validation_real_env.py: 67 warnings
+  <string>:8: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_validation.py: 1 warning
+tests/integration/test_validation_real_env.py: 14 warnings
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_validation_real_env.py: 14 warnings
+  <string>:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+20 passed, 98 warnings in 0.05s

@@ -47,7 +47,7 @@ def capture_baseline_state(openclaw_home: Path) -> BaselineState:
     # Harness readiness checks for canonical ~/.openclaw
     _verify_harness_readiness(openclaw_home)
 
-    target_root = managed_root()
+    target_root = managed_root(openclaw_home.parent)
 
     # Check if installed
     manifest = load_manifest(target_root)
@@ -92,7 +92,9 @@ def _check_ownership(target_root: Path) -> bool:
 
 def _capture_config_state(openclaw_home: Path) -> dict[str, Any]:
     """Capture config.json state."""
-    config_path = openclaw_home / "config.json"
+    from openclaw_enhance.paths import resolve_openclaw_config_path
+
+    config_path = resolve_openclaw_config_path(openclaw_home)
     if not config_path.exists():
         return {"exists": False}
 
@@ -114,7 +116,7 @@ def _capture_managed_root_state(target_root: Path) -> dict[str, Any]:
     if not target_root.exists():
         return {"exists": False}
 
-    state = {"exists": True, "contents": []}
+    state: dict[str, Any] = {"exists": True, "contents": []}
 
     try:
         for item in target_root.iterdir():
@@ -140,6 +142,8 @@ def _verify_harness_readiness(openclaw_home: Path) -> None:
     Raises:
         RuntimeError: If harness readiness checks fail.
     """
+    from openclaw_enhance.paths import resolve_openclaw_config_path
+
     if not openclaw_home.exists():
         raise RuntimeError(
             f"unsupported/missing-home: OpenClaw home {openclaw_home} does not exist"
@@ -149,9 +153,12 @@ def _verify_harness_readiness(openclaw_home: Path) -> None:
     if not version_file.exists():
         raise RuntimeError(f"unsupported/missing-home: missing VERSION file under {openclaw_home}")
 
-    config_file = openclaw_home / "config.json"
-    if not config_file.exists():
-        raise RuntimeError(f"unsupported/missing-home: missing config.json under {openclaw_home}")
+    config_path = resolve_openclaw_config_path(openclaw_home)
+    if not config_path.exists():
+        raise RuntimeError(
+            f"unsupported/missing-home: missing OpenClaw config "
+            f"(openclaw.json or config.json) under {openclaw_home}"
+        )
 
 
 def verify_ownership(state: BaselineState) -> bool:
@@ -167,8 +174,9 @@ def verify_ownership(state: BaselineState) -> bool:
         ForeignStateError: If state is foreign or unsafe.
     """
     if state.is_installed and not state.owned_by_checkout:
+        target_root = managed_root(state.openclaw_home.parent)
         raise ForeignStateError(
-            f"Target {managed_root()} appears to be managed by a different installation. "
+            f"Target {target_root} appears to be managed by a different installation. "
             "Refusing to mutate foreign state."
         )
 

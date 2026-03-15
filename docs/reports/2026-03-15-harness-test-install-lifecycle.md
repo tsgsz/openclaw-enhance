@@ -56,7 +56,7 @@ python -m openclaw_enhance.cli status
 Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 0.1.0
-Install Time: 2026-03-15T06:46:32.888477
+Install Time: 2026-03-15T07:36:31.382483
 Components (12):
   - workspace:oe-watchdog
   - workspace:oe-orchestrator

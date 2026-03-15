@@ -1,0 +1,11 @@
+docs/testing-playbook.md:- **Expectation**: Verifies openclaw.json hook config (or workspace contract fallback) and live reminder delivery.
+docs/troubleshooting.md:cat ~/.openclaw/openclaw.json | jq '.agents'
+docs/troubleshooting.md:cat ~/.openclaw/openclaw.json | jq '.hooks'
+docs/troubleshooting.md:   cp ~/.openclaw/openclaw-enhance/backups/openclaw.json.bak \
+docs/troubleshooting.md:      ~/.openclaw/openclaw.json
+docs/troubleshooting.md:   cat ~/.openclaw/openclaw.json | jq '.hooks'
+docs/troubleshooting.md:cp ~/.openclaw/openclaw-enhance/backups/openclaw.json.bak \
+docs/troubleshooting.md:   ~/.openclaw/openclaw.json
+docs/adr/0001-managed-namespace.md:│   └── openclaw.json.bak         # Pre-install config backup
+docs/adr/0001-managed-namespace.md:Enhancement-owned config keys in `openclaw.json`:
+docs/adr/0001-managed-namespace.md:### 3. Store everything in openclaw.json

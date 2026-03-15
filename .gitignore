@@ -236,3 +236,5 @@ workspaces/*/
 !workspaces/oe-script_coder/**
 !workspaces/oe-watchdog/
 !workspaces/oe-watchdog/**
+!workspaces/oe-tool-recovery/
+!workspaces/oe-tool-recovery/**
