@@ -1,9 +1,9 @@
-# Validation Report: backfill-dev-install
+# Validation Report: backfill-core-install
 
-- **Date**: 2026-03-14
+- **Date**: 2026-03-15
 - **Feature Class**: install-lifecycle
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- Conclusion: PASS
+- **Conclusion**: PASS
 
 ## Baseline State
 
@@ -20,7 +20,7 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.11s
 
 **stdout:**
 ```
@@ -30,11 +30,11 @@ Result: openclaw-enhance is not installed
 ### Command 2: ✓ PASS
 
 ```bash
-python -m openclaw_enhance.cli install --dev
+python -m openclaw_enhance.cli install
 ```
 
 - Exit Code: 0
-- Duration: 0.19s
+- Duration: 0.26s
 
 **stdout:**
 ```
@@ -49,14 +49,14 @@ python -m openclaw_enhance.cli status
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.10s
 
 **stdout:**
 ```
 Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 0.1.0
-Install Time: 2026-03-14T15:00:02.418972
+Install Time: 2026-03-15T04:21:56.411580
 Components (12):
   - workspace:oe-watchdog
   - workspace:oe-orchestrator
@@ -79,7 +79,7 @@ python -m openclaw_enhance.cli doctor
 ```
 
 - Exit Code: 0
-- Duration: 0.07s
+- Duration: 0.08s
 
 **stdout:**
 ```
@@ -93,7 +93,7 @@ python -m openclaw_enhance.cli uninstall
 ```
 
 - Exit Code: 0
-- Duration: 0.08s
+- Duration: 0.10s
 
 **stdout:**
 ```

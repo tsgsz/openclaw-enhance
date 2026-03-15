@@ -368,6 +368,43 @@ class TestDocumentationCompleteness:
             assert "uninstall" in content.lower()
 
 
+class TestReportInventory:
+    """Test validation report inventory."""
+
+    def test_inventory_exists(self) -> None:
+        """Ensure INVENTORY.md exists."""
+        inventory_path = DOCS_DIR / "reports" / "INVENTORY.md"
+        assert inventory_path.exists(), "INVENTORY.md not found"
+
+    def test_inventory_has_required_sections(self) -> None:
+        """Ensure INVENTORY.md has required sections."""
+        inventory_path = DOCS_DIR / "reports" / "INVENTORY.md"
+        if not inventory_path.exists():
+            pytest.skip("INVENTORY.md not found")
+
+        content = inventory_path.read_text()
+
+        assert "## Canonical Current-Branch Backfill" in content
+        assert "## Superseded Reports" in content
+
+    def test_inventory_references_valid_reports(self) -> None:
+        """Ensure inventory references reports that exist."""
+        inventory_path = DOCS_DIR / "reports" / "INVENTORY.md"
+        if not inventory_path.exists():
+            pytest.skip("INVENTORY.md not found")
+
+        content = inventory_path.read_text()
+        # Match filenames like 2026-03-14-backfill-core-install-install-lifecycle.md
+        report_pattern = r"\d{4}-\d{2}-\d{2}-[\w-]+-[\w-]+\.md"
+        matches = re.findall(report_pattern, content)
+
+        reports_dir = DOCS_DIR / "reports"
+        for report_file in matches:
+            assert (reports_dir / report_file).exists(), (
+                f"Referenced report not found: {report_file}"
+            )
+
+
 class TestOpencodePlaybookDocs:
     """Test opencode iteration playbook documentation."""
 

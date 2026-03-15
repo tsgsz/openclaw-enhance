@@ -57,6 +57,8 @@ cat "$HOME/.openclaw/VERSION"
 
 # Verify OpenClaw home exists
 ls -la "$HOME/.openclaw"
+# Verify openclaw.json exists
+ls -la "$HOME/.openclaw/openclaw.json"
 ```
 
 ### Step 2: Clone and Setup
@@ -118,7 +120,7 @@ The installer will:
 2. Register `oe-*` agents with OpenClaw
 3. Copy main-session skills to active workspace
 4. Enable hooks via OpenClaw CLI
-5. Update config with owned keys only
+5. Update config with owned keys only (openclaw.json)
 6. Create backup of original config
 
 **Installation order** (symmetric with uninstall):

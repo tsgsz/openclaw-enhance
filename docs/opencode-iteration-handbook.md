@@ -211,6 +211,16 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Validation of all core enhancement primitives in a clean environment.
 - Success criteria: All six canonical slugs conclude PASS, `docs-check` passes.
 
+**strict-proof-contract-alignment** — COMPLETE
+- Date: 2026-03-15
+- Scope: Aligned all durable documentation and validation tools with the strict proof contract and `openclaw.json`.
+- Deliverables:
+  - `docs/reports/INVENTORY.md` created with canonical vs superseded semantics.
+  - `docs-check` extended to include testing playbook and inventory.
+  - All `config.json` references replaced with `openclaw.json`.
+  - Method contracts in `docs/testing-playbook.md` updated to "Strict Proof" semantics.
+- Success criteria: `docs-check` passes, inventory validation tests pass.
+
 **real-environment-testing-loop** — COMPLETE
 - Date: 2026-03-14
 - Scope: Implemented mandatory real-environment validation loop for all features.

@@ -33,9 +33,14 @@ Each report must include the following sections:
 
 ## Retention Policy
 
-Validation reports are permanent records. They should be committed to the repository along with the code changes they validate. Do not delete reports unless they were created in error or are being replaced by a more accurate version for the same change.
+Validation reports are permanent records. They should be committed to the repository along with the code changes they validate. The [INVENTORY.md](./INVENTORY.md) tracks the canonical status of these reports. Do not delete reports unless they were created in error or are being replaced by a more accurate version for the same change.
+
+## Strict Proof Bundles
+
+All reports must align with the "Strict Proof" bundles defined in the [Testing Playbook](../testing-playbook.md). This means every PASS conclusion must be backed by observable evidence from `openclaw.json` or CLI output.
 
 ## Templates and Examples
 
 - [Canonical Template](./template.md)
+- [Inventory](./INVENTORY.md)
 - [Examples](./examples/)

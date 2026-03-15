@@ -50,15 +50,15 @@ Target: Default `~/.openclaw`
 
 ### 2.3 Routing & Agent Bundle (`workspace-routing`)
 1. **Agent List**: `openclaw agent list`
-   - *Pass*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
+   - *Strict Proof*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
 2. **Routing Test**: `openclaw chat --message "帮我规划一个复杂任务"`
-   - *Pass*: Session logs show routing to `oe-orchestrator`.
+   - *Strict Proof*: `openclaw session info <id>` shows `sessions_spawn` to `oe-orchestrator` and subsequent `sessions_yield`.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
-1. **Hook Verification**: `cat ~/.openclaw/config.json | grep "openclawEnhance"`
-   - *Pass*: Hooks are correctly registered in OpenClaw config.
-2. **Watchdog Trigger**: (Specific trigger command or scenario)
-   - *Pass*: Watchdog identifies timeout or state change as expected.
+1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | grep "openclawEnhance"`
+   - *Strict Proof*: Hooks are correctly registered in `openclaw.json` under the `hooks` key.
+2. **Watchdog Trigger**: `python -m openclaw_enhance.cli status --json`
+   - *Strict Proof*: Output contains `timeouts` object, even if empty.
 
 ### 2.5 Docs Check Only (`docs-test-only`)
 - **Exemption Policy**: Real-environment testing is NOT required if changes are strictly limited to `.md` files or `tests/` (excluding `tests/e2e/`).
@@ -101,20 +101,20 @@ Reports must be saved to: `docs/reports/YYYY-MM-DD-<slug>-<feature-class>.md`
 - Always target the default `~/.openclaw` unless explicitly overridden.
 - The `uninstall` command is the primary cleanup mechanism.
 - Manual removal of `~/.openclaw/openclaw-enhance` is permitted if `uninstall` fails.
-- Never modify `~/.openclaw/config.json` manually; use the CLI.
+- Never modify `~/.openclaw/openclaw.json` manually; use the CLI.
 
 ## 6. Current branch shipped set
 
 This section tracks the canonical backfill slugs for features already shipped in the current branch. Use these slugs with `validate-feature --report-slug <slug>` to generate standardized backfill reports.
 
-| Feature Capability | Canonical Slug | Feature Class | Method Contract | Observable Proof |
+| Feature Capability | Canonical Slug | Feature Class | Method Contract | Strict Observable Proof |
 | :--- | :--- | :--- | :--- | :--- |
-| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
+| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; `openclaw.json` contains `openclawEnhance` |
 | Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
-| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; rendered content matches; docs-check passes; validator self-surface ok |
-| Orchestrator Yield | `backfill-routing-yield` | `workspace-routing` | `openclaw chat --message "帮我规划一个复杂任务"` | Session logs show `oe-orchestrator` using `sessions_yield` for sync |
-| Recovery Worker | `backfill-recovery-worker` | `workspace-routing` | `openclaw agent list` | `oe-tool-recovery` appears in agent list with correct capabilities |
-| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `doctor`, `render-*`, `docs-check` | Exit code 0 for all; `status --json` returns valid schema |
+| Orchestrator Yield | `backfill-routing-yield` | `workspace-routing` | `openclaw chat --message "..."` | `openclaw session info` shows `sessions_yield` in history |
+| Recovery Worker | `backfill-recovery-worker` | `workspace-routing` | `openclaw agent list` | `oe-tool-recovery` present; `render-workspace` shows recovery logic |
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` | `openclawEnhance` hooks present in `hooks` section |
 
 ### 6.1 Method Contracts & Expectations
 
@@ -155,4 +155,4 @@ This section tracks the canonical backfill slugs for features already shipped in
 #### `backfill-watchdog-reminder`
 - **Command**: `python -m openclaw_enhance.cli status`
 - **Expectation**: Shows hook registration status.
-- **Proof**: `grep "openclawEnhance" ~/.openclaw/config.json` returns matches.
+- **Proof**: `grep "openclawEnhance" ~/.openclaw/openclaw.json` returns matches.

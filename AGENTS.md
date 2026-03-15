@@ -78,7 +78,7 @@ Before implementing any code:
 
 ## Current Architecture Milestone
 
-**Completed**: `repo-wide-real-env-backfill` — Canonical real-environment validation baseline established for all core enhancement primitives.
+**Completed**: `strict-proof-contract-alignment` — Aligned all durable documentation and validation tools with the strict proof contract and `openclaw.json`.
 
 **See handbook for full current state, orchestration loop rules, and invariants.**
 

@@ -341,6 +341,8 @@ def docs_check() -> None:
         project_root / "docs" / "troubleshooting.md",
         project_root / "docs" / "adr" / "0002-native-subagent-announce.md",
         project_root / "docs" / "opencode-iteration-handbook.md",
+        project_root / "docs" / "testing-playbook.md",
+        project_root / "docs" / "reports" / "INVENTORY.md",
     ]
 
     required_terms = ["sessions_spawn"]
