@@ -103,7 +103,7 @@ Reports must be saved to: `docs/reports/YYYY-MM-DD-<slug>-<feature-class>.md`
 - Manual removal of `~/.openclaw/openclaw-enhance` is permitted if `uninstall` fails.
 - Never modify `~/.openclaw/openclaw.json` manually; use the CLI.
 
-## 6. Current branch shipped set
+## 6. Canonical Current-Branch Backfill
 
 This section tracks the canonical backfill slugs for features already shipped in the current branch. Use these slugs with `validate-feature --report-slug <slug>` to generate standardized backfill reports.
 
