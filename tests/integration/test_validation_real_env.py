@@ -176,12 +176,106 @@ class TestValidateFeatureCommandOrdering:
 
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        assert len(calls) >= 5
+        assert len(calls) >= 6
         assert "uninstall" in calls[0]
         assert "install --dev" in calls[1]
-        assert "status" in calls[2]
-        assert "doctor" in calls[3]
-        assert "uninstall" in calls[4]
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[2]
+        assert "dev-symlink" in calls[2]
+        assert "status" in calls[3]
+        assert "doctor" in calls[4]
+        assert "uninstall" in calls[5]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_workspace_routing_uses_routing_probe(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        runner = CliRunner()
+        runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "backfill-routing-yield",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        calls = [call[0][0] for call in mock_run.call_args_list]
+        assert len(calls) == 2
+        assert "render-workspace oe-orchestrator" in calls[0]
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[1]
+        assert "routing-yield" in calls[1]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_workspace_routing_uses_recovery_probe(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        runner = CliRunner()
+        runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "backfill-recovery-worker",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        calls = [call[0][0] for call in mock_run.call_args_list]
+        assert len(calls) == 2
+        assert "render-workspace oe-orchestrator" in calls[0]
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[1]
+        assert "recovery-worker" in calls[1]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_runtime_watchdog_uses_watchdog_probe(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        runner = CliRunner()
+        runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "runtime-watchdog",
+                "--report-slug",
+                "backfill-watchdog-reminder",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        calls = [call[0][0] for call in mock_run.call_args_list]
+        assert len(calls) == 1
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
+        assert "watchdog-reminder" in calls[0]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_cli_surface_command_order(
@@ -225,6 +319,8 @@ class TestValidateFeatureCommandOrdering:
         for env in envs:
             assert "OPENCLAW_ENHANCE_WORKSPACES_DIR" in env
             assert "workspaces" in env["OPENCLAW_ENHANCE_WORKSPACES_DIR"]
+            assert env["OPENCLAW_HOME"] == str(mock_openclaw_home)
+            assert env["OPENCLAW_CONFIG_PATH"].endswith("config.json")
 
 
 class TestValidateFeatureExemptions:

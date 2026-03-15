@@ -6,10 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing import TYPE_CHECKING
 
 
 class FeatureClass(Enum):
@@ -104,6 +100,10 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             return [
                 "python -m openclaw_enhance.cli uninstall",
                 "python -m openclaw_enhance.cli install --dev",
+                (
+                    "python -m openclaw_enhance.validation.live_probes dev-symlink "
+                    '--openclaw-home "$OPENCLAW_HOME" --workspace oe-orchestrator'
+                ),
                 "python -m openclaw_enhance.cli status",
                 "python -m openclaw_enhance.cli doctor",
                 "python -m openclaw_enhance.cli uninstall",
@@ -118,28 +118,22 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             ]
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
-        project_root = Path(__file__).parent.parent.parent.parent
-
         if "recovery" in slug:
-            pytest_cmd = (
-                f"cd {project_root} && pytest "
-                "tests/integration/test_orchestrator_dispatch_contract.py::"
-                "TestOrchestratorRecoveryFlow::test_websearch_not_found_recovery_executable "
-                "-xvs"
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes recovery-worker "
+                '--openclaw-home "$OPENCLAW_HOME" --worker oe-tool-recovery'
             )
         else:
-            pytest_cmd = (
-                f"cd {project_root} && pytest "
-                "tests/integration/test_orchestrator_dispatch_contract.py::TestBoundedLoopContract "
-                "-q --tb=no"
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes routing-yield "
+                '--openclaw-home "$OPENCLAW_HOME" --workspace oe-orchestrator'
             )
 
         return [
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
-            pytest_cmd,
+            live_probe_cmd,
         ]
 
-    project_root = Path(__file__).parent.parent.parent.parent
     bundles = {
         FeatureClass.CLI_SURFACE: [
             "python -m openclaw_enhance.cli status",
@@ -156,9 +150,8 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
             (
-                f"cd {project_root} && python -m pytest "
-                "tests/integration/test_timeout_flow.py::TestTimeoutFlow::"
-                "test_end_to_end_monitoring_cycle -xvs"
+                "python -m openclaw_enhance.validation.live_probes watchdog-reminder "
+                '--openclaw-home "$OPENCLAW_HOME"'
             ),
         ],
         FeatureClass.DOCS_TEST_ONLY: [
