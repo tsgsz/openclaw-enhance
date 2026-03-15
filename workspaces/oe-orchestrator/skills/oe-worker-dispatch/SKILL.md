@@ -28,6 +28,59 @@ Use this skill when:
 - Monitoring long-running tasks
 - Aggregating results from multiple sources
 
+## Bounded Orchestration Loop
+
+The Orchestrator uses a bounded multi-round loop for complex work:
+
+```
+Assess -> PlanRound -> DispatchRound -> YieldForResults -> CollectResults -> EvaluateProgress
+                                                                 ↓
+                                         Complete  <- No more work needed
+                                         Blocked   <- Needs main-session decision
+                                         Re-dispatch <- Another round adds new evidence
+```
+
+### Round Outcomes
+
+`EvaluateProgress` must classify each round into one of these outcomes:
+
+- **Complete**: Enough evidence gathered; synthesize and return to main.
+- **Blocked**: External decision required; surface a checkpoint.
+- **Re-dispatch**: Another round is justified by new evidence or narrowed uncertainty.
+- **Recovery Dispatch**: Tool-usage failure requires `oe-tool-recovery`.
+- **Recovery-Assisted Retry**: Retry the original worker with a `RecoveredMethod`.
+- **Escalated**: Recovery failed or retry failed; stop the orchestration.
+
+### Orchestrator-Owned State
+
+The loop state belongs to the Orchestrator, not to `AGENTS.md` body text:
+
+| Field | Purpose |
+|-------|---------|
+| `task_id` | Unique identifier for this orchestration |
+| `round_index` | Current round number |
+| `max_rounds` | default: 3, hard cap: 5 |
+| `pending_dispatches` | Workers currently outstanding |
+| `received_results` | Results collected from completed workers |
+| `blocked_items` | External decisions required from main |
+| `dedupe_keys` | Prevent duplicate dispatches without new evidence |
+| `recovery_attempts` | Per-step retry counter (max 1) |
+| `recovered_methods` | Stored `RecoveredMethod` objects by failed step |
+| `recovery_in_progress` | Prevent nested recovery dispatch |
+| `termination_state` | `active`, `completed`, `blocked`, `exhausted`, `escalated` |
+| `termination_reason` | Human-readable reason for termination |
+
+### Loop Controls
+
+- **Max rounds**: Default 3, hard cap 5.
+- **Max dispatches per round**: Default 3, hard cap 5 concurrent workers.
+- **Incrementality rule**: Only open a new round if it adds new evidence or reduces uncertainty.
+- **Duplicate dispatch guard**: Same worker + objective + context cannot be resent without new evidence.
+- **Blocker escalation**: Two consecutive no-progress evaluations should terminate as `blocked`.
+- **Recovery Cap**: Max ONE recovery-assisted retry per failed step.
+- **No Recovery Loops**: Recovery worker failure or retry failure escalates immediately.
+- **No Worker Handoff**: Recovery never creates worker-to-worker handoff; the Orchestrator remains the sole dispatcher.
+
 ## Discovery-First Worker Routing
 
 The Orchestrator discovers and selects workers dynamically from their `AGENTS.md` frontmatter rather than using hardcoded descriptions. This enables the system to adapt as workers evolve without modifying dispatch logic.
@@ -283,6 +336,14 @@ Orchestrator reports to main only at milestones:
 - Individual worker success within a round
 - Routine round boundaries
 - Internal re-dispatch decisions
+
+### Native Primitive Usage
+
+- **`sessions_spawn`**: The only dispatch path for worker sessions.
+- **`sessions_yield`**: The round-boundary wait primitive used by the Orchestrator.
+- **`announce`**: Worker result delivery path back into the orchestration loop.
+
+Workers remain single-round executors. They do not use `sessions_yield` themselves.
 
 ### Sequential Dispatch (Legacy Pattern)
 ```

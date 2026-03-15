@@ -60,67 +60,31 @@ class TestAgentsMdContent:
         """Load AGENTS.md content."""
         return Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
 
-    def test_has_role_section(self, agents_content):
-        """Should define Orchestrator role."""
-        assert "# Orchestrator Agent Configuration" in agents_content
+    def test_has_frontmatter_manifest(self, agents_content):
+        """Should define routing metadata in YAML frontmatter."""
+        assert agents_content.startswith("---")
+        assert "agent_id: oe-orchestrator" in agents_content
+        assert "workspace: oe-orchestrator" in agents_content
+        assert "routing:" in agents_content
+
+    def test_has_short_operational_sections(self, agents_content):
+        """Should keep only short operational sections in AGENTS.md."""
+        assert "# AGENTS.md - Orchestrator Workspace" in agents_content
+        assert "## Session Startup" in agents_content
         assert "## Role" in agents_content
+        assert "## Boundaries" in agents_content
+        assert "## Skills" in agents_content
 
-    def test_describes_capabilities(self, agents_content):
-        """Should describe capabilities section."""
-        assert "## Capabilities" in agents_content
+    def test_removes_embedded_workflow_manuals(self, agents_content):
+        """Detailed dispatch workflow should live in skills, not AGENTS.md."""
+        assert "## Workflow" not in agents_content
+        assert "Bounded Round-Based Orchestration Loop" not in agents_content
+        assert "## Output Format" not in agents_content
+        assert "task_id" not in agents_content
+        assert "Recovery Cap" not in agents_content
 
-    def test_lists_core_responsibilities(self, agents_content):
-        """Should list core responsibilities."""
-        responsibilities = [
-            "Project Discovery",
-            "Workspace Selection",
-            "Task Splitting",
-            "Worker Dispatch",
-            "Result Synthesis",
-            "Git Context Injection",
-        ]
-        for resp in responsibilities:
-            assert resp in agents_content, f"Missing responsibility: {resp}"
-
-    def test_describes_supported_agent_types(self, agents_content):
-        """Should list supported agent types."""
-        agent_types = ["searcher", "syshelper", "script_coder", "watchdog", "tool_recovery"]
-        for agent in agent_types:
-            assert agent in agents_content, f"Missing agent type: {agent}"
-
-    def test_defines_loop_state_fields(self, agents_content):
-        """Should define mandatory loop state fields."""
-        fields = [
-            "task_id",
-            "round_index",
-            "max_rounds",
-            "pending_dispatches",
-            "received_results",
-            "blocked_items",
-            "dedupe_keys",
-            "recovery_attempts",
-            "recovered_methods",
-            "recovery_in_progress",
-            "termination_state",
-        ]
-        for field in fields:
-            assert field in agents_content, f"Missing state field: {field}"
-
-    def test_documents_recovery_flow(self, agents_content):
-        """Should document tool recovery flow and constraints."""
-        assert "Tool Recovery Flow" in agents_content
-        assert "Recovery Cap" in agents_content
-        assert "No Recovery Loops" in agents_content
-        assert "No Worker Handoff" in agents_content
-        assert "oe-tool-recovery" in agents_content
-
-    def test_describes_workflow(self, agents_content):
-        """Should describe workflow."""
-        assert "## Workflow" in agents_content
-        assert "Bounded Round-Based Orchestration Loop" in agents_content
-
-    def test_lists_available_skills(self, agents_content):
-        """Should list available skills."""
+    def test_references_skills_without_repeating_full_contracts(self, agents_content):
+        """AGENTS.md should point to skills without restating their full logic."""
         skills = [
             "oe-project-registry",
             "oe-worker-dispatch",
@@ -128,7 +92,8 @@ class TestAgentsMdContent:
             "oe-git-context",
         ]
         for skill in skills:
-            assert skill in agents_content, f"Missing skill: {skill}"
+            assert skill in agents_content, f"Missing skill reference: {skill}"
+        assert "skills/" in agents_content
 
 
 class TestToolsMdContent:
@@ -139,30 +104,23 @@ class TestToolsMdContent:
         """Load TOOLS.md content."""
         return Path("workspaces/oe-orchestrator/TOOLS.md").read_text()
 
-    def test_has_title(self, tools_content):
-        """Should have proper title."""
-        assert "# Orchestrator Tools Configuration" in tools_content
+    def test_uses_local_notes_template(self, tools_content):
+        """TOOLS.md should align with local-notes semantics."""
+        assert "# TOOLS.md - Local Notes" in tools_content
+        assert "Skills define how tools work" in tools_content
 
-    def test_describes_core_tools(self, tools_content):
-        """Should describe core tools section."""
-        assert "## Core Tools" in tools_content
-        assert "### Read" in tools_content
-        assert "### Write" in tools_content
-        assert "### Bash" in tools_content
+    def test_keeps_only_workspace_specific_notes(self, tools_content):
+        """TOOLS.md should keep local paths/notes instead of generic manuals."""
+        assert ".sisyphus/plans/" in tools_content
+        assert "project-registry.json" in tools_content
+        assert "workspaces/*/AGENTS.md" in tools_content
 
-    def test_describes_agent_management_tools(self, tools_content):
-        """Should describe agent management tools."""
-        assert "## Agent Management Tools" in tools_content
-        assert "### call_omo_agent" in tools_content
-        assert "### background_output" in tools_content
-
-    def test_has_tool_selection_guide(self, tools_content):
-        """Should have tool selection guide."""
-        assert "## Tool Selection Guide" in tools_content
-
-    def test_defines_output_formats(self, tools_content):
-        """Should define output formats."""
-        assert "## Output Formats" in tools_content
+    def test_removes_tool_policy_duplication(self, tools_content):
+        """Detailed tool usage guides should not remain in TOOLS.md."""
+        assert "## Core Tools" not in tools_content
+        assert "## Agent Management Tools" not in tools_content
+        assert "## Tool Selection Guide" not in tools_content
+        assert "## Output Formats" not in tools_content
 
 
 class TestSkillMdContent:
@@ -296,14 +254,14 @@ class TestWorkspaceRenderingLogic:
         from openclaw_enhance.workspaces import render_workspace
 
         output = render_workspace("oe-orchestrator")
-        assert "# Orchestrator Agent Configuration" in output
+        assert "# AGENTS.md - Orchestrator Workspace" in output
 
     def test_render_includes_tools_md(self):
         """Rendering should include TOOLS.md content."""
         from openclaw_enhance.workspaces import render_workspace
 
         output = render_workspace("oe-orchestrator")
-        assert "# Orchestrator Tools Configuration" in output
+        assert "# TOOLS.md - Local Notes" in output
 
     def test_render_includes_all_skills(self):
         """Rendering should include all skill definitions."""
@@ -336,41 +294,11 @@ class TestCheckpointBehaviorDocumentation:
         """Load worker dispatch SKILL.md content."""
         return Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
 
-    def test_agents_md_documents_checkpoint_semi_visible_model(self, agents_content):
-        """AGENTS.md should document semi-visible checkpoint model for main."""
-        assert "Semi-Visible" in agents_content or "semi-visible" in agents_content.lower()
-        assert "Main sees:" in agents_content or "Main session receives" in agents_content
-        assert "Main does NOT see:" in agents_content
-
-    def test_agents_md_documents_meaningful_progress_checkpoint(self, agents_content):
-        """AGENTS.md should document meaningful_progress checkpoint."""
-        assert "meaningful_progress" in agents_content
-        # Should describe it as optional/suppress routine
-        assert (
-            "optional" in agents_content.lower()
-            or "suppress" in agents_content.lower()
-            or "Significant" in agents_content
-        )
-
-    def test_agents_md_documents_blocked_checkpoint(self, agents_content):
-        """AGENTS.md should document blocked checkpoint for escalation."""
-        assert "blocked" in agents_content
-        # Should describe it as requiring main decision
-        assert "decision" in agents_content.lower() or "intervention" in agents_content.lower()
-
-    def test_agents_md_documents_terminal_checkpoint(self, agents_content):
-        """AGENTS.md should document terminal checkpoint states."""
-        assert (
-            "terminal" in agents_content
-            or "exhausted" in agents_content
-            or "escalated" in agents_content
-        )
-
-    def test_agents_md_no_polling_patterns(self, agents_content):
-        """AGENTS.md should not document polling patterns using sessions_history."""
-        assert "sessions_history" not in agents_content
-        # Should emphasize yield-based waiting
-        assert "sessions_yield" in agents_content
+    def test_agents_md_keeps_checkpoint_details_out_of_bootstrap(self, agents_content):
+        """Checkpoint details should move to the dispatch skill, not AGENTS.md."""
+        assert "meaningful_progress" not in agents_content
+        assert "Main does NOT see:" not in agents_content
+        assert "sessions_yield" not in agents_content
 
     def test_dispatch_skill_documents_checkpoint_visibility(self, dispatch_skill_content):
         """Worker dispatch skill should document checkpoint visibility to main."""

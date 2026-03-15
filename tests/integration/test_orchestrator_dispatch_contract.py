@@ -130,15 +130,14 @@ class TestWorkspaceDiscoveryIntegration:
         for skill in skills:
             assert skill in agents_content, f"AGENTS.md should reference {skill}"
 
-    def test_tools_md_covers_agent_management(self):
-        """TOOLS.md should cover agent management tools."""
+    def test_tools_md_keeps_local_notes_only(self):
+        """TOOLS.md should keep local notes and point to skills."""
         tools_content = Path("workspaces/oe-orchestrator/TOOLS.md").read_text()
 
-        # Should mention call_omo_agent
-        assert "call_omo_agent" in tools_content
-
-        # Should mention background tasks
-        assert "background" in tools_content.lower()
+        assert "Skills define how tools work" in tools_content
+        assert "project-registry.json" in tools_content
+        assert "oe-worker-dispatch" in tools_content
+        assert "call_omo_agent" not in tools_content
 
 
 class TestDispatchWorkflowIntegration:
@@ -302,9 +301,10 @@ class TestOrchestratorEndToEndWorkflow:
         agents = Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
         assert "oe-project-registry" in agents
 
-        # TOOLS should reference agents
+        # TOOLS should stay as local notes and point to skills
         tools = Path("workspaces/oe-orchestrator/TOOLS.md").read_text()
-        assert "call_omo_agent" in tools
+        assert "oe-worker-dispatch" in tools
+        assert "call_omo_agent" not in tools
 
         # Skills should reference each other where appropriate
         dispatch = Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
@@ -339,13 +339,10 @@ class TestOrchestratorRecoveryFlow:
     ):
         """Verify orchestrator detects tool_not_found failure and dispatches oe-tool-recovery.
 
-        Per AGENTS.md: EvaluateProgress identifies tool-usage failures and triggers
-        Recovery Dispatch to oe-tool-recovery with proper context.
+        The short AGENTS.md should point to oe-worker-dispatch, and the detailed
+        recovery contract should live in the worker-dispatch skill.
         """
-        # AGENTS.md must define tool_not_found as a recoverable failure type
-        assert "tool_not_found" in agents_content, (
-            "AGENTS.md must define tool_not_found as recoverable failure type"
-        )
+        assert "oe-worker-dispatch" in agents_content
 
         # Worker dispatch skill must classify tool_not_found as Tool-Usage Failure
         assert "tool_not_found" in dispatch_skill_content, (
@@ -353,8 +350,8 @@ class TestOrchestratorRecoveryFlow:
         )
 
         # Recovery flow must be documented
-        assert "oe-tool-recovery" in agents_content, (
-            "AGENTS.md must reference oe-tool-recovery for recovery dispatch"
+        assert "oe-tool-recovery" in dispatch_skill_content, (
+            "oe-worker-dispatch must reference oe-tool-recovery for recovery dispatch"
         )
 
         # Recovery dispatch context must include required fields
@@ -406,17 +403,16 @@ class TestOrchestratorRecoveryFlow:
         assert payload["tool_name"] == "websearch"
         assert "websearch_web_search_exa" in payload["exact_invocation"]
 
-    def test_invalid_parameters_triggers_recovery_dispatch(
-        self, agents_content, dispatch_skill_content
-    ):
+    def test_invalid_parameters_triggers_recovery_dispatch(self, dispatch_skill_content):
         """Verify invalid_parameters failure routes to recovery with exact_invocation.
 
         Per SKILL.md: Recovery Dispatch passes exact_invocation to recovery worker.
         """
         # Must recognize invalid_parameters as recovery-triggering failure
         assert (
-            "invalid_parameters" in agents_content or "invalid parameter" in agents_content.lower()
-        ), "AGENTS.md must handle invalid_parameters failures"
+            "invalid_parameters" in dispatch_skill_content
+            or "invalid parameter" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must handle invalid_parameters failures"
 
         # Must pass exact_invocation to recovery worker
         assert "exact_invocation" in dispatch_skill_content, (
@@ -429,33 +425,36 @@ class TestOrchestratorRecoveryFlow:
         )
         assert "tool_name" in dispatch_skill_content, "Recovery context must include tool_name"
 
-    def test_permission_denied_triggers_recovery_dispatch(self, agents_content):
+    def test_permission_denied_triggers_recovery_dispatch(self, dispatch_skill_content):
         """Verify permission_denied triggers recovery flow.
 
-        Per AGENTS.md: permission_denied is a tool-usage failure handled via recovery.
+        Per oe-worker-dispatch: permission_denied is a tool-usage failure handled via recovery.
         """
         # Must recognize permission_denied as recoverable
-        assert "permission_denied" in agents_content or "permission" in agents_content.lower(), (
-            "AGENTS.md must handle permission_denied failures"
-        )
+        assert (
+            "permission_denied" in dispatch_skill_content
+            or "permission" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must handle permission_denied failures"
 
         # Must have recovery flow documentation
         assert (
-            "Recovery Dispatch" in agents_content or "recovery dispatch" in agents_content.lower()
-        ), "AGENTS.md must document Recovery Dispatch for permission failures"
+            "Recovery Dispatch" in dispatch_skill_content
+            or "recovery dispatch" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document Recovery Dispatch for permission failures"
 
-    def test_tool_execution_error_triggers_recovery_dispatch(self, agents_content):
+    def test_tool_execution_error_triggers_recovery_dispatch(self, dispatch_skill_content):
         """Verify tool_execution_error triggers recovery flow.
 
-        Per AGENTS.md: tool_execution_error is handled via recovery branch.
+        Per oe-worker-dispatch: tool_execution_error is handled via recovery branch.
         """
         # Must recognize tool_execution_error as recoverable
         assert (
-            "tool_execution_error" in agents_content or "execution error" in agents_content.lower()
-        ), "AGENTS.md must handle tool_execution_error failures"
+            "tool_execution_error" in dispatch_skill_content
+            or "execution error" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must handle tool_execution_error failures"
 
         # Recovery flow must handle execution errors
-        assert "oe-tool-recovery" in agents_content, (
+        assert "oe-tool-recovery" in dispatch_skill_content, (
             "Recovery flow must handle tool_execution_error via oe-tool-recovery"
         )
 
@@ -468,11 +467,11 @@ class TestOrchestratorRecoveryFlow:
             "tool_execution_error",
         ],
     )
-    def test_all_tool_failure_types_route_to_recovery(self, agents_content, failure_type):
+    def test_all_tool_failure_types_route_to_recovery(self, dispatch_skill_content, failure_type):
         """Verify all four tool-usage failure types route to recovery.
 
-        Per AGENTS.md Section "Tool Recovery Flow": All tool-usage failures route
-        through the recovery branch before escalation.
+        Per oe-worker-dispatch, all tool-usage failures route through the
+        recovery branch before escalation.
         """
         # Each failure type should be documented as triggering recovery
         failure_patterns = {
@@ -483,13 +482,15 @@ class TestOrchestratorRecoveryFlow:
         }
 
         patterns = failure_patterns[failure_type]
-        found = any(pattern in agents_content.lower() for pattern in patterns)
-        assert found, f"AGENTS.md must document {failure_type} as a recoverable failure type"
+        found = any(pattern in dispatch_skill_content.lower() for pattern in patterns)
+        assert found, (
+            f"oe-worker-dispatch must document {failure_type} as a recoverable failure type"
+        )
 
-    def test_recovery_consumes_recovered_method(self, agents_content, dispatch_skill_content):
+    def test_recovery_consumes_recovered_method(self, dispatch_skill_content):
         """Verify orchestrator validates RecoveredMethod schema and stores in loop state.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - Integration step validates RecoveredMethod
         - Stores in recovered_methods dict
         - Respects retry_owner decision
@@ -511,9 +512,9 @@ class TestOrchestratorRecoveryFlow:
         assert test_method.confidence == 0.95
         assert test_method.retry_owner == RetryOwner.ORCHESTRATOR
 
-        # AGENTS.md must document recovered_methods storage
-        assert "recovered_methods" in agents_content, (
-            "AGENTS.md must document recovered_methods storage in loop state"
+        # oe-worker-dispatch must document recovered_methods storage
+        assert "recovered_methods" in dispatch_skill_content, (
+            "oe-worker-dispatch must document recovered_methods storage in loop state"
         )
 
         # Must document retry_owner evaluation
@@ -554,145 +555,132 @@ class TestOrchestratorRecoveryFlow:
                 or "exact" in str(exc_info.value).lower()
             ), f"Should reject placeholder pattern in: {invocation}"
 
-    def test_one_recovery_assisted_retry_per_step(self, agents_content, dispatch_skill_content):
+    def test_one_recovery_assisted_retry_per_step(self, dispatch_skill_content):
         """Verify retry limit is enforced (max 1) and second failure escalates.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - "Recovery Cap: Max ONE recovery-assisted retry per failed step"
         - "No Recovery Loops: Recovery worker failure or retry failure escalates immediately"
         - recovery_attempts counter prevents infinite loops
         """
         # Must document the recovery cap
         assert (
-            "Max ONE" in agents_content
-            or "max 1" in agents_content.lower()
-            or "max one" in agents_content.lower()
-        ), "AGENTS.md must document max ONE recovery-assisted retry per step"
+            "Max ONE" in dispatch_skill_content
+            or "max 1" in dispatch_skill_content.lower()
+            or "max one" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document max ONE recovery-assisted retry per step"
 
         # Must document recovery_attempts counter
-        assert "recovery_attempts" in agents_content, (
-            "AGENTS.md must document recovery_attempts counter to prevent loops"
+        assert "recovery_attempts" in dispatch_skill_content, (
+            "oe-worker-dispatch must document recovery_attempts counter to prevent loops"
         )
 
         # Must document escalation on retry failure
-        assert "escalated" in agents_content.lower() or "escalation" in agents_content.lower(), (
-            "AGENTS.md must document escalation when retry limit exceeded"
-        )
+        assert (
+            "escalated" in dispatch_skill_content.lower()
+            or "escalation" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document escalation when retry limit exceeded"
 
-        # Worker dispatch must document retry constraint
-        assert "Max 1" in dispatch_skill_content or "max 1" in dispatch_skill_content.lower(), (
-            "Worker dispatch must document max 1 recovery-assisted retry"
-        )
-
-    def test_recovery_failure_escalates(self, agents_content):
+    def test_recovery_failure_escalates(self, dispatch_skill_content):
         """Verify recovery worker failure leads to escalation, no infinite loops.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - "No Recovery Loops: Recovery worker failure or retry failure escalates immediately"
         - termination_state becomes 'escalated'
         - Do NOT re-enter recovery for the same step
         """
-        # Must document escalation state
-        assert "termination_state" in agents_content, (
-            "AGENTS.md must document termination_state tracking"
+        assert "termination_state" in dispatch_skill_content, (
+            "oe-worker-dispatch must document termination_state tracking"
         )
-
-        # Must include 'escalated' as valid termination state
-        assert "escalated" in agents_content, (
-            "AGENTS.md must include 'escalated' as termination state"
+        assert "escalated" in dispatch_skill_content, (
+            "oe-worker-dispatch must include 'escalated' as termination state"
         )
-
-        # Must explicitly forbid re-entry into recovery
         assert (
-            "re-enter" in agents_content.lower()
-            or "reenter" in agents_content.lower()
-            or "do NOT" in agents_content
-        ), "AGENTS.md must explicitly forbid re-entering recovery for same step"
+            "re-enter" in dispatch_skill_content.lower()
+            or "reenter" in dispatch_skill_content.lower()
+            or "do not" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must explicitly forbid re-entering recovery for same step"
 
-    def test_assisted_retry_success_completes_step(self, agents_content, dispatch_skill_content):
+    def test_assisted_retry_success_completes_step(self, dispatch_skill_content):
         """Verify successful retry after recovery completes normally.
 
-        Per AGENTS.md recovery flow:
+        Per oe-worker-dispatch recovery flow:
         - Step 6: Assisted Retry with recovered_method
         - Step 7: If retry succeeds, normal completion path
         """
-        # Must document assisted retry step
-        assert "Assisted Retry" in agents_content or "assisted retry" in agents_content.lower(), (
-            "AGENTS.md must document Assisted Retry step"
+        assert (
+            "Assisted Retry" in dispatch_skill_content
+            or "assisted retry" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document Assisted Retry step"
+        assert "completed" in dispatch_skill_content.lower(), (
+            "oe-worker-dispatch must define 'completed' as valid outcome"
         )
-
-        # Must define completion state
-        assert "completed" in agents_content.lower(), (
-            "AGENTS.md must define 'completed' as valid outcome"
-        )
-
-        # Worker dispatch must document retry success path
         assert "retry" in dispatch_skill_content.lower(), (
-            "Worker dispatch must document retry mechanism"
+            "oe-worker-dispatch must document retry mechanism"
         )
 
-    def test_assisted_retry_failure_escalates(self, agents_content):
+    def test_assisted_retry_failure_escalates(self, dispatch_skill_content):
         """Verify failed retry after recovery escalates, no third attempt.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - Recovery (1) + Retry (1) + Additional Retry = Forbidden
         - Max total attempts: 1 recovery + 1 assisted retry = 2 total
         - Third attempt must escalate
         """
         # Must document escalation on retry failure
-        assert "Escalation" in agents_content or "escalated" in agents_content.lower(), (
-            "AGENTS.md must document escalation when assisted retry fails"
-        )
+        assert (
+            "Escalation" in dispatch_skill_content or "escalated" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document escalation when assisted retry fails"
 
         # Must document no third attempt
-        assert "recovery_attempts" in agents_content, (
+        assert "recovery_attempts" in dispatch_skill_content, (
             "recovery_attempts counter must prevent third attempt"
         )
 
         # Verify the loop invariant: max 1 per step
-        recovery_cap_text = agents_content.lower()
+        recovery_cap_text = dispatch_skill_content.lower()
         assert "max one" in recovery_cap_text or "max 1" in recovery_cap_text, (
             "Must explicitly limit to max 1 recovery-assisted retry"
         )
 
-    def test_recovery_during_bounded_loop_respects_max_rounds(self, agents_content):
+    def test_recovery_during_bounded_loop_respects_max_rounds(self, dispatch_skill_content):
         """Verify recovery dispatch counts toward max_rounds, loop still terminates.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - "Recovery counts toward max_rounds limit"
         - Loop must terminate if max_rounds reached during recovery
         """
         # Must document max_rounds
-        assert "max_rounds" in agents_content, "AGENTS.md must document max_rounds limit"
-
-        # Must document hard cap
-        assert "hard cap" in agents_content.lower(), "AGENTS.md must document hard cap on rounds"
-
-        # Must document termination conditions
-        assert "terminate" in agents_content.lower() or "exhausted" in agents_content.lower(), (
-            "AGENTS.md must document termination when limits reached"
+        assert "max_rounds" in dispatch_skill_content, (
+            "oe-worker-dispatch must document max_rounds limit"
         )
 
-    def test_recovery_eligibility_checks_prevent_nested_recovery(self, agents_content):
+        # Must document hard cap
+        assert "hard cap" in dispatch_skill_content.lower(), (
+            "oe-worker-dispatch must document hard cap on rounds"
+        )
+
+        # Must document termination conditions
+        assert (
+            "terminate" in dispatch_skill_content.lower()
+            or "exhausted" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document termination when limits reached"
+
+    def test_recovery_eligibility_checks_prevent_nested_recovery(self, dispatch_skill_content):
         """Verify eligibility checks prevent nested or concurrent recovery dispatches.
 
-        Per AGENTS.md:
+        Per oe-worker-dispatch:
         - Verify recovery_attempts[failed_step_id] is 0
         - Verify recovery_in_progress is false
         - recovery_in_progress flag prevents nested recovery
         """
-        # Must document eligibility check
-        assert "recovery_attempts" in agents_content, (
-            "AGENTS.md must document recovery_attempts eligibility check"
+        assert "recovery_attempts" in dispatch_skill_content, (
+            "oe-worker-dispatch must document recovery_attempts eligibility check"
         )
-
-        # Must document in-progress flag
-        assert "recovery_in_progress" in agents_content, (
-            "AGENTS.md must document recovery_in_progress flag"
+        assert "recovery_in_progress" in dispatch_skill_content, (
+            "oe-worker-dispatch must document recovery_in_progress flag"
         )
-
-        # Must document false check
-        assert "false" in agents_content.lower(), (
+        assert "false" in dispatch_skill_content.lower(), (
             "Must check recovery_in_progress is false before dispatch"
         )
 
@@ -700,48 +688,42 @@ class TestOrchestratorRecoveryFlow:
         """Verify oe-tool-recovery is documented as leaf-node only.
 
         Per oe-tool-recovery/AGENTS.md:
-        - Cannot spawn subagents (call_omo_agent, sessions_spawn prohibited)
+        - Cannot spawn subagents
         - Leaf-node only
         """
         # Must declare leaf-node status
         assert (
             "leaf-node" in recovery_agents_content.lower()
             or "leaf node" in recovery_agents_content.lower()
+            or "叶子节点" in recovery_agents_content
         ), "oe-tool-recovery must be documented as leaf-node"
 
         # Must prohibit agent spawning
-        assert "call_omo_agent" in recovery_agents_content, (
-            "oe-tool-recovery must document call_omo_agent prohibition"
-        )
-        assert "sessions_spawn" in recovery_agents_content, (
-            "oe-tool-recovery must document sessions_spawn prohibition"
-        )
-
-        # Must explicitly prohibit spawning
         assert (
-            "Cannot spawn" in recovery_agents_content or "Prohibited" in recovery_agents_content
-        ), "oe-tool-recovery must explicitly prohibit agent spawning"
+            "Agent Spawning" in recovery_agents_content
+            or "严禁派生其他 agent" in recovery_agents_content
+        ), "oe-tool-recovery must document agent spawning prohibition"
 
-    def test_recovery_uses_sessions_spawn_and_yield(self, agents_content):
+    def test_recovery_uses_sessions_spawn_and_yield(self, dispatch_skill_content):
         """Verify recovery dispatch uses native sessions_spawn and sessions_yield.
 
-        Per AGENTS.md Tool Recovery Flow:
+        Per oe-worker-dispatch Tool Recovery Flow:
         - Step 3: Spawn oe-tool-recovery via sessions_spawn
         - Step 4: Call sessions_yield to await results
         """
         # Must document sessions_spawn for recovery
-        assert "sessions_spawn" in agents_content, (
-            "AGENTS.md must document sessions_spawn for recovery dispatch"
+        assert "sessions_spawn" in dispatch_skill_content, (
+            "oe-worker-dispatch must document sessions_spawn for recovery dispatch"
         )
 
         # Must document sessions_yield
-        assert "sessions_yield" in agents_content, (
-            "AGENTS.md must document sessions_yield for recovery await"
+        assert "sessions_yield" in dispatch_skill_content, (
+            "oe-worker-dispatch must document sessions_yield for recovery await"
         )
 
         # Must reference oe-tool-recovery in spawn context
-        assert "oe-tool-recovery" in agents_content, (
-            "AGENTS.md must reference oe-tool-recovery agent type"
+        assert "oe-tool-recovery" in dispatch_skill_content, (
+            "oe-worker-dispatch must reference oe-tool-recovery agent type"
         )
 
     def test_recovered_method_schema_enforces_bounded_retries(self):
@@ -781,22 +763,24 @@ class TestOrchestratorRecoveryFlow:
                     max_retries=retries,
                 )
 
-    def test_no_worker_to_worker_handoff_in_recovery(self, agents_content):
+    def test_no_worker_to_worker_handoff_in_recovery(self, dispatch_skill_content):
         """Verify recovery does NOT create worker-to-worker handoff.
 
-        Per AGENTS.md Loop Controls:
+        Per oe-worker-dispatch Loop Controls:
         - "No Worker Handoff: Recovery dispatch does NOT create worker-to-worker handoff"
         - "The Orchestrator remains the sole dispatcher"
         """
         # Must document no handoff rule
         assert (
-            "No Worker Handoff" in agents_content or "no worker handoff" in agents_content.lower()
-        ), "AGENTS.md must document 'No Worker Handoff' rule"
+            "No Worker Handoff" in dispatch_skill_content
+            or "no worker handoff" in dispatch_skill_content.lower()
+        ), "oe-worker-dispatch must document 'No Worker Handoff' rule"
 
         # Must declare orchestrator as sole dispatcher
         assert (
-            "sole dispatcher" in agents_content.lower() or "Orchestrator remains" in agents_content
-        ), "AGENTS.md must declare Orchestrator as sole dispatcher"
+            "sole dispatcher" in dispatch_skill_content.lower()
+            or "Orchestrator remains" in dispatch_skill_content
+        ), "oe-worker-dispatch must declare Orchestrator as sole dispatcher"
 
 
 class TestBoundedLoopContract:
@@ -812,12 +796,12 @@ class TestBoundedLoopContract:
         """Load worker dispatch SKILL.md content."""
         return Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
 
-    def test_agents_md_references_sessions_yield(self, agents_content):
-        """AGENTS.md should reference sessions_yield as round-boundary primitive."""
-        assert "sessions_yield" in agents_content
+    def test_dispatch_skill_references_sessions_yield(self, dispatch_skill_content):
+        """oe-worker-dispatch should reference sessions_yield as round-boundary primitive."""
+        assert "sessions_yield" in dispatch_skill_content
 
-    def test_agents_md_defines_round_states(self, agents_content):
-        """AGENTS.md should define all round-state phases."""
+    def test_dispatch_skill_defines_round_states(self, dispatch_skill_content):
+        """oe-worker-dispatch should define all round-state phases."""
         round_states = [
             "Assess",
             "PlanRound",
@@ -827,16 +811,16 @@ class TestBoundedLoopContract:
             "EvaluateProgress",
         ]
         for state in round_states:
-            assert state in agents_content, f"Missing round state: {state}"
+            assert state in dispatch_skill_content, f"Missing round state: {state}"
 
-    def test_agents_md_defines_max_rounds(self, agents_content):
-        """AGENTS.md should define max_rounds terminology with default and hard cap."""
-        assert "max_rounds" in agents_content
-        assert "default: 3" in agents_content or "default 3" in agents_content
-        assert "hard cap: 5" in agents_content or "hard cap 5" in agents_content
+    def test_dispatch_skill_defines_max_rounds(self, dispatch_skill_content):
+        """oe-worker-dispatch should define max_rounds terminology with default and hard cap."""
+        assert "max_rounds" in dispatch_skill_content
+        assert "default: 3" in dispatch_skill_content or "default 3" in dispatch_skill_content
+        assert "hard cap: 5" in dispatch_skill_content or "hard cap 5" in dispatch_skill_content
 
-    def test_agents_md_defines_checkpoint_types(self, agents_content):
-        """AGENTS.md should define checkpoint visibility types."""
+    def test_dispatch_skill_defines_checkpoint_types(self, dispatch_skill_content):
+        """oe-worker-dispatch should define checkpoint visibility types."""
         checkpoint_types = [
             "started",
             "meaningful_progress",
@@ -844,27 +828,29 @@ class TestBoundedLoopContract:
             "terminal",
         ]
         for checkpoint in checkpoint_types:
-            assert checkpoint in agents_content, f"Missing checkpoint type: {checkpoint}"
+            assert checkpoint in dispatch_skill_content, f"Missing checkpoint type: {checkpoint}"
 
-    def test_agents_md_defines_duplicate_dispatch_guard(self, agents_content):
-        """AGENTS.md should define duplicate-dispatch guard terms."""
-        assert "dedupe_keys" in agents_content or "deduplicate" in agents_content.lower()
+    def test_dispatch_skill_defines_duplicate_dispatch_guard(self, dispatch_skill_content):
+        """oe-worker-dispatch should define duplicate-dispatch guard terms."""
         assert (
-            "duplicate dispatch" in agents_content.lower() or "Duplicate dispatch" in agents_content
+            "dedupe_keys" in dispatch_skill_content
+            or "deduplicate" in dispatch_skill_content.lower()
+        )
+        assert (
+            "duplicate dispatch" in dispatch_skill_content.lower()
+            or "Duplicate dispatch" in dispatch_skill_content
         )
 
-    def test_agents_md_no_sessions_history_polling(self, agents_content):
-        """AGENTS.md should NOT reference sessions_history for polling patterns."""
+    def test_dispatch_skill_no_sessions_history_polling(self, dispatch_skill_content):
+        """oe-worker-dispatch should NOT reference sessions_history for polling patterns."""
         # Should not suggest polling via sessions_history
-        assert "sessions_history" not in agents_content, (
+        assert "sessions_history" not in dispatch_skill_content, (
             "Should not reference sessions_history for polling"
         )
         # Should emphasize yield-based waiting
-        assert "auto-announced" in agents_content or "sessions_yield" in agents_content
-
-    def test_dispatch_skill_references_sessions_yield(self, dispatch_skill_content):
-        """Worker dispatch skill should reference sessions_yield for round boundaries."""
-        assert "sessions_yield" in dispatch_skill_content
+        assert (
+            "auto-announced" in dispatch_skill_content or "sessions_yield" in dispatch_skill_content
+        )
 
     def test_dispatch_skill_defines_iterative_round_pattern(self, dispatch_skill_content):
         """Worker dispatch skill should define iterative round-based dispatch."""
