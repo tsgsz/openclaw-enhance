@@ -27,7 +27,7 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     manifest_path,
 )
-from openclaw_enhance.paths import managed_root
+from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
 
 
 class UninstallError(RuntimeError):
@@ -57,19 +57,9 @@ def _remove_hooks(
     """
     removed: list[str] = []
 
-    config_candidates = [
-        openclaw_home / "config.json",
-        openclaw_home / "openclaw.json",
-        Path.home() / ".config" / "openclaw" / "config.json",
-    ]
+    config_path = resolve_openclaw_config_path(openclaw_home)
 
-    config_path = None
-    for candidate in config_candidates:
-        if candidate.exists():
-            config_path = candidate
-            break
-
-    if not config_path:
+    if not config_path.exists():
         return removed
 
     try:
@@ -114,19 +104,9 @@ def _unregister_agents(
     """
     removed: list[str] = []
 
-    config_candidates = [
-        openclaw_home / "config.json",
-        openclaw_home / "openclaw.json",
-        Path.home() / ".config" / "openclaw" / "config.json",
-    ]
+    config_path = resolve_openclaw_config_path(openclaw_home)
 
-    config_path = None
-    for candidate in config_candidates:
-        if candidate.exists():
-            config_path = candidate
-            break
-
-    if not config_path:
+    if not config_path.exists():
         return removed
 
     try:

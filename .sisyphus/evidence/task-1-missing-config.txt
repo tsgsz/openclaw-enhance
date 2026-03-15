@@ -1,0 +1,11 @@
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 1 item
+
+tests/unit/test_real_env_guardrails.py::test_harness_readiness_missing_config PASSED                                                                                                                                                                  [100%]
+
+===================================================================================================================== 1 passed in 0.02s =====================================================================================================================

@@ -33,7 +33,7 @@ def mock_managed_root(tmp_path):
 def test_capture_baseline_state_not_installed(mock_openclaw_home):
     """Test capturing baseline when not installed."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
-    (mock_openclaw_home / "config.json").write_text("{}\n")
+    (mock_openclaw_home / "openclaw.json").write_text("{}\n")
 
     with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
         mock_root.return_value = mock_openclaw_home / "openclaw-enhance"
@@ -50,7 +50,7 @@ def test_capture_baseline_state_not_installed(mock_openclaw_home):
 def test_capture_baseline_state_installed_owned(mock_openclaw_home, mock_managed_root):
     """Test capturing baseline when installed and owned."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
-    (mock_openclaw_home / "config.json").write_text("{}\n")
+    (mock_openclaw_home / "openclaw.json").write_text("{}\n")
 
     workspaces_dir = mock_managed_root / "workspaces"
     workspaces_dir.mkdir()
@@ -72,7 +72,7 @@ def test_capture_baseline_state_installed_owned(mock_openclaw_home, mock_managed
 def test_capture_baseline_state_installed_foreign(mock_openclaw_home, mock_managed_root):
     """Test capturing baseline when installed but foreign."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
-    (mock_openclaw_home / "config.json").write_text("{}\n")
+    (mock_openclaw_home / "openclaw.json").write_text("{}\n")
 
     workspaces_dir = mock_managed_root / "workspaces"
     workspaces_dir.mkdir()
@@ -134,7 +134,7 @@ def test_harness_readiness_missing_version(mock_openclaw_home):
 
 
 def test_harness_readiness_missing_config(mock_openclaw_home):
-    """Test harness readiness fails when config.json missing."""
+    """Test harness readiness fails when config missing."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
 
     with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
@@ -142,7 +142,7 @@ def test_harness_readiness_missing_config(mock_openclaw_home):
         with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
             mock_load.return_value = None
 
-            with pytest.raises(RuntimeError, match="missing config.json"):
+            with pytest.raises(RuntimeError, match="missing OpenClaw config"):
                 capture_baseline_state(mock_openclaw_home)
 
 

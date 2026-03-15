@@ -33,8 +33,8 @@ def mock_openclaw_home(tmp_path: Path) -> Path:
     version_file = openclaw_home / "VERSION"
     version_file.write_text("2026.3.1\n")
 
-    # Create a minimal config file
-    config_file = openclaw_home / "config.json"
+    # Create openclaw.json (canonical config)
+    config_file = openclaw_home / "openclaw.json"
     config_file.write_text(json.dumps({"test": True}) + "\n")
 
     return openclaw_home
@@ -50,8 +50,8 @@ def mock_openclaw_home_with_agents(tmp_path: Path) -> Path:
     version_file = openclaw_home / "VERSION"
     version_file.write_text("2026.3.1\n")
 
-    # Create config file
-    config_file = openclaw_home / "config.json"
+    # Create openclaw.json (canonical config)
+    config_file = openclaw_home / "openclaw.json"
     config_file.write_text(json.dumps({"test": True}) + "\n")
 
     # Create AGENTS.md

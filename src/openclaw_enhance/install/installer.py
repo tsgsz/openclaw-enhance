@@ -30,7 +30,11 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     save_manifest,
 )
-from openclaw_enhance.paths import ensure_managed_directories, managed_root
+from openclaw_enhance.paths import (
+    ensure_managed_directories,
+    managed_root,
+    resolve_openclaw_config_path,
+)
 from openclaw_enhance.runtime.config_patch import (
     ConfigPatchError,
     apply_owned_config_patch,
@@ -83,21 +87,6 @@ def _run_openclaw_cli(args: list[str], check: bool = True) -> subprocess.Complet
         return result
     except FileNotFoundError as exc:
         raise InstallError("OpenClaw CLI not found. Ensure 'openclaw' is in PATH.") from exc
-
-
-def _get_openclaw_config_path(openclaw_home: Path) -> Path:
-    """Get the path to OpenClaw's config file."""
-    # Try common config locations
-    config_paths = [
-        openclaw_home / "config.json",
-        openclaw_home / "openclaw.json",
-        Path.home() / ".config" / "openclaw" / "config.json",
-    ]
-    for path in config_paths:
-        if path.exists():
-            return path
-    # Default to the first option if none exist
-    return config_paths[0]
 
 
 def _load_openclaw_config(config_path: Path) -> dict[str, Any]:
@@ -245,7 +234,7 @@ def _register_agents(
     Uses JSON read-modify-write with backup for config changes.
     """
     components: list[ComponentInstall] = []
-    config_path = _get_openclaw_config_path(openclaw_home)
+    config_path = resolve_openclaw_config_path(openclaw_home)
 
     # Define the agents configuration patch
     # NOTE: Registry descriptions are non-authoritative.
@@ -327,7 +316,7 @@ def _enable_hooks(
     Uses JSON read-modify-write with backup for config changes.
     """
     components: list[ComponentInstall] = []
-    config_path = _get_openclaw_config_path(openclaw_home)
+    config_path = resolve_openclaw_config_path(openclaw_home)
 
     # Define the hooks configuration patch
     hooks_patch = {
@@ -455,7 +444,7 @@ def install(
             raise InstallError(f"Workspace sync failed: {exc}") from exc
 
         try:
-            config_path = _get_openclaw_config_path(openclaw_home)
+            config_path = resolve_openclaw_config_path(openclaw_home)
             config = _load_openclaw_config(config_path)
             main_skill_components = sync_main_skills(
                 openclaw_home=openclaw_home,

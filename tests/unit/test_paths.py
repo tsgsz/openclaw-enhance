@@ -92,3 +92,37 @@ def test_main_workspace_skills_dir_does_not_create_directories(tmp_path: Path) -
     assert skills_dir == workspace / "skills"
     assert not workspace.exists()
     assert not skills_dir.exists()
+
+
+def test_resolve_openclaw_config_path_prefers_openclaw_json(tmp_path: Path) -> None:
+    openclaw_home = tmp_path / ".openclaw"
+    openclaw_home.mkdir()
+
+    openclaw_json = openclaw_home / "openclaw.json"
+    config_json = openclaw_home / "config.json"
+    openclaw_json.write_text("{}")
+    config_json.write_text("{}")
+
+    result = paths.resolve_openclaw_config_path(openclaw_home)
+    assert result == openclaw_json
+
+
+def test_resolve_openclaw_config_path_falls_back_to_config_json(tmp_path: Path) -> None:
+    openclaw_home = tmp_path / ".openclaw"
+    openclaw_home.mkdir()
+
+    config_json = openclaw_home / "config.json"
+    config_json.write_text("{}")
+
+    result = paths.resolve_openclaw_config_path(openclaw_home)
+    assert result == config_json
+
+
+def test_resolve_openclaw_config_path_returns_config_json_when_neither_exists(
+    tmp_path: Path,
+) -> None:
+    openclaw_home = tmp_path / ".openclaw"
+    openclaw_home.mkdir()
+
+    result = paths.resolve_openclaw_config_path(openclaw_home)
+    assert result == openclaw_home / "config.json"

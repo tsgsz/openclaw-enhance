@@ -9,6 +9,11 @@ from openclaw_enhance.validation.types import ValidationReport
 
 def generate_markdown_report(report: ValidationReport) -> str:
     """Generate markdown report from ValidationReport."""
+    from openclaw_enhance.paths import resolve_openclaw_config_path
+
+    config_path = resolve_openclaw_config_path(report.baseline.openclaw_home)
+    config_name = config_path.name
+
     lines = [
         f"# Validation Report: {report.feature_name}",
         "",
@@ -28,7 +33,7 @@ def generate_markdown_report(report: ValidationReport) -> str:
 
     lines.extend(
         [
-            f"- Config Exists: {report.baseline.config_exists}",
+            f"- Config Exists: {report.baseline.config_exists} ({config_name})",
             "",
             "## Execution Log",
             "",
@@ -44,9 +49,9 @@ def generate_markdown_report(report: ValidationReport) -> str:
                 [
                     f"### Command {i}: {status}",
                     "",
-                    f"```bash",
-                    f"{result.command}",
-                    f"```",
+                    "```bash",
+                    result.command,
+                    "```",
                     "",
                     f"- Exit Code: {result.exit_code}",
                     f"- Duration: {result.duration_seconds:.2f}s",

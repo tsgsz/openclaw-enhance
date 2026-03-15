@@ -20,13 +20,13 @@ from openclaw_enhance.validation.types import (
 
 def _capture_baseline(openclaw_home: Path) -> BaselineState:
     from openclaw_enhance.install.manifest import load_manifest
-    from openclaw_enhance.paths import managed_root
+    from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
 
     target_root = managed_root()
     manifest = load_manifest(target_root)
     is_installed = manifest is not None
     version = manifest.version if manifest else None
-    config_path = openclaw_home / "config.json"
+    config_path = resolve_openclaw_config_path(openclaw_home)
 
     return BaselineState(
         openclaw_home=openclaw_home,
