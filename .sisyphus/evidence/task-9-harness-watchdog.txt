@@ -1,0 +1,19 @@
+# Task 9: Harness Watchdog E2E Coverage
+
+## Harness Test Execution
+Command: OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py -k watchdog -q
+Result: 2 passed, 25 deselected in 0.45s
+
+## Tests Added
+1. test_watchdog_workspace_available
+   - Verifies oe-watchdog workspace renders successfully
+   - Checks for SessionSender or monitoring keywords
+
+2. test_watchdog_reminder_delivery_validation
+   - Runs validate-feature for runtime-watchdog
+   - Asserts PASS conclusion in output
+
+## Selection Proof
+Before: 0 selected / 25 deselected
+After: 2 selected / 25 deselected
+Tests are discoverable via `-k watchdog` filter

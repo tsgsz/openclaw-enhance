@@ -1,0 +1,2 @@
+docs/opencode-iteration-handbook.md:**repo-wide-real-env-backfill** — COMPLETE
+AGENTS.md:**Completed**: `repo-wide-real-env-backfill` — Canonical real-environment validation baseline established for all core enhancement primitives.

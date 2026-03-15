@@ -1,0 +1,11 @@
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 59 items / 58 deselected / 1 selected
+
+tests/integration/test_orchestrator_dispatch_contract.py::TestOrchestratorRecoveryFlow::test_websearch_not_found_recovery_executable PASSED                                                                                                           [100%]
+
+============================================================================================================= 1 passed, 58 deselected in 0.01s ==============================================================================================================

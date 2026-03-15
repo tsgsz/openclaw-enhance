@@ -1,0 +1,113 @@
+.......................................................................................................................................                                                                                                               [100%]
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/unit/test_real_env_validation.py: 2 warnings
+tests/unit/test_real_env_runner.py: 8 warnings
+tests/integration/test_validation_real_env.py: 61 warnings
+  <string>:8: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_validation.py: 1 warning
+tests/unit/test_real_env_runner.py: 8 warnings
+tests/integration/test_validation_real_env.py: 11 warnings
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_runner.py: 8 warnings
+tests/integration/test_validation_real_env.py: 11 warnings
+  <string>:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_runner.py::TestBuildReportPath::test_build_report_path_format
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/validation/runner.py:205: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+tests/integration/test_install_uninstall.py: 19 warnings
+tests/integration/test_dev_mode_integration.py: 8 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/lock.py:157: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  <string>:4: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_install_uninstall.py: 78 warnings
+tests/integration/test_dev_mode_integration.py: 36 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:228: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 39 warnings
+tests/integration/test_dev_mode_integration.py: 18 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/main_skill_sync.py:53: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:304: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 26 warnings
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:119: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/integration/test_install_uninstall.py: 26 warnings
+tests/integration/test_dev_mode_integration.py: 12 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:126: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:358: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+tests/integration/test_timeout_flow.py: 8 warnings
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/integration/test_install_uninstall.py: 13 warnings
+tests/integration/test_dev_mode_integration.py: 6 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/installer.py:390: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    install_time=datetime.utcnow(),
+
+tests/integration/test_install_uninstall.py: 156 warnings
+tests/integration/test_dev_mode_integration.py: 72 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/install/manifest.py:105: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.last_updated = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_detector_emits_to_store
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_policy_evaluation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/watchdog/detector.py:115: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_detector_emits_to_store
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_policy_evaluation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_multiple_sessions_tracking
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/watchdog/detector.py:138: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/integration/test_timeout_flow.py: 11 warnings
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/watchdog/state_sync.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_watchdog_reads_and_confirms
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_escalation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_clear_confirmed_timeouts
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/watchdog/state_sync.py:220: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_escalation_flow
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle
+  <string>:6: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_clear_confirmed_timeouts
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/watchdog/state_sync.py:246: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+135 passed, 762 warnings in 1.98s

@@ -1,0 +1,8 @@
+CMD /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface --openclaw-home /Users/tsgsz/.openclaw
+EXIT 0
+Running validation for cli-surface (slug: backfill-cli-surface)...
+Report written to: docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md
+Conclusion: PASS
+
+version-cleanup-ok
+config-cleanup-ok

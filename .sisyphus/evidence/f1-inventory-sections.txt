@@ -1,0 +1,6 @@
+COMMAND: grep -n 'Canonical Current-Branch Backfill\|Superseded Reports' docs/reports/INVENTORY.md
+EXIT_CODE: 0
+--- STDOUT ---
+18:## Superseded Reports
+
+--- STDERR ---

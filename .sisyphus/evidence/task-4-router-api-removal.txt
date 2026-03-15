@@ -1,0 +1,12 @@
+=== Task 4: Router API Removal Verification ===
+
+Date: Fri Mar 13 15:49:20 CST 2026
+
+=== Removed Classes/Functions Check ===
+SUCCESS: No matches found - all removed
+
+=== Files Modified ===
+- src/openclaw_enhance/skills_catalog.py: Removed SkillRouter, TaskAssessment, RoutingDecision, should_escalate_to_orchestrator
+- tests/unit/test_main_skills.py: Rewritten to test contracts instead of routing
+- tests/integration/test_subagent_routing.py: Rewritten to test contract semantics
+- tests/fixtures/__init__.py: Removed skill_router fixture

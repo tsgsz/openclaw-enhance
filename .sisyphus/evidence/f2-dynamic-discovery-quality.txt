@@ -1,0 +1,10 @@
+Test Execution Results
+======================
+Command: pytest tests/unit/test_agent_catalog.py tests/unit/test_worker_workspaces.py tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_worker_role_boundaries.py -q
+
+Output:
+................................................................................................. [ 68%]
+.............................................                                                     [100%]
+142 passed in 0.58s
+
+Status: ALL TESTS PASSED ✓

@@ -1,0 +1,50 @@
+# Task 2: Surface current-Python validation through doctor and installer preflight
+
+## Summary
+Successfully surfaced current-Python validation through `doctor` command and installer `preflight_checks`.
+
+## Code Integration Status
+
+### Doctor Command (src/openclaw_enhance/cli.py:116)
+- Calls `validate_environment(openclaw_home)` which includes `validate_python_version()`
+- Catches `SupportError` and converts to `ClickException` for clean CLI output
+- Error messages include Python version requirements (>=3.10)
+
+### Installer Preflight (src/openclaw_enhance/install/installer.py:140)
+- Calls `validate_environment(openclaw_home)` which includes `validate_python_version()`
+- Hard-fails on unsupported Python version (no silent continuation)
+- Error is captured in `PreflightResult.errors` with actionable message
+
+### Shared Validator (src/openclaw_enhance/runtime/support_matrix.py:44)
+- `validate_environment()` calls `validate_python_version()` first
+- Actionable error message: "Unsupported Python version 'X.Y'. Supported: >=3.10"
+
+## Tests Added
+
+### tests/unit/test_cli_smoke.py
+- `TestCLIDoctorPythonValidation::test_doctor_validates_python_version_via_validate_environment`
+- `TestCLIDoctorPythonValidation::test_doctor_fails_on_unsupported_python_version`
+
+### tests/integration/test_install_uninstall.py
+- `TestInstallPreflightPythonValidation::test_preflight_validates_python_version_via_validate_environment`
+- `TestInstallPreflightPythonValidation::test_preflight_fails_on_unsupported_python_version`
+- `TestInstallPreflightPythonValidation::test_preflight_error_message_is_actionable`
+
+## Acceptance Criteria Verification
+
+1. ✅ `pytest tests/unit/test_cli_smoke.py -q` exits `0` (12 passed)
+2. ✅ `pytest tests/integration/test_install_uninstall.py -q` exits `0` (17 passed)
+3. ✅ `python -m openclaw_enhance.cli doctor --help` exits `0`
+4. ✅ Inline Python test exits `0` with 'doctor-cli-ok'
+
+## QA Scenarios Verified
+
+- ✅ Scenario 1: Doctor validates using current interpreter (passes with Python 3.13)
+- ✅ Scenario 2: Unsupported Python hard-fails install preflight (mocked Python 3.9)
+
+## No Duplication
+
+- Single source of truth: `validate_environment()` in support_matrix.py
+- Both doctor and preflight call the same shared validator
+- No interpreter selection flags added
+- No silent continuation on unsupported Python

@@ -1,0 +1,13 @@
+Usage: python -m openclaw_enhance.validation.live_probes [OPTIONS] COMMAND
+                                                         [ARGS]...
+
+  Run strict live proof probes for canonical bundles.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  dev-symlink        Verify dev install workspace path is a symlink.
+  recovery-worker    Verify recovery worker registration and live...
+  routing-yield      Verify orchestrator routing via live openclaw chat...
+  watchdog-reminder  Verify watchdog reminder prerequisites from config...

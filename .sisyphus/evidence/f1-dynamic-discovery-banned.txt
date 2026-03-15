@@ -1,0 +1,7 @@
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/.ipynb_checkpoints/SKILL-checkpoint.md:dispatch_task(
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/.ipynb_checkpoints/SKILL-checkpoint.md:    result = dispatch_task(...)
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/.ipynb_checkpoints/SKILL-checkpoint.md:    result = dispatch_task(..., timeout_minutes=extended)
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/.ipynb_checkpoints/SKILL-checkpoint.md:code_result = dispatch_task(
+workspaces/oe-orchestrator/skills/oe-git-context/SKILL.md:result = dispatch_task(
+src/openclaw_enhance/cli.py:        "dispatch_task(",
+src/openclaw_enhance/.ipynb_checkpoints/cli-checkpoint.py:        "dispatch_task(",

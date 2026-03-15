@@ -1,0 +1,32 @@
+# Task 9: Watchdog Reminder Delivery Evidence (CORRECTED)
+
+## Delivery Proof (Not Intent-Only)
+
+### Integration Test Execution
+Command: pytest tests/integration/test_timeout_flow.py::TestTimeoutFlow::test_end_to_end_monitoring_cycle -xvs
+Result: PASSED
+Duration: 0.29s
+
+### Delivery Assertions Added
+Lines 289-291 in test_timeout_flow.py:
+```python
+assert len(mock_sender.sent_messages) > 0, "No reminders delivered via SessionSender"
+delivered_session_ids = [sid for sid, _ in mock_sender.sent_messages]
+assert "e2e_session" in delivered_session_ids, "Reminder not delivered to e2e_session"
+```
+
+### What This Proves
+1. notifier.send_suspected_timeout() invokes SessionSender.send_to_session()
+2. MockSessionSender.sent_messages list captures actual delivery
+3. Test fails if delivery doesn't happen (not just state logging)
+4. Delivery includes session_id and formatted message
+
+### Test Configuration
+- Policy with min_duration=0, multiplier_threshold=0.5 to trigger delivery
+- MockSessionSender captures all send_to_session() invocations
+- Assertions verify delivery happened, not just intent logged
+
+## Validation Report
+Path: docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md
+Conclusion: PASS
+Feature Class: runtime-watchdog

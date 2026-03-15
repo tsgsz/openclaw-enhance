@@ -1,0 +1,34 @@
+=== QA Scenario 1: Canonical strict-proof report set is complete and explicitly inventoried ===
+
+Checking INVENTORY.md exists:
+-rw-r--r--  1 tsgsz  staff  3266 Mar 15 15:03 docs/reports/INVENTORY.md
+
+Checking all six canonical slugs are listed:
+| backfill-core-install | [2026-03-14-backfill-core-install-install-lifecycle.md](./2026-03-14-backfill-core-install-install-lifecycle.md) | 2026-03-14 | PASS |
+| backfill-dev-install | [2026-03-14-backfill-dev-install-install-lifecycle.md](./2026-03-14-backfill-dev-install-install-lifecycle.md) | 2026-03-14 | PASS |
+| backfill-cli-surface | [2026-03-14-backfill-cli-surface-cli-surface.md](./2026-03-14-backfill-cli-surface-cli-surface.md) | 2026-03-14 | PASS |
+| backfill-routing-yield | [2026-03-14-backfill-routing-yield-workspace-routing.md](./2026-03-14-backfill-routing-yield-workspace-routing.md) | 2026-03-14 | PASS |
+| backfill-recovery-worker | [2026-03-14-backfill-recovery-worker-workspace-routing.md](./2026-03-14-backfill-recovery-worker-workspace-routing.md) | 2026-03-14 | PASS |
+| backfill-watchdog-reminder | [2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-14 | PASS |
+| [2026-03-15-backfill-core-install-install-lifecycle.md](./2026-03-15-backfill-core-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-core-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-dev-install-install-lifecycle.md](./2026-03-15-backfill-dev-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-dev-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-cli-surface-cli-surface.md](./2026-03-15-backfill-cli-surface-cli-surface.md) | 2026-03-15 | 2026-03-14-backfill-cli-surface-cli-surface.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-routing-yield-workspace-routing.md](./2026-03-15-backfill-routing-yield-workspace-routing.md) | 2026-03-15 | 2026-03-14-backfill-routing-yield-workspace-routing.md | Environment incompatibility (openclaw chat command missing) |
+| [2026-03-15-backfill-recovery-worker-workspace-routing.md](./2026-03-15-backfill-recovery-worker-workspace-routing.md) | 2026-03-15 | 2026-03-14-backfill-recovery-worker-workspace-routing.md | Environment incompatibility (openclaw chat command missing) |
+| [2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-15 | 2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md | Validation framework change; 2026-03-14 version is canonical |
+
+Verifying all canonical reports exist:
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md
+docs/reports/2026-03-14-backfill-core-install-install-lifecycle.md
+docs/reports/2026-03-14-backfill-dev-install-install-lifecycle.md
+docs/reports/2026-03-14-backfill-recovery-worker-workspace-routing.md
+docs/reports/2026-03-14-backfill-routing-yield-workspace-routing.md
+docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md
+
+Verifying all canonical reports have PASS conclusion:
+2026-03-14-backfill-cli-surface-cli-surface.md: - Conclusion: PASS
+2026-03-14-backfill-core-install-install-lifecycle.md: - Conclusion: PASS
+2026-03-14-backfill-dev-install-install-lifecycle.md: - Conclusion: PASS
+2026-03-14-backfill-recovery-worker-workspace-routing.md: - Conclusion: PASS
+2026-03-14-backfill-routing-yield-workspace-routing.md: - Conclusion: PASS
+2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md: - Conclusion: PASS

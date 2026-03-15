@@ -1,0 +1,8 @@
+CMD /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-dev-install --openclaw-home /Users/tsgsz/.openclaw
+EXIT 0
+Running validation for install-lifecycle (slug: backfill-dev-install)...
+Report written to: docs/reports/2026-03-14-backfill-dev-install-install-lifecycle.md
+Conclusion: PASS
+
+version-cleanup-ok
+config-cleanup-ok

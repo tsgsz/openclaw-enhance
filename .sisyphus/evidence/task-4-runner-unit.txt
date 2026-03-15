@@ -1,0 +1,35 @@
+..........                                                                                                                                                                                                                                            [100%]
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/unit/test_real_env_runner.py::TestExecuteCommand::test_execute_command_success
+tests/unit/test_real_env_runner.py::TestExecuteCommand::test_execute_command_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_all_pass
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_product_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_environment_failure
+tests/unit/test_real_env_runner.py::TestGenerateMarkdownReport::test_generate_markdown_report_with_results
+  <string>:8: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_all_pass
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_product_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_environment_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_exempt
+tests/unit/test_real_env_runner.py::TestGenerateMarkdownReport::test_generate_markdown_report_basic
+tests/unit/test_real_env_runner.py::TestGenerateMarkdownReport::test_generate_markdown_report_with_results
+tests/unit/test_real_env_runner.py::TestWriteReport::test_write_report
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_all_pass
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_product_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_environment_failure
+tests/unit/test_real_env_runner.py::TestRunScenario::test_run_scenario_exempt
+tests/unit/test_real_env_runner.py::TestGenerateMarkdownReport::test_generate_markdown_report_basic
+tests/unit/test_real_env_runner.py::TestGenerateMarkdownReport::test_generate_markdown_report_with_results
+tests/unit/test_real_env_runner.py::TestWriteReport::test_write_report
+  <string>:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/unit/test_real_env_runner.py::TestBuildReportPath::test_build_report_path_format
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/validation/runner.py:161: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+10 passed, 21 warnings in 0.02s
+Exit code: 0

@@ -1,0 +1,3 @@
+.......                                                                                                                                                                                                               [100%]
+7 passed, 25 deselected in 0.02s
+router-contract-in-sync

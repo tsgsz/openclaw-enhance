@@ -1,0 +1,3 @@
+Running validation for workspace-routing (slug: backfill-routing-yield)...
+Report written to: docs/reports/2026-03-15-backfill-routing-yield-workspace-routing.md
+Conclusion: PRODUCT_FAILURE

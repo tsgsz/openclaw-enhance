@@ -1,0 +1,36 @@
+==================================================================================================================== test session starts ====================================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance-strict-gap-closure
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 15 items
+
+tests/integration/test_validation_real_env.py::TestValidateFeatureReportCreation::test_report_file_created PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureReportCreation::test_report_contains_baseline PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_install_lifecycle_command_order PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_install_lifecycle_dev_mode_slug PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_workspace_routing_uses_routing_probe PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_workspace_routing_uses_recovery_probe PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_runtime_watchdog_uses_watchdog_probe PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCommandOrdering::test_cli_surface_command_order PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureExemptions::test_docs_test_only_exempt PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureExemptions::test_docs_test_only_executes_docs_check PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_environment_failure_exit_127 PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_product_failure_nonzero_exit PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureFailureClassification::test_pass_all_commands_succeed PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureCleanupVerification::test_baseline_captured_before_execution PASSED
+tests/integration/test_validation_real_env.py::TestValidateFeatureRecoveryDispatch::test_recovery_dispatch_verified PASSED
+
+===================================================================================================================== warnings summary ======================================================================================================================
+tests/integration/test_validation_real_env.py: 15 warnings
+  <string>:7: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_validation_real_env.py: 66 warnings
+  <string>:8: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+tests/integration/test_validation_real_env.py: 15 warnings
+  <string>:10: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================================================================== 15 passed, 96 warnings in 0.06s ==============================================================================================================

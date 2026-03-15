@@ -1,0 +1,7 @@
+## 6. Current branch shipped set
+| Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
+#### `backfill-dev-install`
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+#### `backfill-watchdog-reminder`
+| Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
+- **Command**: `python -m openclaw_enhance.cli install --dev`

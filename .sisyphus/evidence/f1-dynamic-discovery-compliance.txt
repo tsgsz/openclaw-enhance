@@ -1,0 +1,16 @@
+workspaces/oe-orchestrator/AGENTS.md:42:4. **Rank**: Select by least-privilege rules (narrowest scope, lowest cost, best capability match)
+workspaces/oe-script_coder/AGENTS.md:2:schema_version: 1
+workspaces/oe-script_coder/AGENTS.md:5:routing:
+workspaces/oe-searcher/AGENTS.md:2:schema_version: 1
+workspaces/oe-searcher/AGENTS.md:5:routing:
+workspaces/oe-syshelper/AGENTS.md:2:schema_version: 1
+workspaces/oe-syshelper/AGENTS.md:5:routing:
+workspaces/oe-tool-recovery/AGENTS.md:2:schema_version: 1
+workspaces/oe-tool-recovery/AGENTS.md:5:routing:
+workspaces/oe-watchdog/AGENTS.md:2:schema_version: 1
+workspaces/oe-watchdog/AGENTS.md:5:routing:
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:37:To discover worker manifests and route tasks dynamically:
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:45:First, discover worker manifests by scanning available workspaces:
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:64:schema_version: 1
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:67:routing:
+workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md:111:Apply least-privilege ranking to select the narrowest capable worker:

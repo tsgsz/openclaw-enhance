@@ -1,0 +1,24 @@
+{
+  "name": "openclaw-enhance",
+  "version": "0.1.0",
+  "description": "Hybrid Python/TypeScript toolchain for OpenClaw-native hooks and extensions",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint hooks extensions scripts --ext .ts",
+    "test": "npm run build && node --test dist/extensions/openclaw-enhance-runtime/src/runtime-bridge.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,25 @@
+AGENTS.md:  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class <class> --report-slug <slug>` passes
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder
+docs/install.md:python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install
+docs/install.md:- [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install` passes
+docs/testing-playbook.md:8. **Validator Self-Surface**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
+docs/testing-playbook.md:## 6. Current branch shipped set
+docs/testing-playbook.md:| Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
+docs/testing-playbook.md:| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+docs/testing-playbook.md:#### `backfill-core-install`
+docs/testing-playbook.md:- **Command**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
+docs/testing-playbook.md:#### `backfill-watchdog-reminder`
+docs/opencode-iteration-handbook.md:    - `backfill-core-install` (install-lifecycle)
+docs/opencode-iteration-handbook.md:    - `backfill-watchdog-reminder` (runtime-watchdog)
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke
+docs/reports/2026-03-14-backfill-core-install-install-lifecycle.md:# Validation Report: backfill-core-install
+docs/reports/2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md:# Validation Report: backfill-watchdog-reminder
+src/openclaw_enhance/validation/matrix.py:        "slug": "backfill-core-install",
+src/openclaw_enhance/validation/matrix.py:        "slug": "backfill-watchdog-reminder",
+tests/unit/test_validation_matrix.py:        "backfill-core-install",
+tests/unit/test_validation_matrix.py:        "backfill-watchdog-reminder",
+tests/unit/test_validation_matrix.py:    entry = get_feature_entry("backfill-core-install")
+tests/unit/test_validation_matrix.py:    assert entry["slug"] == "backfill-core-install"

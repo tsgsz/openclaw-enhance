@@ -1,0 +1,2 @@
+98:- **Advisory Role**: Provides recommendations, not execution
+194:- **call_omo_agent / sessions_spawn**: The recovery worker is a leaf node and cannot spawn subagents.

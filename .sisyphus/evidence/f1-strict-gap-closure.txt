@@ -1,0 +1,40 @@
+docs/testing-playbook.md:1. **Hook Verification**: `cat ~/.openclaw/config.json | grep "openclawEnhance"`
+docs/testing-playbook.md:- Never modify `~/.openclaw/config.json` manually; use the CLI.
+docs/testing-playbook.md:## 6. Current branch shipped set
+docs/testing-playbook.md:| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/config.json` | `openclawEnhance` hooks present in `hooks` section of config |
+docs/reports/2026-03-14-backfill-cli-surface-cli-surface.md:  tsconfig.json
+docs/reports/2026-03-14-backfill-routing-yield-workspace-routing.md:  tsconfig.json
+docs/reports/2026-03-15-backfill-cli-surface-cli-surface.md:  tsconfig.json
+docs/reports/2026-03-14-harness-recovery-test-workspace-routing.md:  tsconfig.json
+docs/reports/2026-03-14-backfill-recovery-worker-workspace-routing.md:  tsconfig.json
+src/openclaw_enhance/paths.py:CONFIG_BACKUP_FILENAME = "config.json.bak"
+src/openclaw_enhance/paths.py:    """Resolve OpenClaw config path, preferring openclaw.json over config.json.
+src/openclaw_enhance/paths.py:        Path to openclaw.json if it exists, otherwise config.json.
+src/openclaw_enhance/paths.py:    return openclaw_home / "config.json"
+src/openclaw_enhance/cli.py:        "validate-feature --class",
+src/openclaw_enhance/validation/runner.py:    return openclaw_home / "config.json"
+src/openclaw_enhance/validation/guardrails.py:    """Capture config.json state."""
+src/openclaw_enhance/validation/guardrails.py:            f"(openclaw.json or config.json) under {openclaw_home}"
+src/openclaw_enhance/validation/live_probes.py:    return openclaw_home / "config.json"
+src/openclaw_enhance/validation/live_probes.py:        _fail("watchdog-reminder", "invalid_openclaw_config_json", str(exc))
+tests/unit/test_config_patch.py:    config_path = tmp_path / "config.json"
+tests/unit/test_config_patch.py:    config_path = tmp_path / "config.json"
+tests/unit/test_config_patch.py:    backup_path = tmp_path / "config.json.bak"
+tests/unit/test_paths.py:        fake_home / ".openclaw" / "openclaw-enhance" / "config.json.bak"
+tests/unit/test_paths.py:    config_json = openclaw_home / "config.json"
+tests/unit/test_paths.py:    config_json.write_text("{}")
+tests/unit/test_paths.py:def test_resolve_openclaw_config_path_falls_back_to_config_json(tmp_path: Path) -> None:
+tests/unit/test_paths.py:    config_json = openclaw_home / "config.json"
+tests/unit/test_paths.py:    config_json.write_text("{}")
+tests/unit/test_paths.py:    assert result == config_json
+tests/unit/test_paths.py:def test_resolve_openclaw_config_path_returns_config_json_when_neither_exists(
+tests/unit/test_paths.py:    assert result == openclaw_home / "config.json"
+tests/integration/test_validation_real_env.py:    config_file = openclaw_home / "config.json"
+tests/integration/test_validation_real_env.py:            assert env["OPENCLAW_CONFIG_PATH"].endswith("config.json")
+tests/integration/test_install_idempotency.py:    config_file = openclaw_home / "config.json"
+tests/integration/test_status_command.py:        config_file = openclaw_home / "config.json"
+tests/integration/test_dev_mode_integration.py:    config_file = openclaw_home / "config.json"
+tests/integration/test_install_uninstall.py:    config_file = openclaw_home / "config.json"
+tests/integration/test_main_skill_sync.py:    (openclaw_home / "config.json").write_text(json.dumps(config) + "\n")
+tests/fixtures/__init__.py:    config_file = tmp_path / "config.json"
+tests/e2e/test_openclaw_harness.py:        config_file = openclaw_home / "config.json"

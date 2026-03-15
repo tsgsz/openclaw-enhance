@@ -1,0 +1,22 @@
+Error: workspaces/oe-watchdog/AGENTS.md: Missing required field: agent_id
+Error: workspaces/oe-watchdog/AGENTS.md: Missing required field: workspace
+Error: workspaces/oe-watchdog/AGENTS.md: Invalid capabilities: ['timeout_detection', 'status_monitoring', 'reminder_delivery', 'health_checks']
+Error: workspaces/oe-watchdog/AGENTS.md: Invalid model_tier: fast
+Error: workspaces/oe-orchestrator/AGENTS.md: No frontmatter found in content
+Error: workspaces/oe-syshelper/AGENTS.md: Missing required field: agent_id
+Error: workspaces/oe-syshelper/AGENTS.md: Missing required field: workspace
+Error: workspaces/oe-syshelper/AGENTS.md: Invalid capabilities: ['system_discovery', 'session_analysis', 'code_navigation', 'search_operations']
+Error: workspaces/oe-syshelper/AGENTS.md: Invalid model_tier: fast
+Error: workspaces/oe-searcher/AGENTS.md: Missing required field: agent_id
+Error: workspaces/oe-searcher/AGENTS.md: Missing required field: workspace
+Error: workspaces/oe-searcher/AGENTS.md: Invalid capabilities: ['web_search', 'documentation_lookup', 'code_examples', 'research_synthesis']
+Error: workspaces/oe-searcher/AGENTS.md: Invalid model_tier: fast
+Error: workspaces/oe-tool-recovery/AGENTS.md: Missing required field: agent_id
+Error: workspaces/oe-tool-recovery/AGENTS.md: Missing required field: workspace
+Error: workspaces/oe-tool-recovery/AGENTS.md: Invalid capabilities: ['failure_diagnosis', 'contract_inspection', 'recovery_suggestion']
+Error: workspaces/oe-tool-recovery/AGENTS.md: Invalid model_tier: reasoning
+Error: workspaces/oe-script_coder/AGENTS.md: Missing required field: agent_id
+Error: workspaces/oe-script_coder/AGENTS.md: Missing required field: workspace
+Error: workspaces/oe-script_coder/AGENTS.md: Invalid capabilities: ['script_writing', 'test_development', 'code_implementation', 'debugging', 'refactoring']
+Error: workspaces/oe-script_coder/AGENTS.md: Invalid model_tier: reasoning
+Error: Docs check failed

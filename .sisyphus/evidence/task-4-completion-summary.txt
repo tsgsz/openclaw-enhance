@@ -1,0 +1,15 @@
+Task 4 Complete - Summary:
+
+Commit: 23d25c9 feat(validation): add live recovery worker proof
+
+Changes:
+- Replaced backfill-routing-yield with live orchestrator-session proof
+- Modified live_probes.py: routing-yield now executes openclaw chat + session info
+- Modified types.py: routing bundle uses --message parameter
+- Updated integration tests: expect single live probe command
+- Updated e2e tests: verify live_session proof and session_id
+
+Verification:
+- All integration tests pass (15/15)
+- Contract test passes (13/13)
+- LSP diagnostics clean

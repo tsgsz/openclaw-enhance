@@ -1,0 +1,19 @@
+15:The Orchestrator delegates work to specialized subagents via the native `announce` mechanism. This skill provides:
+115:2. **Dispatch Workers**: Spawn agents via `sessions_spawn` with unique dispatch identities
+116:3. **Yield for Results**: Call `sessions_yield` to cleanly end turn
+117:4. **Collect via Announce**: Receive results on next turn via auto-announce
+120:**Important**: After calling `sessions_yield`, wait for auto-announced results. Do not poll or query session state while waiting.
+156:1. **Dispatch**: Orchestrator spawns `oe-tool-recovery` with the failure context via `sessions_spawn`.
+157:2. **Yield**: Orchestrator calls `sessions_yield` to await the recovery suggestion.
+237:All dispatch is done through OpenClaw's native `sessions_spawn` tool. Do NOT create wrapper functions.
+241:Use `sessions_spawn` to dispatch to a specific agent:
+253:Spawn multiple agents in parallel using separate `sessions_spawn` calls:
+320:[Agent output from announce]
+323:[Agent output from announce]
+340:When a subagent fails (announces failure or times out):
+342:1. Check announce status for error details
+350:**Error**: [from announce]
+392:8. **Never wrap sessions_spawn**: Use native tool directly
+418:3. **Dispatch parallel research** (native sessions_spawn)
+422:   - Wait for all to announce results
+429:   - Collect all announce results

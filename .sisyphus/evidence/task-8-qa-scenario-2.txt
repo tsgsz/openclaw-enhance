@@ -1,0 +1,27 @@
+=== QA Scenario 2: Historical duplicates remain but are marked superseded ===
+
+Checking 2026-03-15 reports still exist:
+docs/reports/2026-03-15-backfill-cli-surface-cli-surface.md
+docs/reports/2026-03-15-backfill-core-install-install-lifecycle.md
+docs/reports/2026-03-15-backfill-dev-install-install-lifecycle.md
+docs/reports/2026-03-15-backfill-recovery-worker-workspace-routing.md
+docs/reports/2026-03-15-backfill-routing-yield-workspace-routing.md
+docs/reports/2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md
+
+Verifying superseded section exists in INVENTORY.md:
+## Superseded Reports
+
+These reports have been replaced by newer canonical versions:
+
+| Report File | Date | Superseded By | Reason |
+|-------------|------|---------------|--------|
+| [2026-03-15-backfill-core-install-install-lifecycle.md](./2026-03-15-backfill-core-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-core-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-dev-install-install-lifecycle.md](./2026-03-15-backfill-dev-install-install-lifecycle.md) | 2026-03-15 | 2026-03-14-backfill-dev-install-install-lifecycle.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-cli-surface-cli-surface.md](./2026-03-15-backfill-cli-surface-cli-surface.md) | 2026-03-15 | 2026-03-14-backfill-cli-surface-cli-surface.md | Validation framework change; 2026-03-14 version is canonical |
+| [2026-03-15-backfill-routing-yield-workspace-routing.md](./2026-03-15-backfill-routing-yield-workspace-routing.md) | 2026-03-15 | 2026-03-14-backfill-routing-yield-workspace-routing.md | Environment incompatibility (openclaw chat command missing) |
+| [2026-03-15-backfill-recovery-worker-workspace-routing.md](./2026-03-15-backfill-recovery-worker-workspace-routing.md) | 2026-03-15 | 2026-03-14-backfill-recovery-worker-workspace-routing.md | Environment incompatibility (openclaw chat command missing) |
+| [2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-15 | 2026-03-14-backfill-watchdog-reminder-runtime-watchdog.md | Validation framework change; 2026-03-14 version is canonical |
+
+## Notes
+
+- The 2026-03-14 reports use a validation approach compatible with OpenClaw 2026.3.12

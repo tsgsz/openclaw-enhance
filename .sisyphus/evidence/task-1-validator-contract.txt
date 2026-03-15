@@ -1,0 +1,7 @@
+AGENTS.md:  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class <class> --report-slug <slug>` passes
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield
+docs/operations.md:python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder
+docs/install.md:python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug post-install-check
+docs/install.md:- [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug post-install-check` passes
