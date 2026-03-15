@@ -8,7 +8,7 @@ the runtime store for the watchdog to evaluate and act upon.
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from typing import Protocol
+from typing import Protocol, TypedDict
 
 
 class SessionStatus(Enum):
@@ -77,6 +77,12 @@ class DetectionConfig:
     min_session_duration: timedelta = field(default_factory=lambda: timedelta(seconds=30))
 
 
+class MonitoredSession(TypedDict):
+    started_at: datetime
+    expected_duration: timedelta
+    metadata: dict[str, str]
+
+
 class TimeoutDetector:
     """Detects timeouts in OpenClaw sessions.
 
@@ -88,7 +94,7 @@ class TimeoutDetector:
         self,
         store: RuntimeStore | None = None,
         config: DetectionConfig | None = None,
-    ):
+    ) -> None:
         """Initialize the timeout detector.
 
         Args:
@@ -97,7 +103,7 @@ class TimeoutDetector:
         """
         self._store = store
         self._config = config or DetectionConfig()
-        self._monitored_sessions: dict[str, dict[str, datetime | timedelta]] = {}
+        self._monitored_sessions: dict[str, MonitoredSession] = {}
 
     def start_monitoring(
         self,
@@ -142,8 +148,8 @@ class TimeoutDetector:
             expected = data["expected_duration"]
             metadata = data.get("metadata", {})
 
-            actual_duration = now - started_at  # type: ignore[operator]
-            threshold = expected + self._config.grace_period  # type: ignore[operator]
+            actual_duration = now - started_at
+            threshold = expected + self._config.grace_period
 
             # Skip if session hasn't reached minimum duration
             if actual_duration < self._config.min_session_duration:
@@ -153,10 +159,10 @@ class TimeoutDetector:
                 event = TimeoutEvent(
                     session_id=session_id,
                     detected_at=now,
-                    expected_duration=expected,  # type: ignore[arg-type]
+                    expected_duration=expected,
                     actual_duration=actual_duration,
                     status=SessionStatus.TIMEOUT_SUSPECTED,
-                    metadata=metadata,  # type: ignore[arg-type]
+                    metadata=metadata,
                 )
                 events.append(event)
 
@@ -183,15 +189,15 @@ class TimeoutDetector:
         expected = data["expected_duration"]
         metadata = data.get("metadata", {})
 
-        actual_duration = now - started_at  # type: ignore[operator]
+        actual_duration = now - started_at
 
         event = TimeoutEvent(
             session_id=session_id,
             detected_at=now,
-            expected_duration=expected,  # type: ignore[arg-type]
+            expected_duration=expected,
             actual_duration=actual_duration,
             status=SessionStatus.CONFIRMED_TIMEOUT,
-            metadata=metadata,  # type: ignore[arg-type]
+            metadata=metadata,
         )
 
         if self._store is not None:

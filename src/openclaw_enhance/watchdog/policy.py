@@ -133,7 +133,7 @@ class PolicyEngine:
     appropriate actions for the watchdog to take.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the policy engine with default policies."""
         self._policies: dict[str, TimeoutPolicy] = {}
         self._session_policies: dict[str, str] = {}
