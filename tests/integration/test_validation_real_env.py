@@ -211,10 +211,10 @@ class TestValidateFeatureCommandOrdering:
         )
 
         calls = [call[0][0] for call in mock_run.call_args_list]
-        assert len(calls) == 2
-        assert "render-workspace oe-orchestrator" in calls[0]
-        assert "python -m openclaw_enhance.validation.live_probes" in calls[1]
-        assert "routing-yield" in calls[1]
+        assert len(calls) == 1
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
+        assert "routing-yield" in calls[0]
+        assert "--message" in calls[0]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_workspace_routing_uses_recovery_probe(
@@ -242,10 +242,10 @@ class TestValidateFeatureCommandOrdering:
         )
 
         calls = [call[0][0] for call in mock_run.call_args_list]
-        assert len(calls) == 2
-        assert "render-workspace oe-orchestrator" in calls[0]
-        assert "python -m openclaw_enhance.validation.live_probes" in calls[1]
-        assert "recovery-worker" in calls[1]
+        assert len(calls) == 1
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
+        assert "recovery-worker" in calls[0]
+        assert "--message" in calls[0]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_runtime_watchdog_uses_watchdog_probe(
@@ -530,3 +530,48 @@ class TestValidateFeatureCleanupVerification:
         content = report_files[0].read_text()
 
         assert "environment" in content.lower() or "baseline" in content.lower()
+
+
+class TestValidateFeatureRecoveryDispatch:
+    """Tests for recovery worker dispatch verification."""
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_recovery_dispatch_verified(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        """Recovery probe should verify dispatch and corrected method."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=(
+                '{"ok": true, "probe": "recovery-worker", '
+                '"marker": "PROBE_RECOVERY_WORKER_OK", "session_id": "ses_test123"}'
+            ),
+            stderr="",
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "recovery-dispatch-test",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        assert result.exit_code == 0
+        report_files = list(reports_dir.glob("*-recovery-dispatch-test-workspace-routing.md"))
+        assert len(report_files) == 1
+
+        content = report_files[0].read_text()
+        assert "recovery-worker" in content
+        assert "PROBE_RECOVERY_WORKER_OK" in content

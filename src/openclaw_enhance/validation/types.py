@@ -121,18 +121,18 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
         if "recovery" in slug:
             live_probe_cmd = (
                 "python -m openclaw_enhance.validation.live_probes recovery-worker "
-                '--openclaw-home "$OPENCLAW_HOME" --worker oe-tool-recovery'
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--message "请先尝试使用 websearch 工具搜索 Python async patterns；'
+                '若失败，继续完成任务并报告最终采用的方法"'
             )
         else:
             live_probe_cmd = (
                 "python -m openclaw_enhance.validation.live_probes routing-yield "
-                '--openclaw-home "$OPENCLAW_HOME" --workspace oe-orchestrator'
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--message "帮我规划一个复杂任务，先并行搜索两个方向，再汇总一个执行计划"'
             )
 
-        return [
-            "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
-            live_probe_cmd,
-        ]
+        return [live_probe_cmd]
 
     bundles = {
         FeatureClass.CLI_SURFACE: [

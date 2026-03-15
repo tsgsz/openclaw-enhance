@@ -524,7 +524,7 @@ class TestHarnessRoutingYieldValidation:
         assert "PASS" in result.stdout or "Conclusion: PASS" in result.stdout
 
     def test_routing_yield_report_contains_evidence(self):
-        """Routing yield report should contain deterministic evidence."""
+        """Routing yield report should contain live session evidence."""
         subprocess.run(
             [
                 sys.executable,
@@ -549,6 +549,8 @@ class TestHarnessRoutingYieldValidation:
             content = report.read_text()
             assert '"probe": "routing-yield"' in content
             assert '"marker": "PROBE_ROUTING_YIELD_OK"' in content
+            assert '"proof": "live_session"' in content
+            assert '"session_id":' in content
 
 
 class TestHarnessRecoveryWorkerValidation:
@@ -576,7 +578,7 @@ class TestHarnessRecoveryWorkerValidation:
         assert "workspace-routing" in result.stdout
 
     def test_recovery_worker_report_contains_executable_proof(self):
-        """Recovery worker report should contain executable test proof."""
+        """Recovery worker report should contain dispatch and corrected method proof."""
         subprocess.run(
             [
                 sys.executable,
@@ -601,6 +603,7 @@ class TestHarnessRecoveryWorkerValidation:
             content = report.read_text()
             assert '"probe": "recovery-worker"' in content
             assert '"marker": "PROBE_RECOVERY_WORKER_OK"' in content
+            assert "session_id" in content
 
 
 class TestHarnessLiveProbeOutputs:

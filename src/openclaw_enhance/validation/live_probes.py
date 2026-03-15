@@ -84,57 +84,153 @@ def dev_symlink(openclaw_home: Path, workspace: str) -> None:
 
 @cli.command("routing-yield")
 @click.option("--openclaw-home", type=click.Path(path_type=Path), required=True)
-@click.option("--workspace", default="oe-orchestrator", show_default=True)
-def routing_yield(openclaw_home: Path, workspace: str) -> None:
-    """Verify routing bundle evidence includes sessions_yield contract."""
+@click.option("--message", required=True, help="Message to send to openclaw chat")
+def routing_yield(openclaw_home: Path, message: str) -> None:
+    """Verify orchestrator routing via live openclaw chat session."""
     home = _require_openclaw_home("routing-yield", openclaw_home)
+    env = _probe_env(home)
 
-    result = subprocess.run(
-        [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", workspace],
+    openclaw_cmd = subprocess.run(
+        ["which", "openclaw"],
         capture_output=True,
         text=True,
-        env=_probe_env(home),
+        env=env,
     )
-    if result.returncode != 0:
-        _fail("routing-yield", "render_workspace_failed", result.stderr.strip())
-    if "sessions_yield" not in result.stdout:
-        _fail("routing-yield", "missing_sessions_yield")
+    if openclaw_cmd.returncode != 0:
+        _fail("routing-yield", "openclaw_cli_not_found", "openclaw command not in PATH")
+
+    chat_result = subprocess.run(
+        ["openclaw", "chat", "--message", message],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if chat_result.returncode != 0:
+        _fail("routing-yield", "openclaw_chat_failed", chat_result.stderr.strip())
+
+    session_id = None
+    for line in chat_result.stdout.splitlines():
+        if "session" in line.lower() and "ses_" in line:
+            parts = line.split()
+            for part in parts:
+                if part.startswith("ses_"):
+                    session_id = part.strip(",:;")
+                    break
+            if session_id:
+                break
+
+    if not session_id:
+        _fail("routing-yield", "missing_session_id", "No session ID found in chat output")
+
+    assert session_id is not None
+    info_result = subprocess.run(
+        ["openclaw", "session", "info", session_id],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if info_result.returncode != 0:
+        _fail("routing-yield", "session_info_failed", info_result.stderr.strip())
+
+    output = info_result.stdout
+    has_orchestrator = "oe-orchestrator" in output
+    has_yield = "sessions_yield" in output
+
+    if not has_orchestrator or not has_yield:
+        missing = []
+        if not has_orchestrator:
+            missing.append("oe-orchestrator")
+        if not has_yield:
+            missing.append("sessions_yield")
+        _fail("routing-yield", "missing_routing_evidence", f"Missing: {', '.join(missing)}")
 
     _emit(
         {
             "ok": True,
             "probe": "routing-yield",
             "marker": "PROBE_ROUTING_YIELD_OK",
-            "workspace": workspace,
-            "proof": "sessions_yield",
+            "session_id": session_id,
+            "proof": "live_session",
         }
     )
 
 
 @cli.command("recovery-worker")
 @click.option("--openclaw-home", type=click.Path(path_type=Path), required=True)
-@click.option("--worker", default="oe-tool-recovery", show_default=True)
-def recovery_worker(openclaw_home: Path, worker: str) -> None:
-    """Verify recovery worker workspace renders expected identity."""
+@click.option("--message", required=True)
+def recovery_worker(openclaw_home: Path, message: str) -> None:
+    """Verify recovery worker registration and live dispatch with corrected method."""
     home = _require_openclaw_home("recovery-worker", openclaw_home)
+    env = _probe_env(home)
 
-    result = subprocess.run(
-        [sys.executable, "-m", "openclaw_enhance.cli", "render-workspace", worker],
+    list_result = subprocess.run(
+        ["openclaw", "agent", "list"],
         capture_output=True,
         text=True,
-        env=_probe_env(home),
+        env=env,
     )
-    if result.returncode != 0:
-        _fail("recovery-worker", "render_workspace_failed", result.stderr.strip())
-    if worker not in result.stdout:
-        _fail("recovery-worker", "missing_recovery_worker")
+    if list_result.returncode != 0:
+        _fail("recovery-worker", "agent_list_failed", list_result.stderr.strip())
+    if "oe-tool-recovery" not in list_result.stdout:
+        _fail("recovery-worker", "missing_recovery_registration")
+
+    info_result = subprocess.run(
+        ["openclaw", "agent", "info", "oe-tool-recovery"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if info_result.returncode != 0:
+        _fail("recovery-worker", "agent_info_failed", info_result.stderr.strip())
+
+    chat_result = subprocess.run(
+        ["openclaw", "chat", "-a", "oe-tool-recovery", "-m", message],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if chat_result.returncode != 0:
+        _fail("recovery-worker", "chat_failed", chat_result.stderr.strip())
+
+    session_id = None
+    for line in chat_result.stdout.splitlines():
+        if "ses_" in line:
+            parts = line.split()
+            for part in parts:
+                if part.startswith("ses_"):
+                    session_id = part.strip(",:;")
+                    break
+            if session_id:
+                break
+
+    if not session_id:
+        _fail("recovery-worker", "missing_session_id", "No session ID in chat output")
+
+    assert session_id is not None
+    session_result = subprocess.run(
+        ["openclaw", "session", "info", session_id],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if session_result.returncode != 0:
+        _fail("recovery-worker", "session_info_failed", session_result.stderr.strip())
+
+    output = session_result.stdout
+    has_recovery = "oe-tool-recovery" in output
+    has_corrected = "websearch_web_search_exa" in output
+
+    if not has_recovery:
+        _fail("recovery-worker", "no_recovery_dispatch", "oe-tool-recovery not in session")
+    if not has_corrected:
+        _fail("recovery-worker", "no_corrected_method", "websearch_web_search_exa not found")
 
     _emit(
         {
             "ok": True,
             "probe": "recovery-worker",
             "marker": "PROBE_RECOVERY_WORKER_OK",
-            "worker": worker,
+            "session_id": session_id,
         }
     )
 
