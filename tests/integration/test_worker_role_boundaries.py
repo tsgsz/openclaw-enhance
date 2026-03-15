@@ -83,7 +83,7 @@ class TestSyshelperBoundaries(TestWorkerRoleBoundaries):
 
     def test_syshelper_has_lsp_tools(self):
         """Syshelper should have LSP code navigation tools."""
-        tools = self._read_file("oe-syshelper", "skills/oe-session-inspect/SKILL.md")
+        self._read_file("oe-syshelper", "skills/oe-session-inspect/SKILL.md")
 
         pass  # LSP tools managed via frontmatter now
 
@@ -190,7 +190,7 @@ class TestWatchdogBoundaries(TestWorkerRoleBoundaries):
     def test_watchdog_cannot_spawn_agents(self):
         """Watchdog cannot spawn agents."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
-        tools = self._read_file("oe-watchdog", "skills/oe-timeout-alarm/SKILL.md")
+        self._read_file("oe-watchdog", "skills/oe-timeout-alarm/SKILL.md")
 
         assert "严禁派生" in agents or "Cannot spawn" in agents
         pass
