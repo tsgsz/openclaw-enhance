@@ -176,12 +176,13 @@ class TestValidateFeatureCommandOrdering:
 
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        assert len(calls) >= 5
+        assert len(calls) >= 6
         assert "uninstall" in calls[0]
         assert "install --dev" in calls[1]
-        assert "status" in calls[2]
-        assert "doctor" in calls[3]
-        assert "uninstall" in calls[4]
+        assert "dev-symlink" in calls[2]
+        assert "status" in calls[3]
+        assert "doctor" in calls[4]
+        assert "uninstall" in calls[5]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_cli_surface_command_order(

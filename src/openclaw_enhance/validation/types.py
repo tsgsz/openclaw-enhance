@@ -104,6 +104,10 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             return [
                 "python -m openclaw_enhance.cli uninstall",
                 "python -m openclaw_enhance.cli install --dev",
+                (
+                    "python -m openclaw_enhance.validation.live_probes dev-symlink "
+                    '--openclaw-home "$OPENCLAW_HOME" --workspace oe-orchestrator'
+                ),
                 "python -m openclaw_enhance.cli status",
                 "python -m openclaw_enhance.cli doctor",
                 "python -m openclaw_enhance.cli uninstall",

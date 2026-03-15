@@ -479,6 +479,42 @@ class TestHarnessRealEnvironmentValidation:
         assert len(report_files) > 0, "Validation report should be generated"
 
 
+class TestHarnessDevInstallValidation:
+    """E2E tests for dev-install validation in harness environment."""
+
+    def test_dev_install_report_contains_symlink_evidence(self):
+        """Dev-install report should contain explicit symlink proof."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "openclaw_enhance.cli",
+                "validate-feature",
+                "--feature-class",
+                "install-lifecycle",
+                "--report-slug",
+                "backfill-dev-install",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        # Should execute validation scenario
+        assert result.returncode in [0, 1], f"Unexpected exit code: {result.returncode}"
+
+        # Verify report was generated
+        reports_dir = Path("docs/reports")
+        report_files = list(reports_dir.glob("*backfill-dev-install-install-lifecycle.md"))
+        assert len(report_files) > 0, "Dev-install validation report should be generated"
+
+        # Verify symlink evidence in report
+        content = report_files[0].read_text()
+        assert "dev-symlink" in content
+        assert "Symlink:" in content
+        assert "Target:" in content
+        assert "oe-orchestrator" in content
+
+
 class TestHarnessRoutingYieldValidation:
     """E2E tests for routing and yield validation in harness."""
 

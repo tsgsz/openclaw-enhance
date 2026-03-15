@@ -53,6 +53,7 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
     env = os.environ.copy()
     project_root = Path(__file__).parent.parent.parent.parent
     env["OPENCLAW_ENHANCE_WORKSPACES_DIR"] = str(project_root / "workspaces")
+    env["OPENCLAW_HOME"] = str(openclaw_home)
 
     result = subprocess.run(
         cmd,
