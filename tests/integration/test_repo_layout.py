@@ -29,9 +29,7 @@ class TestRepoLayout:
         repo_root = test_file.parent.parent.parent
 
         expected_dir = repo_root / directory
-        assert expected_dir.exists(), (
-            f"Directory '{directory}' does not exist at {expected_dir}"
-        )
+        assert expected_dir.exists(), f"Directory '{directory}' does not exist at {expected_dir}"
         assert expected_dir.is_dir(), f"'{directory}' exists but is not a directory"
 
     def test_src_package_structure(self):
@@ -46,9 +44,7 @@ class TestRepoLayout:
         expected_files = ["__init__.py", "cli.py", "constants.py"]
         for filename in expected_files:
             file_path = package_dir / filename
-            assert file_path.exists(), (
-                f"Expected file '{filename}' not found in package"
-            )
+            assert file_path.exists(), f"Expected file '{filename}' not found in package"
 
     def test_tests_directory_structure(self):
         """Tests directory should have unit and integration subdirs."""

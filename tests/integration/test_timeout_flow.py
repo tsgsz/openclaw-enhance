@@ -16,12 +16,11 @@ import pytest
 
 from openclaw_enhance.watchdog.detector import (
     DetectionConfig,
-    RuntimeStore,
     SessionStatus,
     TimeoutDetector,
     TimeoutEvent,
 )
-from openclaw_enhance.watchdog.notifier import Notifier, ReminderType
+from openclaw_enhance.watchdog.notifier import Notifier
 from openclaw_enhance.watchdog.policy import ActionType, PolicyEngine
 from openclaw_enhance.watchdog.state_sync import RuntimeStoreAdapter, StateSync
 

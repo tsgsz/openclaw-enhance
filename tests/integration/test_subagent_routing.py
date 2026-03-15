@@ -5,7 +5,6 @@ the Python-first router runtime API.
 """
 
 from datetime import timedelta
-from pathlib import Path
 
 import pytest
 
