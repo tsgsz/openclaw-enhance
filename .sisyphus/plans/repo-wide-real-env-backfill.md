@@ -143,9 +143,9 @@ Wave 3: harness execution, durable report generation, and workflow state updates
   - Test: `tests/unit/test_cli_smoke.py:117` — existing CLI smoke pattern for `validate-feature --help`
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `grep -R "validate-feature --class" AGENTS.md docs tests --include='*.md' --include='*.py'` returns no matches
-  - [ ] `python -m openclaw_enhance.cli validate-feature --help | grep -q -- "--feature-class"` exits `0`
-  - [ ] `python -m openclaw_enhance.cli docs-check` exits `0`
+  - [x] `grep -R "validate-feature --class" AGENTS.md docs tests --include='*.md' --include='*.py'` returns no matches
+  - [x] `python -m openclaw_enhance.cli validate-feature --help | grep -q -- "--feature-class"` exits `0`
+  - [x] `python -m openclaw_enhance.cli docs-check` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -185,10 +185,10 @@ Wave 3: harness execution, durable report generation, and workflow state updates
   - Harness anchor: `tests/e2e/test_openclaw_harness.py:424` — current real-environment smoke already uses `validate-feature`
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `grep -q "Current branch shipped set" docs/testing-playbook.md` exits `0`
-  - [ ] `grep -q "backfill-dev-install" docs/testing-playbook.md` exits `0`
-  - [ ] `grep -q "backfill-watchdog-reminder" docs/testing-playbook.md` exits `0`
-  - [ ] `grep -q "install --dev" docs/testing-playbook.md` exits `0`
+  - [x] `grep -q "Current branch shipped set" docs/testing-playbook.md` exits `0`
+  - [x] `grep -q "backfill-dev-install" docs/testing-playbook.md` exits `0`
+  - [x] `grep -q "backfill-watchdog-reminder" docs/testing-playbook.md` exits `0`
+  - [x] `grep -q "install --dev" docs/testing-playbook.md` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -227,8 +227,8 @@ Wave 3: harness execution, durable report generation, and workflow state updates
   - Test style: `tests/unit/test_real_env_validation.py` — validation enums/path-convention test patterns
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/unit/test_validation_matrix.py -q` exits `0`
-  - [ ] `python - <<'PY'
+  - [x] `pytest tests/unit/test_validation_matrix.py -q` exits `0`
+  - [x] `python - <<'PY'
 from openclaw_enhance.validation.matrix import SHIPPED_CAPABILITY_MATRIX
 required = {
     'backfill-core-install',
@@ -280,8 +280,8 @@ PY` exits `0`
   - Integration coverage: `tests/integration/test_validation_real_env.py` — validator integration tests that should pin new semantics
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/unit/test_real_env_guardrails.py tests/unit/test_real_env_runner.py tests/integration/test_validation_real_env.py -q` exits `0`
-  - [ ] `python - <<'PY'
+  - [x] `pytest tests/unit/test_real_env_guardrails.py tests/unit/test_real_env_runner.py tests/integration/test_validation_real_env.py -q` exits `0`
+  - [x] `python - <<'PY'
 from pathlib import Path
 from openclaw_enhance.validation.guardrails import capture_baseline_state
 state = capture_baseline_state(Path.home() / '.openclaw')
@@ -327,9 +327,9 @@ PY` exits `0`
   - Existing failed report: `docs/reports/2026-03-14-harness-test-install-lifecycle.md` — evidence of what the current live bundle misses
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_install_uninstall.py tests/integration/test_dev_mode_integration.py -q` exits `0`
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-dev-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `pytest tests/integration/test_install_uninstall.py tests/integration/test_dev_mode_integration.py -q` exits `0`
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-dev-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -368,9 +368,9 @@ PY` exits `0`
   - Docs drift repair: `AGENTS.md:92`, `docs/install.md:41`, `docs/operations.md:473` — now-correct contract examples that the live bundle should match
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/unit/test_cli_smoke.py tests/integration/test_status_command.py -q` exits `0`
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `grep -q "Conclusion: PASS" docs/reports/*-backfill-cli-surface-cli-surface.md` exits `0`
+  - [x] `pytest tests/unit/test_cli_smoke.py tests/integration/test_status_command.py -q` exits `0`
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `grep -q "Conclusion: PASS" docs/reports/*-backfill-cli-surface-cli-surface.md` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -411,9 +411,9 @@ PY` exits `0`
   - Existing harness anchor: `tests/e2e/test_openclaw_harness.py:424` — existing real-environment validator smoke entry point
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_worker_role_boundaries.py -q` exits `0`
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `grep -q "oe-orchestrator" docs/reports/*-backfill-routing-yield-workspace-routing.md` exits `0`
+  - [x] `pytest tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_worker_role_boundaries.py -q` exits `0`
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `grep -q "oe-orchestrator" docs/reports/*-backfill-routing-yield-workspace-routing.md` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -453,9 +453,9 @@ PY` exits `0`
   - Routing evidence: `tests/integration/test_worker_role_boundaries.py` — recovery-worker authority boundaries that must remain intact
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_orchestrator_dispatch_contract.py -q` exits `0`
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-recovery-worker --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `grep -q "oe-tool-recovery" docs/reports/*-backfill-recovery-worker-workspace-routing.md` exits `0`
+  - [x] `pytest tests/integration/test_orchestrator_dispatch_contract.py -q` exits `0`
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-recovery-worker --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `grep -q "oe-tool-recovery" docs/reports/*-backfill-recovery-worker-workspace-routing.md` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -495,10 +495,10 @@ PY` exits `0`
   - Bundle baseline: `src/openclaw_enhance/validation/types.py:109` — current runtime-watchdog bundle is only a config grep and is insufficient
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_timeout_flow.py tests/integration/test_worker_role_boundaries.py -q` exits `0`
-  - [ ] `OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py -k watchdog -q` exits `0` in the prepared harness environment
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `grep -q "Conclusion: PASS" docs/reports/*-backfill-watchdog-reminder-runtime-watchdog.md` exits `0`
+  - [x] `pytest tests/integration/test_timeout_flow.py tests/integration/test_worker_role_boundaries.py -q` exits `0`
+  - [x] `OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py -k watchdog -q` exits `0` in the prepared harness environment
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `grep -q "Conclusion: PASS" docs/reports/*-backfill-watchdog-reminder-runtime-watchdog.md` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -537,9 +537,9 @@ PY` exits `0`
   - Coverage matrix: `docs/testing-playbook.md` — source of truth for canonical slugs and proof kinds
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `pytest tests/integration/test_validation_real_env.py tests/integration/test_timeout_flow.py tests/integration/test_orchestrator_dispatch_contract.py -q` exits `0`
-  - [ ] `OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py -k "real_env or recovery or watchdog" -q` exits `0` in the prepared harness environment
-  - [ ] `pytest tests/e2e/test_openclaw_harness.py -k "real_env or recovery or watchdog" -q` skips cleanly when the harness environment is not available
+  - [x] `pytest tests/integration/test_validation_real_env.py tests/integration/test_timeout_flow.py tests/integration/test_orchestrator_dispatch_contract.py -q` exits `0`
+  - [x] `OPENCLAW_HARNESS=1 pytest tests/e2e/test_openclaw_harness.py -k "real_env or recovery or watchdog" -q` exits `0` in the prepared harness environment
+  - [x] `pytest tests/e2e/test_openclaw_harness.py -k "real_env or recovery or watchdog" -q` skips cleanly when the harness environment is not available
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -578,10 +578,10 @@ PY` exits `0`
   - Coverage matrix: `docs/testing-playbook.md` — canonical source for the six backfill slugs and proof expectations
 
   **Acceptance Criteria** (agent-executable only):
-  - [ ] `ls docs/reports/*-backfill-core-install-install-lifecycle.md docs/reports/*-backfill-dev-install-install-lifecycle.md docs/reports/*-backfill-cli-surface-cli-surface.md docs/reports/*-backfill-routing-yield-workspace-routing.md docs/reports/*-backfill-recovery-worker-workspace-routing.md docs/reports/*-backfill-watchdog-reminder-runtime-watchdog.md` exits `0`
-  - [ ] `grep -R "Conclusion: PASS" docs/reports/*-backfill-*.md` returns six matches
-  - [ ] `grep -q "repo-wide-real-env-backfill" docs/opencode-iteration-handbook.md` exits `0`
-  - [ ] `python -m openclaw_enhance.cli docs-check` exits `0`
+  - [x] `ls docs/reports/*-backfill-core-install-install-lifecycle.md docs/reports/*-backfill-dev-install-install-lifecycle.md docs/reports/*-backfill-cli-surface-cli-surface.md docs/reports/*-backfill-routing-yield-workspace-routing.md docs/reports/*-backfill-recovery-worker-workspace-routing.md docs/reports/*-backfill-watchdog-reminder-runtime-watchdog.md` exits `0`
+  - [x] `grep -R "Conclusion: PASS" docs/reports/*-backfill-*.md` returns six matches
+  - [x] `grep -q "repo-wide-real-env-backfill" docs/opencode-iteration-handbook.md` exits `0`
+  - [x] `python -m openclaw_enhance.cli docs-check` exits `0`
 
   **QA Scenarios** (MANDATORY — task incomplete without these):
   ```
@@ -605,9 +605,9 @@ PY` exits `0`
 
   **What to do**: Verify the finished change set matches this plan only: full current-branch shipped-set coverage via a matrix-to-bundle model, repaired validator contract, strengthened existing feature classes (not new ones), six canonical PASS backfill reports, and no CI/OpenClaw-core scope drift.
   **Verification**:
-  - [ ] `grep -R "validate-feature --class" AGENTS.md docs tests --include='*.md' --include='*.py'` returns no matches
-  - [ ] `grep -q "Current branch shipped set" docs/testing-playbook.md` exits `0`
-  - [ ] `ls docs/reports/*-backfill-*.md` lists exactly the canonical backfill report set
+  - [x] `grep -R "validate-feature --class" AGENTS.md docs tests --include='*.md' --include='*.py'` returns no matches
+  - [x] `grep -q "Current branch shipped set" docs/testing-playbook.md` exits `0`
+  - [x] `ls docs/reports/*-backfill-*.md` lists exactly the canonical backfill report set
   **QA Scenarios**:
   ```
   Scenario: Plan-required coverage surfaces exist and forbidden drift is absent
@@ -629,8 +629,8 @@ PY` exits `0`
 
   **What to do**: Review the validation matrix, runner/guardrails changes, strengthened bundles, and their unit/integration coverage for determinism, cleanup safety, and bundle completeness.
   **Verification**:
-  - [ ] `pytest tests/unit/test_real_env_validation.py tests/unit/test_real_env_guardrails.py tests/unit/test_real_env_runner.py tests/unit/test_validation_matrix.py -q` exits `0`
-  - [ ] `pytest tests/integration/test_validation_real_env.py tests/integration/test_install_uninstall.py tests/integration/test_dev_mode_integration.py tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_timeout_flow.py -q` exits `0`
+  - [x] `pytest tests/unit/test_real_env_validation.py tests/unit/test_real_env_guardrails.py tests/unit/test_real_env_runner.py tests/unit/test_validation_matrix.py -q` exits `0`
+  - [x] `pytest tests/integration/test_validation_real_env.py tests/integration/test_install_uninstall.py tests/integration/test_dev_mode_integration.py tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_timeout_flow.py -q` exits `0`
   **QA Scenarios**:
   ```
   Scenario: Validation implementation suites pass together
@@ -652,9 +652,9 @@ PY` exits `0`
 
   **What to do**: Execute the canonical backfill scenarios in the prepared harness environment and confirm that the full report inventory is produced with PASS conclusions and observable proof for routing, recovery, and watchdog reminder delivery.
   **Verification**:
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
-  - [ ] `grep -R "Conclusion: PASS" docs/reports/*-backfill-*.md` returns six matches
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycle --report-slug backfill-core-install --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder --openclaw-home "$HOME/.openclaw"` exits `0` in the prepared harness environment
+  - [x] `grep -R "Conclusion: PASS" docs/reports/*-backfill-*.md` returns six matches
   **QA Scenarios**:
   ```
   Scenario: Canonical backfill scenarios run end to end and write durable reports
@@ -676,7 +676,7 @@ PY` exits `0`
 
   **What to do**: Verify the repo now has a bounded, matrix-driven real-environment backfill for all shipped current-branch capabilities without drifting into OpenClaw-core changes, new feature-class taxonomies, or platform-wide CI work.
   **Verification**:
-  - [ ] `python - <<'PY'
+  - [x] `python - <<'PY'
 from pathlib import Path
 blob = '\n'.join([
     Path('AGENTS.md').read_text(encoding='utf-8'),
@@ -689,7 +689,7 @@ assert 'backfill-watchdog-reminder' in blob
 assert 'No OpenClaw source code edits' in Path('AGENTS.md').read_text(encoding='utf-8')
 print('repo-backfill-scope-ok')
 PY` exits `0`
-  - [ ] `python -m openclaw_enhance.cli docs-check` exits `0`
+  - [x] `python -m openclaw_enhance.cli docs-check` exits `0`
   **QA Scenarios**:
   ```
   Scenario: Scope script proves bounded backfill design and durable state alignment

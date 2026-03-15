@@ -411,3 +411,30 @@ Normalized validate-feature contract to use --feature-class and --report-slug ac
 - Non-harness mode: 5 tests skipped cleanly (no failures)
 - Integration tests: 79 passed (all existing coverage preserved)
 - Evidence files generated successfully in `.sisyphus/evidence/`
+
+## Task 11: F2 Verification Already Passing
+
+### Status
+- F2 verification command already passes: 102 tests passed
+- Previously failing tests now pass:
+  - `TestValidateFeatureCommandOrdering.test_install_lifecycle_command_order`
+  - `TestValidateFeatureCommandOrdering.test_install_lifecycle_dev_mode_slug`
+
+### Root Cause (Historical)
+- Issue was harness readiness checks blocking test execution
+- `_verify_harness_readiness()` was called for ALL feature classes
+- Tests with temp openclaw_home fixtures failed readiness checks
+- Runner returned ENVIRONMENT_FAILURE before executing any commands
+- Result: mocked subprocess.run received zero calls
+
+### Resolution (Already Applied)
+- Commit `51614a7`: Made harness readiness checks conditional
+- Readiness checks now only run for `INSTALL_LIFECYCLE` feature class
+- Other feature classes (cli-surface, workspace-routing, etc.) skip checks
+- Tests now reach command execution path successfully
+
+### Verification
+- Full F2 command exits 0: `pytest tests/integration/test_validation_real_env.py tests/integration/test_install_uninstall.py tests/integration/test_dev_mode_integration.py tests/integration/test_orchestrator_dispatch_contract.py tests/integration/test_timeout_flow.py -q`
+- All ordering tests assert command sequences correctly
+- Install-lifecycle tests verify both standard and dev-mode slugs
+- Guardrail contract preserved for real validation runs
