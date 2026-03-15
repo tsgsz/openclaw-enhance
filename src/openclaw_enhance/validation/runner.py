@@ -29,7 +29,7 @@ def _capture_baseline(openclaw_home: Path) -> BaselineState:
     from openclaw_enhance.install.manifest import load_manifest
     from openclaw_enhance.paths import managed_root
 
-    target_root = managed_root()
+    target_root = managed_root(openclaw_home.parent)
     manifest = load_manifest(target_root)
     is_installed = manifest is not None
     version = manifest.version if manifest else None

@@ -47,7 +47,7 @@ def capture_baseline_state(openclaw_home: Path) -> BaselineState:
     # Harness readiness checks for canonical ~/.openclaw
     _verify_harness_readiness(openclaw_home)
 
-    target_root = managed_root()
+    target_root = managed_root(openclaw_home.parent)
 
     # Check if installed
     manifest = load_manifest(target_root)
@@ -174,8 +174,9 @@ def verify_ownership(state: BaselineState) -> bool:
         ForeignStateError: If state is foreign or unsafe.
     """
     if state.is_installed and not state.owned_by_checkout:
+        target_root = managed_root(state.openclaw_home.parent)
         raise ForeignStateError(
-            f"Target {managed_root()} appears to be managed by a different installation. "
+            f"Target {target_root} appears to be managed by a different installation. "
             "Refusing to mutate foreign state."
         )
 
