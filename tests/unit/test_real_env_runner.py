@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from openclaw_enhance.validation.reporting import generate_markdown_report, write_report
 from openclaw_enhance.validation.runner import (
