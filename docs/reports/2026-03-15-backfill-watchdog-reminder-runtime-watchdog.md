@@ -21,7 +21,7 @@ python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-h
 ```
 
 - Exit Code: 0
-- Duration: 0.17s
+- Duration: 0.19s
 
 **stdout:**
 ```

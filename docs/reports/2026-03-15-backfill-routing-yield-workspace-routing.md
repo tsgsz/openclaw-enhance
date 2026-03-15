@@ -3,7 +3,7 @@
 - **Date**: 2026-03-15
 - **Feature Class**: workspace-routing
 - **Environment**: macOS /Users/tsgsz/.openclaw
-- **Conclusion**: PRODUCT_FAILURE
+- **Conclusion**: PASS
 
 ## Baseline State
 
@@ -14,16 +14,16 @@
 
 ## Execution Log
 
-### Command 1: ✗ FAIL
+### Command 1: ✓ PASS
 
 ```bash
 python -m openclaw_enhance.validation.live_probes routing-yield --openclaw-home "$OPENCLAW_HOME" --message "帮我规划一个复杂任务，先并行搜索两个方向，再汇总一个执行计划"
 ```
 
-- Exit Code: 2
-- Duration: 15.46s
+- Exit Code: 0
+- Duration: 32.68s
 
-**stderr:**
+**stdout:**
 ```
-{"detail": "Session aa83229c-8edc-4e61-95a8-5b645b809635 not in sessions list", "ok": false, "probe": "routing-yield", "reason": "session_not_found"}
+{"marker": "PROBE_ROUTING_YIELD_OK", "ok": true, "probe": "routing-yield", "proof": "runtime_surface", "runtime_identity_confirmed": true, "runtime_workspace": "/Users/tsgsz/.openclaw/openclaw-enhance/workspaces/oe-orchestrator", "session_id": "aa83229c-8edc-4e61-95a8-5b645b809635", "tool_surface_has_sessions_yield": true, "transcript_path": "/Users/tsgsz/.openclaw/agents/oe-orchestrator/sessions/aa83229c-8edc-4e61-95a8-5b645b809635.jsonl"}
 ```
