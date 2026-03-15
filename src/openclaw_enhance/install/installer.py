@@ -541,7 +541,7 @@ def get_install_status(
 
     target_root = managed_root(user_home)
 
-    status = {
+    status: dict[str, Any] = {
         "installed": False,
         "version": None,
         "install_path": str(target_root),

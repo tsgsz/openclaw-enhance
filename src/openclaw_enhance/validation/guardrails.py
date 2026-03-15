@@ -116,7 +116,7 @@ def _capture_managed_root_state(target_root: Path) -> dict[str, Any]:
     if not target_root.exists():
         return {"exists": False}
 
-    state = {"exists": True, "contents": []}
+    state: dict[str, Any] = {"exists": True, "contents": []}
 
     try:
         for item in target_root.iterdir():
