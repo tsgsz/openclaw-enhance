@@ -10,7 +10,6 @@ import {
   RuntimeBridge,
   createRuntimeBridge,
   type SpawnEvent,
-  type RuntimeBridgeConfig,
 } from "./runtime-bridge.js";
 
 describe("RuntimeBridge", () => {
