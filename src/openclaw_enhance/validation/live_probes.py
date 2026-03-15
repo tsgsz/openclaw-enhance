@@ -99,13 +99,13 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
         _fail("routing-yield", "openclaw_cli_not_found", "openclaw command not in PATH")
 
     chat_result = subprocess.run(
-        ["openclaw", "chat", "--message", message],
+        ["openclaw", "agent", "-m", message],
         capture_output=True,
         text=True,
         env=env,
     )
     if chat_result.returncode != 0:
-        _fail("routing-yield", "openclaw_chat_failed", chat_result.stderr.strip())
+        _fail("routing-yield", "openclaw_agent_failed", chat_result.stderr.strip())
 
     session_id = None
     for line in chat_result.stdout.splitlines():
@@ -119,19 +119,34 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
                 break
 
     if not session_id:
-        _fail("routing-yield", "missing_session_id", "No session ID found in chat output")
+        _fail("routing-yield", "missing_session_id", "No session ID found in agent output")
 
     assert session_id is not None
-    info_result = subprocess.run(
-        ["openclaw", "session", "info", session_id],
+    sessions_result = subprocess.run(
+        ["openclaw", "sessions", "--json"],
         capture_output=True,
         text=True,
         env=env,
     )
-    if info_result.returncode != 0:
-        _fail("routing-yield", "session_info_failed", info_result.stderr.strip())
+    if sessions_result.returncode != 0:
+        _fail("routing-yield", "sessions_list_failed", sessions_result.stderr.strip())
 
-    output = info_result.stdout
+    try:
+        sessions_data = json.loads(sessions_result.stdout)
+    except json.JSONDecodeError as exc:
+        _fail("routing-yield", "sessions_json_invalid", str(exc))
+        return
+
+    session_info = None
+    for session in sessions_data if isinstance(sessions_data, list) else []:
+        if session.get("session_id") == session_id:
+            session_info = session
+            break
+
+    if not session_info:
+        _fail("routing-yield", "session_not_found", f"Session {session_id} not in sessions list")
+
+    output = json.dumps(session_info)
     has_orchestrator = "oe-orchestrator" in output
     has_yield = "sessions_yield" in output
 
@@ -163,33 +178,24 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
     env = _probe_env(home)
 
     list_result = subprocess.run(
-        ["openclaw", "agent", "list"],
+        ["openclaw", "agents", "list"],
         capture_output=True,
         text=True,
         env=env,
     )
     if list_result.returncode != 0:
-        _fail("recovery-worker", "agent_list_failed", list_result.stderr.strip())
+        _fail("recovery-worker", "agents_list_failed", list_result.stderr.strip())
     if "oe-tool-recovery" not in list_result.stdout:
         _fail("recovery-worker", "missing_recovery_registration")
 
-    info_result = subprocess.run(
-        ["openclaw", "agent", "info", "oe-tool-recovery"],
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-    if info_result.returncode != 0:
-        _fail("recovery-worker", "agent_info_failed", info_result.stderr.strip())
-
     chat_result = subprocess.run(
-        ["openclaw", "chat", "-a", "oe-tool-recovery", "-m", message],
+        ["openclaw", "agent", "-m", message],
         capture_output=True,
         text=True,
         env=env,
     )
     if chat_result.returncode != 0:
-        _fail("recovery-worker", "chat_failed", chat_result.stderr.strip())
+        _fail("recovery-worker", "agent_failed", chat_result.stderr.strip())
 
     session_id = None
     for line in chat_result.stdout.splitlines():
@@ -203,19 +209,34 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
                 break
 
     if not session_id:
-        _fail("recovery-worker", "missing_session_id", "No session ID in chat output")
+        _fail("recovery-worker", "missing_session_id", "No session ID in agent output")
 
     assert session_id is not None
-    session_result = subprocess.run(
-        ["openclaw", "session", "info", session_id],
+    sessions_result = subprocess.run(
+        ["openclaw", "sessions", "--json"],
         capture_output=True,
         text=True,
         env=env,
     )
-    if session_result.returncode != 0:
-        _fail("recovery-worker", "session_info_failed", session_result.stderr.strip())
+    if sessions_result.returncode != 0:
+        _fail("recovery-worker", "sessions_list_failed", sessions_result.stderr.strip())
 
-    output = session_result.stdout
+    try:
+        sessions_data = json.loads(sessions_result.stdout)
+    except json.JSONDecodeError as exc:
+        _fail("recovery-worker", "sessions_json_invalid", str(exc))
+        return
+
+    session_info = None
+    for session in sessions_data if isinstance(sessions_data, list) else []:
+        if session.get("session_id") == session_id:
+            session_info = session
+            break
+
+    if not session_info:
+        _fail("recovery-worker", "session_not_found", f"Session {session_id} not in sessions list")
+
+    output = json.dumps(session_info)
     has_recovery = "oe-tool-recovery" in output
     has_corrected = "websearch_web_search_exa" in output
 
