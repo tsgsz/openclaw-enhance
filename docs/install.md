@@ -131,7 +131,8 @@ The installer will:
 5. Copy main skills
 6. Sync hook assets
 7. Register agents and hooks on supported OpenClaw config surfaces
-8. Apply config backup/rollback guardrails
+8. Start the managed monitor service on macOS
+9. Apply config backup/rollback guardrails
 
 ### Step 6: Verify Installation
 
@@ -147,7 +148,7 @@ Installation Path: /Users/you/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 1.0.0
 Install Time: 2026-03-13T10:30:00
-Components (13):
+Components (13 on Linux/manual setups, 14 on macOS with managed monitor):
   - oe-orchestrator agent
   - oe-searcher agent
   - oe-syshelper agent
@@ -159,13 +160,17 @@ Components (13):
   - oe-timeout-state-sync skill
   - managed hook assets
   - oe-subagent-spawn-enrich hook
+  - managed monitor LaunchAgent (macOS)
 ```
 
 ## Post-Installation Setup
 
-### Optional: Setup Runtime Monitor
+### Runtime Monitor
 
-For automatic timeout detection, set up the monitor script:
+On macOS, `install` now provisions and starts a per-user LaunchAgent for the runtime monitor automatically.
+The managed service label is `ai.openclaw.enhance.monitor`, and logs are written under `~/.openclaw/openclaw-enhance/logs/`.
+
+For manual or non-macOS setups, you can still configure the monitor script explicitly:
 
 ```bash
 # Add to crontab (runs every minute)
@@ -182,6 +187,13 @@ sudo cp scripts/systemd/openclaw-enhance-monitor.timer /etc/systemd/system/
 # Enable and start
 sudo systemctl enable openclaw-enhance-monitor.timer
 sudo systemctl start openclaw-enhance-monitor.timer
+```
+
+On macOS, verify the managed monitor service with:
+
+```bash
+launchctl print gui/$UID/ai.openclaw.enhance.monitor
+tail -f ~/.openclaw/openclaw-enhance/logs/monitor.log
 ```
 
 ## Upgrade
@@ -286,15 +298,17 @@ python -m openclaw_enhance.cli uninstall --openclaw-home "$HOME/.openclaw"
 ```
 
 **Uninstall order** (reverse of install):
-1. Remove config changes (owned keys only)
-2. Disable hooks
-3. Unregister agents
-4. Remove main skills
-5. Remove worker workspaces
-6. Remove managed namespace
-7. Release install lock
+1. Stop and remove the managed monitor service (macOS)
+2. Remove config changes (owned keys only)
+3. Disable hooks
+4. Unregister agents
+5. Remove main skills
+6. Remove worker workspaces
+7. Remove managed namespace and monitor logs
+8. Release install lock
 
 **What gets removed:**
+- Managed monitor LaunchAgent plist (`~/Library/LaunchAgents/ai.openclaw.enhance.monitor.plist`) on macOS
 - All `oe-*` prefixed agents
 - All `oe-*` prefixed skills in main workspace
 - Hook configurations
