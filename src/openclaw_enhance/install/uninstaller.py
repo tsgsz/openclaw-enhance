@@ -92,23 +92,23 @@ def _remove_hooks(
             if isinstance(internal_obj, dict):
                 entries_obj = internal_obj.get("entries")
                 if isinstance(entries_obj, dict):
-                    filtered_entries = {
+                    filtered_entries_dict = {
                         key: value
                         for key, value in entries_obj.items()
                         if key not in OWNED_HOOK_ENTRY_IDS
                     }
-                    if filtered_entries != entries_obj:
-                        internal_obj["entries"] = filtered_entries
+                    if filtered_entries_dict != entries_obj:
+                        internal_obj["entries"] = filtered_entries_dict
                         removed.append("hooks:subagent-spawn-enrich")
                         changed = True
                 elif isinstance(entries_obj, list):
-                    filtered_entries = [
+                    filtered_entries_list = [
                         value
                         for value in entries_obj
                         if not (isinstance(value, str) and value in OWNED_HOOK_ENTRY_IDS)
                     ]
-                    if filtered_entries != entries_obj:
-                        internal_obj["entries"] = filtered_entries
+                    if filtered_entries_list != entries_obj:
+                        internal_obj["entries"] = filtered_entries_list
                         removed.append("hooks:subagent-spawn-enrich")
                         changed = True
 
