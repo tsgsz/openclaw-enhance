@@ -291,7 +291,11 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
         assert session_id is not None
         transcript_path = _get_transcript_path("oe-orchestrator", session_id, home, env)
         if not transcript_path:
-            _fail("routing-yield", "transcript_not_found", f"No transcript for session {session_id}")
+            _fail(
+                "routing-yield",
+                "transcript_not_found",
+                f"No transcript for session {session_id}",
+            )
 
         tool_surface_names = _tool_surface_names(agent_output)
         if "sessions_yield" not in tool_surface_names:
@@ -388,7 +392,11 @@ def recovery_worker(openclaw_home: Path, message: str) -> None:
         assert session_id is not None
         transcript_path = _get_transcript_path("oe-tool-recovery", session_id, home, env)
         if not transcript_path:
-            _fail("recovery-worker", "transcript_not_found", f"No transcript for session {session_id}")
+            _fail(
+                "recovery-worker",
+                "transcript_not_found",
+                f"No transcript for session {session_id}",
+            )
 
         workspace_dir = (
             system_prompt_report.get("workspaceDir")
@@ -504,7 +512,6 @@ def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id:
             payload["config_fragment"] = json.dumps(enhance_fragment, sort_keys=True)
 
         _emit(payload)
-
 
 
 def main() -> None:

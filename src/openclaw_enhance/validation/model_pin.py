@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import fcntl
 import json
 from contextlib import contextmanager
-import fcntl
 from pathlib import Path
 from typing import Any, Iterator
 
