@@ -193,13 +193,13 @@ def mock_config_file(tmp_path: Path) -> Path:
     config = {
         "agents": {
             "main": {
-                "model": "claude-3-5-sonnet-20241022",
+                "model": {"primary": "minimax/MiniMax-M2.1", "fallbacks": []},
                 "skills": ["oe-eta-estimator", "oe-toolcall-router"],
             }
         }
     }
 
-    config_file = tmp_path / "config.json"
+    config_file = tmp_path / "openclaw.json"
     config_file.write_text(json.dumps(config, indent=2))
     return config_file
 

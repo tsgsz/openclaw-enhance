@@ -27,8 +27,18 @@ def mock_openclaw_home(tmp_path: Path) -> Path:
     version_file = openclaw_home / "VERSION"
     version_file.write_text("2026.3.1\n")
 
-    config_file = openclaw_home / "config.json"
-    config_file.write_text(json.dumps({"test": True}) + "\n")
+    config_file = openclaw_home / "openclaw.json"
+    config_payload = {
+        "agents": {
+            "defaults": {
+                "model": {
+                    "primary": "openai-codex/gpt-5.4",
+                    "fallbacks": ["google/gemini-3-flash-preview"],
+                }
+            }
+        }
+    }
+    config_file.write_text(json.dumps(config_payload) + "\n")
 
     return openclaw_home
 
@@ -320,7 +330,7 @@ class TestValidateFeatureCommandOrdering:
             assert "OPENCLAW_ENHANCE_WORKSPACES_DIR" in env
             assert "workspaces" in env["OPENCLAW_ENHANCE_WORKSPACES_DIR"]
             assert env["OPENCLAW_HOME"] == str(mock_openclaw_home)
-            assert env["OPENCLAW_CONFIG_PATH"].endswith("config.json")
+            assert env["OPENCLAW_CONFIG_PATH"].endswith("openclaw.json")
 
 
 class TestValidateFeatureExemptions:
