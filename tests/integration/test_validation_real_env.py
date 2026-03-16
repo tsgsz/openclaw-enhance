@@ -11,7 +11,6 @@ Tests the validate-feature CLI command with mocked subprocess calls to verify:
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import sys
 
 import pytest
 from click.testing import CliRunner
