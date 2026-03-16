@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,10 @@ from openclaw_enhance.install.manifest import (
     InstallManifest,
     load_manifest,
     manifest_path,
+)
+from openclaw_enhance.install.monitor_service import (
+    monitor_launch_agent_path,
+    uninstall_monitor_launchagent,
 )
 from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
 from openclaw_enhance.runtime.ownership import (
@@ -367,7 +372,10 @@ def uninstall(
 
     # Check if installed
     manifest = load_manifest(target_root)
-    if not manifest and not force:
+    has_partial_monitor_install = (
+        sys.platform == "darwin" and monitor_launch_agent_path(user_home).exists()
+    )
+    if not manifest and not force and not has_partial_monitor_install:
         return UninstallResult(
             success=True,
             message="openclaw-enhance is not installed",
@@ -399,6 +407,18 @@ def uninstall(
     failed: list[str] = []
 
     try:
+        try:
+            monitor_service_removed = uninstall_monitor_launchagent(
+                manifest=manifest,
+                target_root=target_root,
+                user_home=user_home,
+            )
+            removed.extend(monitor_service_removed)
+        except Exception as exc:
+            failed.append(f"monitor-service: {exc}")
+            if not force:
+                raise
+
         # Step 2: Remove hooks
         try:
             hooks_removed = _remove_hooks(manifest or InstallManifest(), openclaw_home)
@@ -538,6 +558,7 @@ def is_symmetric_install_uninstall(
         "workspace:": ["workspaces"],
         "agents:": ["agents:registry"],
         "hooks:": ["hooks:subagent-spawn-enrich"],
+        "monitor:": ["monitor:launchagent"],
         "runtime:": ["runtime:state"],
     }
 
