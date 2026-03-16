@@ -51,6 +51,23 @@ class TestExecuteCommand:
         assert result.stderr == "error"
         assert not result.is_success
 
+    @patch("openclaw_enhance.validation.runner.pinned_openclaw_runtime_model")
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_execute_command_skips_outer_model_pin_for_live_probes(self, mock_run, mock_pin):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="ok",
+            stderr="",
+        )
+
+        result = execute_command(
+            "python -m openclaw_enhance.validation.live_probes watchdog-reminder",
+            Path("/tmp/.openclaw"),
+        )
+
+        assert result.exit_code == 0
+        mock_pin.assert_not_called()
+
 
 class TestRunScenario:
     @patch("openclaw_enhance.validation.runner.execute_command")

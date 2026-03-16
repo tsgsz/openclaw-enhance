@@ -283,9 +283,10 @@ class TestValidateFeatureCommandOrdering:
         )
 
         calls = [call[0][0] for call in mock_run.call_args_list]
-        assert len(calls) == 1
-        assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
-        assert "watchdog-reminder" in calls[0]
+        assert len(calls) == 2
+        assert calls[0] == "openclaw hooks list"
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[1]
+        assert "watchdog-reminder" in calls[1]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_cli_surface_command_order(
