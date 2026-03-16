@@ -8,6 +8,11 @@ from pathlib import Path
 import click
 
 from openclaw_enhance import paths as openclaw_paths
+from openclaw_enhance.validation.model_pin import (
+    PINNED_OPENCLAW_MODEL,
+    get_primary_model,
+    pinned_openclaw_runtime_model,
+)
 
 
 def _resolve_config_path(openclaw_home: Path) -> Path:
@@ -45,6 +50,7 @@ def _probe_env(openclaw_home: Path) -> dict[str, str]:
     """Build subprocess environment with explicit OpenClaw paths."""
     env = os.environ.copy()
     env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
+    env["OPENCLAW_HOME"] = str(openclaw_home)
     return env
 
 
@@ -239,84 +245,93 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
     """Verify orchestrator routing via live openclaw chat session."""
     home = _require_openclaw_home("routing-yield", openclaw_home)
     env = _probe_env(home)
+    config_path = _resolve_config_path(home)
 
-    openclaw_cmd = subprocess.run(
-        ["which", "openclaw"],
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-    if openclaw_cmd.returncode != 0:
-        _fail("routing-yield", "openclaw_cli_not_found", "openclaw command not in PATH")
-
-    if not _ensure_bootstrap_ready("oe-orchestrator", home, env):
-        _fail("routing-yield", "bootstrap_prep_failed", "Could not prepare orchestrator workspace")
-
-    chat_result = subprocess.run(
-        ["openclaw", "agent", "--agent", "oe-orchestrator", "-m", message, "--json"],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=60,
-    )
-    if chat_result.returncode != 0:
-        _fail("routing-yield", "openclaw_agent_failed", chat_result.stderr.strip())
-
-    agent_output = _parse_agent_output(chat_result.stdout + chat_result.stderr)
-    if not agent_output:
-        _fail("routing-yield", "invalid_agent_output", "Could not parse openclaw agent JSON")
-    assert agent_output is not None
-
-    result = agent_output.get("result")
-    meta = result.get("meta") if isinstance(result, dict) else None
-    agent_meta = meta.get("agentMeta") if isinstance(meta, dict) else None
-    system_prompt_report = meta.get("systemPromptReport") if isinstance(meta, dict) else None
-
-    session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
-
-    if not session_id:
-        _fail("routing-yield", "missing_session_id", "No session ID found in agent output")
-
-    assert session_id is not None
-    transcript_path = _get_transcript_path("oe-orchestrator", session_id, home, env)
-    if not transcript_path:
-        _fail("routing-yield", "transcript_not_found", f"No transcript for session {session_id}")
-
-    tool_surface_names = _tool_surface_names(agent_output)
-    if "sessions_yield" not in tool_surface_names:
-        _fail(
-            "routing-yield",
-            "missing_tool_surface",
-            "sessions_yield not exposed in live tool surface",
+    with pinned_openclaw_runtime_model(config_path) as configured_model:
+        openclaw_cmd = subprocess.run(
+            ["which", "openclaw"],
+            capture_output=True,
+            text=True,
+            env=env,
         )
+        if openclaw_cmd.returncode != 0:
+            _fail("routing-yield", "openclaw_cli_not_found", "openclaw command not in PATH")
 
-    workspace_dir = (
-        system_prompt_report.get("workspaceDir") if isinstance(system_prompt_report, dict) else None
-    )
-    if not isinstance(workspace_dir, str) or "oe-orchestrator" not in workspace_dir:
-        _fail("routing-yield", "wrong_runtime_workspace", str(workspace_dir))
+        if not _ensure_bootstrap_ready("oe-orchestrator", home, env):
+            _fail(
+                "routing-yield",
+                "bootstrap_prep_failed",
+                "Could not prepare orchestrator workspace",
+            )
 
-    runtime_identity_confirmed = _runtime_identity_confirmed(home, "oe-orchestrator")
-    if not runtime_identity_confirmed:
-        _fail(
-            "routing-yield",
-            "runtime_identity_unconfirmed",
-            "oe-orchestrator workspace still looks uninitialized",
+        chat_result = subprocess.run(
+            ["openclaw", "agent", "--agent", "oe-orchestrator", "-m", message, "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
         )
+        if chat_result.returncode != 0:
+            _fail("routing-yield", "openclaw_agent_failed", chat_result.stderr.strip())
 
-    _emit(
-        {
-            "ok": True,
-            "probe": "routing-yield",
-            "marker": "PROBE_ROUTING_YIELD_OK",
-            "session_id": session_id,
-            "proof": "runtime_surface",
-            "transcript_path": str(transcript_path),
-            "runtime_workspace": workspace_dir,
-            "runtime_identity_confirmed": runtime_identity_confirmed,
-            "tool_surface_has_sessions_yield": True,
-        }
-    )
+        agent_output = _parse_agent_output(chat_result.stdout + chat_result.stderr)
+        if not agent_output:
+            _fail("routing-yield", "invalid_agent_output", "Could not parse openclaw agent JSON")
+        assert agent_output is not None
+
+        result = agent_output.get("result")
+        meta = result.get("meta") if isinstance(result, dict) else None
+        agent_meta = meta.get("agentMeta") if isinstance(meta, dict) else None
+        system_prompt_report = meta.get("systemPromptReport") if isinstance(meta, dict) else None
+
+        session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
+        if not session_id:
+            _fail("routing-yield", "missing_session_id", "No session ID found in agent output")
+
+        assert session_id is not None
+        transcript_path = _get_transcript_path("oe-orchestrator", session_id, home, env)
+        if not transcript_path:
+            _fail("routing-yield", "transcript_not_found", f"No transcript for session {session_id}")
+
+        tool_surface_names = _tool_surface_names(agent_output)
+        if "sessions_yield" not in tool_surface_names:
+            _fail(
+                "routing-yield",
+                "missing_tool_surface",
+                "sessions_yield not exposed in live tool surface",
+            )
+
+        workspace_dir = (
+            system_prompt_report.get("workspaceDir")
+            if isinstance(system_prompt_report, dict)
+            else None
+        )
+        if not isinstance(workspace_dir, str) or "oe-orchestrator" not in workspace_dir:
+            _fail("routing-yield", "wrong_runtime_workspace", str(workspace_dir))
+
+        runtime_identity_confirmed = _runtime_identity_confirmed(home, "oe-orchestrator")
+        if not runtime_identity_confirmed:
+            _fail(
+                "routing-yield",
+                "runtime_identity_unconfirmed",
+                "oe-orchestrator workspace still looks uninitialized",
+            )
+
+        _emit(
+            {
+                "ok": True,
+                "probe": "routing-yield",
+                "marker": "PROBE_ROUTING_YIELD_OK",
+                "session_id": session_id,
+                "proof": "runtime_surface",
+                "transcript_path": str(transcript_path),
+                "runtime_workspace": workspace_dir,
+                "runtime_identity_confirmed": runtime_identity_confirmed,
+                "tool_surface_has_sessions_yield": True,
+                "config_path": str(config_path),
+                "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
+            }
+        )
 
 
 @cli.command("recovery-worker")
@@ -325,78 +340,87 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
 def recovery_worker(openclaw_home: Path, message: str) -> None:
     home = _require_openclaw_home("recovery-worker", openclaw_home)
     env = _probe_env(home)
+    config_path = _resolve_config_path(home)
 
-    list_result = subprocess.run(
-        ["openclaw", "agents", "list"],
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-    if list_result.returncode != 0:
-        _fail("recovery-worker", "agents_list_failed", list_result.stderr.strip())
-    if "oe-tool-recovery" not in list_result.stdout:
-        _fail("recovery-worker", "missing_recovery_registration")
-
-    if not _ensure_bootstrap_ready("oe-tool-recovery", home, env):
-        _fail("recovery-worker", "bootstrap_prep_failed", "Could not prepare recovery workspace")
-
-    chat_result = subprocess.run(
-        ["openclaw", "agent", "--agent", "oe-tool-recovery", "-m", message, "--json"],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=60,
-    )
-    if chat_result.returncode != 0:
-        _fail("recovery-worker", "agent_failed", chat_result.stderr.strip())
-
-    agent_output = _parse_agent_output(chat_result.stdout + chat_result.stderr)
-    if not agent_output:
-        _fail("recovery-worker", "invalid_agent_output", "Could not parse openclaw agent JSON")
-    assert agent_output is not None
-
-    result = agent_output.get("result")
-    meta = result.get("meta") if isinstance(result, dict) else None
-    agent_meta = meta.get("agentMeta") if isinstance(meta, dict) else None
-    system_prompt_report = meta.get("systemPromptReport") if isinstance(meta, dict) else None
-
-    session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
-
-    if not session_id:
-        _fail("recovery-worker", "missing_session_id", "No session ID in agent output")
-
-    assert session_id is not None
-    transcript_path = _get_transcript_path("oe-tool-recovery", session_id, home, env)
-    if not transcript_path:
-        _fail("recovery-worker", "transcript_not_found", f"No transcript for session {session_id}")
-
-    workspace_dir = (
-        system_prompt_report.get("workspaceDir") if isinstance(system_prompt_report, dict) else None
-    )
-    if not isinstance(workspace_dir, str) or "oe-tool-recovery" not in workspace_dir:
-        _fail("recovery-worker", "wrong_runtime_workspace", str(workspace_dir))
-
-    runtime_identity_confirmed = _runtime_identity_confirmed(home, "oe-tool-recovery")
-    if not runtime_identity_confirmed:
-        _fail(
-            "recovery-worker",
-            "runtime_identity_unconfirmed",
-            "oe-tool-recovery workspace still looks uninitialized",
+    with pinned_openclaw_runtime_model(config_path) as configured_model:
+        list_result = subprocess.run(
+            ["openclaw", "agents", "list"],
+            capture_output=True,
+            text=True,
+            env=env,
         )
+        if list_result.returncode != 0:
+            _fail("recovery-worker", "agents_list_failed", list_result.stderr.strip())
+        if "oe-tool-recovery" not in list_result.stdout:
+            _fail("recovery-worker", "missing_recovery_registration")
 
-    _emit(
-        {
-            "ok": True,
-            "probe": "recovery-worker",
-            "marker": "PROBE_RECOVERY_WORKER_OK",
-            "session_id": session_id,
-            "proof": "runtime_surface",
-            "transcript_path": str(transcript_path),
-            "runtime_workspace": workspace_dir,
-            "runtime_identity_confirmed": runtime_identity_confirmed,
-            "recovery_registration_confirmed": True,
-        }
-    )
+        if not _ensure_bootstrap_ready("oe-tool-recovery", home, env):
+            _fail(
+                "recovery-worker",
+                "bootstrap_prep_failed",
+                "Could not prepare recovery workspace",
+            )
+
+        chat_result = subprocess.run(
+            ["openclaw", "agent", "--agent", "oe-tool-recovery", "-m", message, "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        )
+        if chat_result.returncode != 0:
+            _fail("recovery-worker", "agent_failed", chat_result.stderr.strip())
+
+        agent_output = _parse_agent_output(chat_result.stdout + chat_result.stderr)
+        if not agent_output:
+            _fail("recovery-worker", "invalid_agent_output", "Could not parse openclaw agent JSON")
+        assert agent_output is not None
+
+        result = agent_output.get("result")
+        meta = result.get("meta") if isinstance(result, dict) else None
+        agent_meta = meta.get("agentMeta") if isinstance(meta, dict) else None
+        system_prompt_report = meta.get("systemPromptReport") if isinstance(meta, dict) else None
+
+        session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
+        if not session_id:
+            _fail("recovery-worker", "missing_session_id", "No session ID in agent output")
+
+        assert session_id is not None
+        transcript_path = _get_transcript_path("oe-tool-recovery", session_id, home, env)
+        if not transcript_path:
+            _fail("recovery-worker", "transcript_not_found", f"No transcript for session {session_id}")
+
+        workspace_dir = (
+            system_prompt_report.get("workspaceDir")
+            if isinstance(system_prompt_report, dict)
+            else None
+        )
+        if not isinstance(workspace_dir, str) or "oe-tool-recovery" not in workspace_dir:
+            _fail("recovery-worker", "wrong_runtime_workspace", str(workspace_dir))
+
+        runtime_identity_confirmed = _runtime_identity_confirmed(home, "oe-tool-recovery")
+        if not runtime_identity_confirmed:
+            _fail(
+                "recovery-worker",
+                "runtime_identity_unconfirmed",
+                "oe-tool-recovery workspace still looks uninitialized",
+            )
+
+        _emit(
+            {
+                "ok": True,
+                "probe": "recovery-worker",
+                "marker": "PROBE_RECOVERY_WORKER_OK",
+                "session_id": session_id,
+                "proof": "runtime_surface",
+                "transcript_path": str(transcript_path),
+                "runtime_workspace": workspace_dir,
+                "runtime_identity_confirmed": runtime_identity_confirmed,
+                "recovery_registration_confirmed": True,
+                "config_path": str(config_path),
+                "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
+            }
+        )
 
 
 @cli.command("watchdog-reminder")
@@ -416,66 +440,71 @@ def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id:
     if not resolved_config.exists():
         _fail("watchdog-reminder", "missing_openclaw_config", str(resolved_config))
 
-    try:
-        config_data = json.loads(resolved_config.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        _fail("watchdog-reminder", "invalid_openclaw_config_json", str(exc))
-        return
-    except OSError as exc:
-        _fail("watchdog-reminder", "config_read_error", str(exc))
-        return
-
-    enhance_fragment = config_data.get("openclawEnhance")
-    proof_type = (
-        "config_hook_plus_live_reminder"
-        if enhance_fragment
-        else "workspace_contract_plus_live_reminder"
-    )
-
-    if not enhance_fragment:
-        result = subprocess.run(
-            ["python", "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
-            capture_output=True,
-            text=True,
-            env=_probe_env(home),
-        )
-        if result.returncode != 0 or "oe-watchdog" not in result.stdout:
-            _fail("watchdog-reminder", "missing_watchdog_workspace_and_config")
+    with pinned_openclaw_runtime_model(resolved_config) as configured_model:
+        try:
+            config_data = json.loads(resolved_config.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            _fail("watchdog-reminder", "invalid_openclaw_config_json", str(exc))
+            return
+        except OSError as exc:
+            _fail("watchdog-reminder", "config_read_error", str(exc))
             return
 
-    state_sync = StateSync(user_home=home)
-    store_adapter = RuntimeStoreAdapter(state_sync)
-    detector = TimeoutDetector(
-        store=store_adapter,
-        config=DetectionConfig(
-            default_timeout=timedelta(seconds=0),
-            grace_period=timedelta(seconds=0),
-            min_session_duration=timedelta(seconds=0),
-        ),
-    )
+        enhance_fragment = config_data.get("openclawEnhance")
+        proof_type = (
+            "config_hook_plus_live_reminder"
+            if enhance_fragment
+            else "workspace_contract_plus_live_reminder"
+        )
 
-    detector.start_monitoring(session_id)
-    events = detector.check_timeouts()
+        if not enhance_fragment:
+            result = subprocess.run(
+                ["python", "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
+                capture_output=True,
+                text=True,
+                env=_probe_env(home),
+            )
+            if result.returncode != 0 or "oe-watchdog" not in result.stdout:
+                _fail("watchdog-reminder", "missing_watchdog_workspace_and_config")
+                return
 
-    if not events or not any(e.session_id == session_id for e in events):
-        _fail("watchdog-reminder", "no_timeout_event_generated")
+        state_sync = StateSync(user_home=home)
+        store_adapter = RuntimeStoreAdapter(state_sync)
+        detector = TimeoutDetector(
+            store=store_adapter,
+            config=DetectionConfig(
+                default_timeout=timedelta(seconds=0),
+                grace_period=timedelta(seconds=0),
+                min_session_duration=timedelta(seconds=0),
+            ),
+        )
 
-    pending = state_sync.get_pending_suspected_events()
-    if not any(e.session_id == session_id for e in pending):
-        _fail("watchdog-reminder", "no_reminder_delivery_evidence")
+        detector.start_monitoring(session_id)
+        events = detector.check_timeouts()
 
-    payload = {
-        "ok": True,
-        "probe": "watchdog-reminder",
-        "marker": "PROBE_WATCHDOG_REMINDER_OK",
-        "config_path": str(resolved_config),
-        "session_id": session_id,
-        "proof": proof_type,
-    }
-    if enhance_fragment:
-        payload["config_fragment"] = json.dumps(enhance_fragment, sort_keys=True)
+        if not events or not any(e.session_id == session_id for e in events):
+            _fail("watchdog-reminder", "no_timeout_event_generated")
 
-    _emit(payload)
+        pending = state_sync.get_pending_suspected_events()
+        if not any(e.session_id == session_id for e in pending):
+            _fail("watchdog-reminder", "no_reminder_delivery_evidence")
+
+        payload = {
+            "ok": True,
+            "probe": "watchdog-reminder",
+            "marker": "PROBE_WATCHDOG_REMINDER_OK",
+            "config_path": str(resolved_config),
+            "session_id": session_id,
+            "proof": proof_type,
+            "configured_model": configured_model
+            or get_primary_model(resolved_config)
+            or PINNED_OPENCLAW_MODEL,
+        }
+        if enhance_fragment:
+            payload["config_fragment"] = json.dumps(enhance_fragment, sort_keys=True)
+
+        _emit(payload)
+
 
 
 def main() -> None:

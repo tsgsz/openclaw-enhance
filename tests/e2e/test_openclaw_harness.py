@@ -58,7 +58,7 @@ class TestHarnessAvailability:
     def test_openclaw_config_exists(self):
         """Verify OpenClaw config exists."""
         openclaw_home = Path.home() / ".openclaw"
-        config_file = openclaw_home / "config.json"
+        config_file = openclaw_home / "openclaw.json"
 
         if not config_file.exists():
             pytest.skip("OpenClaw config not found - skipping harness tests")
@@ -683,6 +683,7 @@ class TestHarnessRecoveryWorkerValidation:
             assert '"proof": "runtime_surface"' in content
             assert '"recovery_registration_confirmed": true' in content
             assert "session_id" in content
+            assert "\"configured_model\": \"minimax/MiniMax-M2.1\"" in content
 
 
 class TestHarnessLiveProbeOutputs:
