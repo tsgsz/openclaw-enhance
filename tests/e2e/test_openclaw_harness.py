@@ -683,7 +683,7 @@ class TestHarnessRecoveryWorkerValidation:
             assert '"proof": "runtime_surface"' in content
             assert '"recovery_registration_confirmed": true' in content
             assert "session_id" in content
-            assert "\"configured_model\": \"minimax/MiniMax-M2.1\"" in content
+            assert '"configured_model": "minimax/MiniMax-M2.1"' in content
 
 
 class TestHarnessLiveProbeOutputs:

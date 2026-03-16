@@ -61,7 +61,9 @@ class TestPinnedOpenClawRuntimeModel:
         assert json.loads(config_path.read_text(encoding="utf-8")) == {}
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
-    def test_execute_command_pins_model_for_subprocess_and_restores(self, mock_run, tmp_path: Path) -> None:
+    def test_execute_command_pins_model_for_subprocess_and_restores(
+        self, mock_run, tmp_path: Path
+    ) -> None:
         openclaw_home = tmp_path / ".openclaw"
         config_path = openclaw_home / "openclaw.json"
         _write_config(config_path, primary="google/gemini-3-flash-preview")

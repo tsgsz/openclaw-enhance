@@ -28,7 +28,17 @@ def mock_openclaw_home(tmp_path: Path) -> Path:
     version_file.write_text("2026.3.1\n")
 
     config_file = openclaw_home / "openclaw.json"
-    config_file.write_text(json.dumps({"agents": {"defaults": {"model": {"primary": "openai-codex/gpt-5.4", "fallbacks": ["google/gemini-3-flash-preview"]}}}}) + "\n")
+    config_payload = {
+        "agents": {
+            "defaults": {
+                "model": {
+                    "primary": "openai-codex/gpt-5.4",
+                    "fallbacks": ["google/gemini-3-flash-preview"],
+                }
+            }
+        }
+    }
+    config_file.write_text(json.dumps(config_payload) + "\n")
 
     return openclaw_home
 
