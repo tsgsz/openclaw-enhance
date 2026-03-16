@@ -4,6 +4,17 @@ from typing import Any
 
 OWNED_NAMESPACE = "openclawEnhance"
 
+OWNED_AGENT_SPECS: tuple[tuple[str, str], ...] = (
+    ("oe-orchestrator", "oe-orchestrator"),
+    ("oe-searcher", "oe-searcher"),
+    ("oe-syshelper", "oe-syshelper"),
+    ("oe-script_coder", "oe-script_coder"),
+    ("oe-watchdog", "oe-watchdog"),
+    ("oe-tool-recovery", "oe-tool-recovery"),
+)
+
+OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = ("oe-subagent-spawn-enrich",)
+
 
 def filter_owned_keys(
     patch: Mapping[str, Any], namespace: str = OWNED_NAMESPACE

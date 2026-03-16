@@ -28,6 +28,7 @@ class ComponentInstall:
     target_path: str | None = None
     checksum: str | None = None
     is_symlink: bool = False
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -39,6 +40,7 @@ class ComponentInstall:
             "target_path": self.target_path,
             "checksum": self.checksum,
             "is_symlink": self.is_symlink,
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -52,6 +54,7 @@ class ComponentInstall:
             target_path=data.get("target_path"),
             checksum=data.get("checksum"),
             is_symlink=data.get("is_symlink", False),
+            metadata=data.get("metadata", {}),
         )
 
 

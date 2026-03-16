@@ -28,6 +28,11 @@ from openclaw_enhance.install.manifest import (
     manifest_path,
 )
 from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
+from openclaw_enhance.runtime.ownership import (
+    OWNED_AGENT_SPECS,
+    OWNED_HOOK_ENTRY_IDS,
+    OWNED_NAMESPACE,
+)
 
 
 class UninstallError(RuntimeError):
@@ -63,28 +68,105 @@ def _remove_hooks(
         return removed
 
     try:
-        # Read current config
         with config_path.open("r", encoding="utf-8") as f:
             config = json.load(f)
 
-        # Check if our namespace exists
-        if "openclawEnhance" not in config:
+        if not isinstance(config, dict):
             return removed
 
-        # Create backup
+        changed = False
+        hook_component = manifest.get_component("hooks:subagent-spawn-enrich")
+        hook_metadata = hook_component.metadata if hook_component is not None else {}
+        previous_enabled_present = hook_metadata.get("previous_enabled_present")
+        previous_enabled_value = hook_metadata.get("previous_enabled_value")
+        managed_hook_dirs: set[Path] = set()
+        for component in manifest.components:
+            if component.name == "hooks:assets" and component.target_path:
+                managed_hook_dirs.add(Path(component.target_path).resolve())
+        if not managed_hook_dirs:
+            managed_hook_dirs.add((managed_root() / "hooks").resolve())
+
+        hooks_obj = config.get("hooks")
+        if isinstance(hooks_obj, dict):
+            internal_obj = hooks_obj.get("internal")
+            if isinstance(internal_obj, dict):
+                entries_obj = internal_obj.get("entries")
+                if isinstance(entries_obj, dict):
+                    filtered_entries = {
+                        key: value
+                        for key, value in entries_obj.items()
+                        if key not in OWNED_HOOK_ENTRY_IDS
+                    }
+                    if filtered_entries != entries_obj:
+                        internal_obj["entries"] = filtered_entries
+                        removed.append("hooks:subagent-spawn-enrich")
+                        changed = True
+                elif isinstance(entries_obj, list):
+                    filtered_entries = [
+                        value
+                        for value in entries_obj
+                        if not (isinstance(value, str) and value in OWNED_HOOK_ENTRY_IDS)
+                    ]
+                    if filtered_entries != entries_obj:
+                        internal_obj["entries"] = filtered_entries
+                        removed.append("hooks:subagent-spawn-enrich")
+                        changed = True
+
+                if previous_enabled_present is True:
+                    if internal_obj.get("enabled") != previous_enabled_value:
+                        internal_obj["enabled"] = previous_enabled_value
+                        changed = True
+                elif previous_enabled_present is False:
+                    if "enabled" in internal_obj:
+                        del internal_obj["enabled"]
+                        changed = True
+                elif list(internal_obj.keys()) == ["enabled"]:
+                    del internal_obj["enabled"]
+                    changed = True
+
+                load_obj = internal_obj.get("load")
+                if isinstance(load_obj, dict):
+                    extra_dirs_obj = load_obj.get("extraDirs")
+                    if isinstance(extra_dirs_obj, list):
+                        filtered_dirs = [
+                            v
+                            for v in extra_dirs_obj
+                            if not (isinstance(v, str) and Path(v).resolve() in managed_hook_dirs)
+                        ]
+                        if filtered_dirs != extra_dirs_obj:
+                            load_obj["extraDirs"] = filtered_dirs
+                            changed = True
+                        if not load_obj["extraDirs"]:
+                            del load_obj["extraDirs"]
+                            changed = True
+
+                if isinstance(internal_obj.get("load"), dict) and not internal_obj["load"]:
+                    del internal_obj["load"]
+                    changed = True
+                if isinstance(internal_obj.get("entries"), dict) and not internal_obj["entries"]:
+                    del internal_obj["entries"]
+                    changed = True
+                if isinstance(internal_obj.get("entries"), list) and not internal_obj["entries"]:
+                    del internal_obj["entries"]
+                    changed = True
+                if not internal_obj:
+                    del hooks_obj["internal"]
+                    changed = True
+
+            if not hooks_obj:
+                del config["hooks"]
+                changed = True
+
+        if OWNED_NAMESPACE in config:
+            del config[OWNED_NAMESPACE]
+            changed = True
+
+        if not changed:
+            return removed
+
         backup_path = config_path.with_suffix(".json.bak")
         shutil.copy2(config_path, backup_path)
 
-        # Remove hooks section from our namespace
-        if "hooks" in config.get("openclawEnhance", {}):
-            del config["openclawEnhance"]["hooks"]
-            removed.append("hooks:subagent-spawn-enrich")
-
-        # If namespace is now empty, remove it entirely
-        if config.get("openclawEnhance") == {}:
-            del config["openclawEnhance"]
-
-        # Write updated config
         with config_path.open("w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, sort_keys=True)
             f.write("\n")
@@ -110,28 +192,50 @@ def _unregister_agents(
         return removed
 
     try:
-        # Read current config
         with config_path.open("r", encoding="utf-8") as f:
             config = json.load(f)
 
-        # Check if our namespace exists
-        if "openclawEnhance" not in config:
+        if not isinstance(config, dict):
             return removed
 
-        # Create backup
+        changed = False
+        agents_obj = config.get("agents")
+        if isinstance(agents_obj, dict):
+            current_list = agents_obj.get("list")
+            if isinstance(current_list, list):
+                owned_ids = {agent_id for agent_id, _ in OWNED_AGENT_SPECS}
+                filtered_list = [
+                    entry
+                    for entry in current_list
+                    if not (
+                        isinstance(entry, dict)
+                        and isinstance(entry.get("id"), str)
+                        and entry["id"] in owned_ids
+                    )
+                ]
+                if filtered_list != current_list:
+                    agents_obj["list"] = filtered_list
+                    removed.append("agents:registry")
+                    changed = True
+
+                if isinstance(agents_obj.get("list"), list) and not agents_obj["list"]:
+                    del agents_obj["list"]
+                    changed = True
+
+            if not agents_obj:
+                del config["agents"]
+                changed = True
+
+        if OWNED_NAMESPACE in config:
+            del config[OWNED_NAMESPACE]
+            changed = True
+
+        if not changed:
+            return removed
+
         backup_path = config_path.with_suffix(".json.bak")
         shutil.copy2(config_path, backup_path)
 
-        # Remove agents section from our namespace
-        if "agents" in config.get("openclawEnhance", {}):
-            del config["openclawEnhance"]["agents"]
-            removed.append("agents:registry")
-
-        # If namespace is now empty, remove it entirely
-        if config.get("openclawEnhance") == {}:
-            del config["openclawEnhance"]
-
-        # Write updated config
         with config_path.open("w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, sort_keys=True)
             f.write("\n")
@@ -139,6 +243,23 @@ def _unregister_agents(
         return removed
     except (json.JSONDecodeError, OSError, KeyError) as exc:
         raise UninstallError(f"Failed to unregister agents: {exc}") from exc
+
+
+def _remove_hook_assets(target_root: Path) -> list[str]:
+    removed: list[str] = []
+    hooks_dir = target_root / "hooks"
+
+    if hooks_dir.exists() or hooks_dir.is_symlink():
+        try:
+            if hooks_dir.is_symlink():
+                hooks_dir.unlink()
+            else:
+                shutil.rmtree(hooks_dir)
+            removed.append("hooks:assets")
+        except OSError as exc:
+            raise UninstallError(f"Failed to remove hooks assets: {exc}") from exc
+
+    return removed
 
 
 def _remove_workspaces(target_root: Path) -> list[str]:
@@ -314,7 +435,14 @@ def uninstall(
             if not force:
                 raise
 
-        # Step 6: Remove runtime state
+        try:
+            hook_assets_removed = _remove_hook_assets(target_root)
+            removed.extend(hook_assets_removed)
+        except UninstallError as exc:
+            failed.append(f"hooks-assets: {exc}")
+            if not force:
+                raise
+
         try:
             runtime_removed = _remove_runtime_state(target_root)
             removed.extend(runtime_removed)
@@ -322,7 +450,6 @@ def uninstall(
             failed.append(f"runtime: {exc}")
             # Non-fatal
 
-        # Step 7: Remove manifest
         manifest_file = manifest_path(target_root)
         if manifest_file.exists():
             try:
@@ -331,11 +458,9 @@ def uninstall(
             except OSError as exc:
                 failed.append(f"manifest: {exc}")
 
-        # Step 8: Remove lock file
         lock_removed = _remove_lock_file(target_root)
         removed.extend(lock_removed)
 
-        # Step 9: Try to remove managed root if empty
         if target_root.exists():
             try:
                 # Only remove if directory is empty or contains only empty subdirs
