@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+import sys
 
 
 class FeatureClass(Enum):
@@ -109,13 +110,20 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
                 "python -m openclaw_enhance.cli uninstall",
             ]
         else:
-            return [
+            commands = [
                 "python -m openclaw_enhance.cli uninstall",
                 "python -m openclaw_enhance.cli install",
-                "python -m openclaw_enhance.cli status",
-                "python -m openclaw_enhance.cli doctor",
-                "python -m openclaw_enhance.cli uninstall",
             ]
+            if sys.platform == "darwin":
+                commands.append("launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor")
+            commands.extend(
+                [
+                    "python -m openclaw_enhance.cli status",
+                    "python -m openclaw_enhance.cli doctor",
+                    "python -m openclaw_enhance.cli uninstall",
+                ]
+            )
+            return commands
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
         if "recovery" in slug:
