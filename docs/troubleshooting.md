@@ -403,12 +403,13 @@ chmod -R u+rw ~/.openclaw/openclaw-enhance/
 **Diagnosis**:
 1. Check hook is registered:
    ```bash
-   cat ~/.openclaw/openclaw.json | jq '.hooks'
+   cat ~/.openclaw/openclaw.json | jq '.hooks.internal'
+   openclaw hooks list
    ```
 
 2. Check handler file exists:
    ```bash
-   ls ~/.openclaw/hooks/oe-subagent-spawn-enrich/
+   ls ~/.openclaw/openclaw-enhance/hooks/oe-subagent-spawn-enrich/
    ```
 
 **Solution**:

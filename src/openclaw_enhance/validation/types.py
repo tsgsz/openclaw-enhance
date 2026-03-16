@@ -149,6 +149,7 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             ),
         ],
         FeatureClass.RUNTIME_WATCHDOG: [
+            "openclaw hooks list",
             (
                 "python -m openclaw_enhance.validation.live_probes watchdog-reminder "
                 '--openclaw-home "$OPENCLAW_HOME" '

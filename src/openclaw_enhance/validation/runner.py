@@ -63,7 +63,8 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
     env["OPENCLAW_HOME"] = str(openclaw_home)
     env["OPENCLAW_CONFIG_PATH"] = str(config_path)
 
-    with pinned_openclaw_runtime_model(config_path):
+    manages_model_pin = "python -m openclaw_enhance.validation.live_probes" in cmd
+    if manages_model_pin:
         result = subprocess.run(
             cmd,
             shell=True,
@@ -72,6 +73,16 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
             cwd=openclaw_home.parent,
             env=env,
         )
+    else:
+        with pinned_openclaw_runtime_model(config_path):
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                cwd=openclaw_home.parent,
+                env=env,
+            )
     duration = time.time() - start
 
     return CommandResult(

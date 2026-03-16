@@ -458,14 +458,36 @@ def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id:
             _fail("watchdog-reminder", "config_read_error", str(exc))
             return
 
-        enhance_fragment = config_data.get("openclawEnhance")
+        hooks_fragment = None
+        managed_hooks_dir = str((home / "openclaw-enhance" / "hooks").absolute())
+        hooks_obj = config_data.get("hooks")
+        if isinstance(hooks_obj, dict):
+            internal_hooks = hooks_obj.get("internal")
+            if isinstance(internal_hooks, dict):
+                entries = internal_hooks.get("entries")
+                hook_enabled = False
+                if isinstance(entries, dict):
+                    hook_entry = entries.get("oe-subagent-spawn-enrich")
+                    if isinstance(hook_entry, dict):
+                        hook_enabled = hook_entry.get("enabled") is True
+
+                load_obj = internal_hooks.get("load")
+                has_managed_hook_dir = False
+                if isinstance(load_obj, dict):
+                    extra_dirs = load_obj.get("extraDirs")
+                    if isinstance(extra_dirs, list):
+                        has_managed_hook_dir = managed_hooks_dir in extra_dirs
+
+                if hook_enabled and has_managed_hook_dir:
+                    hooks_fragment = {"internal": internal_hooks}
+
         proof_type = (
             "config_hook_plus_live_reminder"
-            if enhance_fragment
+            if hooks_fragment
             else "workspace_contract_plus_live_reminder"
         )
 
-        if not enhance_fragment:
+        if not hooks_fragment:
             result = subprocess.run(
                 ["python", "-m", "openclaw_enhance.cli", "render-workspace", "oe-watchdog"],
                 capture_output=True,
@@ -508,8 +530,8 @@ def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id:
             or get_primary_model(resolved_config)
             or PINNED_OPENCLAW_MODEL,
         }
-        if enhance_fragment:
-            payload["config_fragment"] = json.dumps(enhance_fragment, sort_keys=True)
+        if hooks_fragment:
+            payload["config_fragment"] = json.dumps(hooks_fragment, sort_keys=True)
 
         _emit(payload)
 

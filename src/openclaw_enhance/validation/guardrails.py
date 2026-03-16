@@ -80,6 +80,20 @@ def _check_ownership(target_root: Path) -> bool:
     if not manifest:
         return False
 
+    checkout_root = Path(__file__).resolve().parents[3]
+    components = getattr(manifest, "components", [])
+    for component in components:
+        source_path = getattr(component, "source_path", None)
+        if not isinstance(source_path, str) or not source_path:
+            continue
+
+        try:
+            resolved_source = Path(source_path).resolve()
+            resolved_source.relative_to(checkout_root)
+            return True
+        except (OSError, ValueError):
+            continue
+
     # Check for workspace symlinks (dev mode indicator)
     workspaces_dir = target_root / "workspaces"
     if workspaces_dir.exists():
@@ -102,10 +116,24 @@ def _capture_config_state(openclaw_home: Path) -> dict[str, Any]:
         with config_path.open("r", encoding="utf-8") as f:
             config = json.load(f)
 
+        agents_config = config.get("agents", {}) if isinstance(config, dict) else {}
+        hooks_config = config.get("hooks", {}) if isinstance(config, dict) else {}
+        has_runtime_agents = False
+        if isinstance(agents_config, dict):
+            agents_list = agents_config.get("list")
+            has_runtime_agents = isinstance(agents_list, list)
+
+        has_runtime_hooks = False
+        if isinstance(hooks_config, dict):
+            internal_hooks = hooks_config.get("internal")
+            has_runtime_hooks = isinstance(internal_hooks, dict)
+
         return {
             "exists": True,
-            "has_enhance_namespace": "openclawEnhance" in config,
-            "enhance_config": config.get("openclawEnhance", {}),
+            "has_runtime_agents": has_runtime_agents,
+            "has_runtime_hooks": has_runtime_hooks,
+            "agents_config": agents_config if isinstance(agents_config, dict) else {},
+            "hooks_config": hooks_config if isinstance(hooks_config, dict) else {},
         }
     except (json.JSONDecodeError, OSError):
         return {"exists": True, "readable": False}

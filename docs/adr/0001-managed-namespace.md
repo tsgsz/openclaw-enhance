@@ -38,45 +38,67 @@ We will use a **dedicated managed namespace** under `~/.openclaw/openclaw-enhanc
 
 All enhancement-owned assets use the `oe-` prefix:
 
-- **Agents**: `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script-coder`, `oe-watchdog`
+- **Agents**: `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`
 - **Skills**: `oe-eta-estimator`, `oe-toolcall-router`, `oe-timeout-state-sync`
 - **Hooks**: `oe-subagent-spawn-enrich`
 - **Workspaces**: `~/.openclaw/workspace-openclaw-enhance-<role>/`
 
 ### Ownership Model
 
-Enhancement-owned config keys in `openclaw.json`:
+Enhancement-owned persistent state lives under the managed root and install manifest:
+
+```json
+{
+  "install-manifest.json": "tracks enhancement-owned components",
+  "runtime-state.json": "tracks runtime state",
+  "hooks/": "contains synced hook assets"
+}
+```
+
+Runtime-facing registration in `openclaw.json` must use only supported OpenClaw surfaces:
 
 ```json
 {
   "agents": {
-    "list": ["oe-orchestrator", "oe-searcher", ...]
+    "list": [
+      {
+        "id": "oe-orchestrator",
+        "workspace": "~/.openclaw/openclaw-enhance/workspaces/oe-orchestrator",
+        "agentDir": "~/.openclaw/openclaw-enhance/workspaces/oe-orchestrator"
+      }
+    ]
   },
-  "openclaw-enhance": {
-    "version": "1.0.0",
-    "installed_at": "2026-03-13T10:00:00Z",
-    "namespace": "~/.openclaw/openclaw-enhance/"
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "oe-subagent-spawn-enrich": {"enabled": true}
+      },
+      "load": {
+        "extraDirs": ["~/.openclaw/openclaw-enhance/hooks"]
+      }
+    }
   }
 }
 ```
 
-The `openclaw-enhance` top-level key is the only namespace we own. All other keys are user-owned and must never be modified.
+`openclaw-enhance` must never introduce an unsupported top-level config namespace. It owns only the `oe-*` registrations it writes on supported surfaces and the files under `~/.openclaw/openclaw-enhance/`.
 
 ### Lifecycle Guarantees
 
 **Install**:
 1. Create namespace directory structure
 2. Write install manifest
-3. Register `oe-*` agents
+3. Sync worker workspaces and hook assets into the managed namespace
 4. Copy skills to main workspace
-5. Enable hooks
-6. Update owned config keys only
+5. Register `oe-*` agents on supported `agents.list` surfaces
+6. Register `oe-subagent-spawn-enrich` on supported `hooks.internal` surfaces
 7. Create config backup
 
 **Uninstall**:
-1. Remove owned config keys
-2. Disable hooks
-3. Unregister agents
+1. Remove enhancement-owned hook registrations from supported config surfaces
+2. Remove enhancement-owned agent registrations from supported config surfaces
+3. Remove synced hook assets
 4. Remove skills from main workspace
 5. Remove worker workspaces
 6. Remove namespace directory

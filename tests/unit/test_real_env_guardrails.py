@@ -1,5 +1,6 @@
 """Unit tests for baseline state capture and cleanup verification."""
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -68,6 +69,35 @@ def test_capture_baseline_state_installed_owned(mock_openclaw_home, mock_managed
             assert state.owned_by_checkout
 
 
+def test_capture_baseline_state_installed_owned_via_manifest_sources(
+    mock_openclaw_home, mock_managed_root
+):
+    (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
+    (mock_openclaw_home / "openclaw.json").write_text("{}\n")
+
+    workspaces_dir = mock_managed_root / "workspaces"
+    workspaces_dir.mkdir()
+    (workspaces_dir / "oe-orchestrator").mkdir()
+
+    with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
+        mock_root.return_value = mock_managed_root
+        with patch("openclaw_enhance.validation.guardrails.load_manifest") as mock_load:
+            repo_root = Path(__file__).resolve().parents[2]
+            mock_manifest = MagicMock()
+            mock_manifest.components = [
+                MagicMock(
+                    name="workspace:oe-orchestrator",
+                    source_path=str(repo_root / "workspaces" / "oe-orchestrator"),
+                )
+            ]
+            mock_load.return_value = mock_manifest
+
+            state = capture_baseline_state(mock_openclaw_home)
+
+            assert state.is_installed
+            assert state.owned_by_checkout
+
+
 def test_capture_baseline_state_installed_foreign(mock_openclaw_home, mock_managed_root):
     """Test capturing baseline when installed but foreign."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
@@ -93,7 +123,10 @@ def test_capture_config_state_exists(mock_openclaw_home):
     """Test capturing config state when config exists."""
     (mock_openclaw_home / "VERSION").write_text("2026.3.1\n")
     config_path = mock_openclaw_home / "openclaw.json"
-    config_path.write_text('{"openclawEnhance": {"agents": {"enabled": true}}}')
+    config_path.write_text(
+        '{"agents": {"list": [{"id": "oe-orchestrator"}]}, '
+        '"hooks": {"internal": {"entries": {"oe-subagent-spawn-enrich": {"enabled": true}}}}}'
+    )
 
     with patch("openclaw_enhance.validation.guardrails.managed_root") as mock_root:
         mock_root.return_value = mock_openclaw_home / "openclaw-enhance"
@@ -103,7 +136,8 @@ def test_capture_config_state_exists(mock_openclaw_home):
             state = capture_baseline_state(mock_openclaw_home)
 
             assert state.config_state["exists"]
-            assert state.config_state["has_enhance_namespace"]
+            assert state.config_state["has_runtime_agents"]
+            assert state.config_state["has_runtime_hooks"]
 
 
 def test_harness_readiness_missing_home(tmp_path):

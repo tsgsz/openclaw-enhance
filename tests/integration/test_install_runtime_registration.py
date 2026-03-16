@@ -1,0 +1,151 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from openclaw_enhance.install import install
+from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
+
+
+@pytest.fixture
+def mock_openclaw_home(tmp_path: Path) -> Path:
+    openclaw_home = tmp_path / ".openclaw"
+    openclaw_home.mkdir(parents=True)
+
+    version_file = openclaw_home / "VERSION"
+    version_file.write_text("2026.3.1\n")
+
+    config_file = openclaw_home / "openclaw.json"
+    config_file.write_text(json.dumps({"theme": "dark"}) + "\n")
+
+    return openclaw_home
+
+
+@pytest.fixture
+def isolated_user_home(tmp_path: Path) -> Path:
+    return tmp_path / "user_home"
+
+
+def test_install_does_not_write_top_level_openclaw_enhance_key(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    result = install(mock_openclaw_home, user_home=isolated_user_home)
+    assert result.success
+
+    config_path = resolve_openclaw_config_path(mock_openclaw_home)
+    assert config_path.name == "openclaw.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    assert "openclawEnhance" not in config, "Should not write top-level 'openclawEnhance' key"
+
+
+def test_force_install_migrates_legacy_config(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    config_path = resolve_openclaw_config_path(mock_openclaw_home)
+    config_path.write_text(json.dumps({"theme": "light", "openclawEnhance": {"legacy": True}}))
+
+    result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+    assert result.success
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    assert "openclawEnhance" not in config, (
+        "Legacy 'openclawEnhance' key should be migrated/removed"
+    )
+
+
+def test_runtime_registration_uses_supported_shape(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    result = install(mock_openclaw_home, user_home=isolated_user_home)
+    assert result.success
+
+    config_path = resolve_openclaw_config_path(mock_openclaw_home)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    assert "agents" in config, "Top-level 'agents' key should exist"
+    assert "list" in config["agents"], "Top-level 'agents.list' should exist"
+
+    agent_ids = [a["id"] for a in config["agents"]["list"]]
+    expected_agents = [
+        "oe-orchestrator",
+        "oe-searcher",
+        "oe-syshelper",
+        "oe-script_coder",
+        "oe-watchdog",
+        "oe-tool-recovery",
+    ]
+    for agent_id in expected_agents:
+        assert agent_id in agent_ids, f"Agent {agent_id} should be in top-level agents.list"
+
+    assert "hooks" in config, "Top-level 'hooks' key should exist"
+    assert "internal" in config["hooks"], "Top-level 'hooks.internal' should exist"
+    internal_hooks = config["hooks"]["internal"]
+    assert "entries" in internal_hooks, "Top-level 'hooks.internal.entries' should exist"
+    assert isinstance(internal_hooks["entries"], dict), (
+        "Top-level 'hooks.internal.entries' should be a record"
+    )
+    assert "oe-subagent-spawn-enrich" in internal_hooks["entries"], (
+        "oe-subagent-spawn-enrich hook should be enabled under hooks.internal.entries"
+    )
+    assert internal_hooks["entries"]["oe-subagent-spawn-enrich"] == {"enabled": True}, (
+        "oe-subagent-spawn-enrich hook entry should be enabled explicitly"
+    )
+
+    assert "load" in internal_hooks, "Top-level 'hooks.internal.load' should exist"
+    assert "extraDirs" in internal_hooks["load"], (
+        "Top-level 'hooks.internal.load.extraDirs' should exist"
+    )
+    expected_hook_dir = str(managed_root(isolated_user_home) / "hooks")
+    assert expected_hook_dir in internal_hooks["load"]["extraDirs"], (
+        "Managed hook directory should be registered for hook discovery"
+    )
+
+    managed_agents = [agent for agent in config["agents"]["list"] if agent["id"] in expected_agents]
+    expected_workspaces_root = managed_root(isolated_user_home) / "workspaces"
+    for agent in managed_agents:
+        assert "agentDir" in agent, f"Agent {agent['id']} should declare agentDir"
+        assert "workspace" in agent, f"Agent {agent['id']} should declare workspace"
+        expected_workspace = str(expected_workspaces_root / agent["id"])
+        assert agent["workspace"] == expected_workspace, (
+            f"Agent {agent['id']} should use managed workspace path"
+        )
+
+    assert "openclawEnhance" not in config, "Registration should not be under 'openclawEnhance'"
+
+
+def test_install_preserves_foreign_hook_entry_configuration(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    config_path = resolve_openclaw_config_path(mock_openclaw_home)
+    foreign_entry = {
+        "enabled": False,
+        "env": {"FOREIGN_FLAG": "1"},
+    }
+    config_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "internal": {
+                        "entries": {"foreign-hook": foreign_entry},
+                        "load": {"extraDirs": ["/foreign/hooks"]},
+                    }
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = install(mock_openclaw_home, user_home=isolated_user_home)
+    assert result.success
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    internal_hooks = config["hooks"]["internal"]
+
+    assert internal_hooks["entries"]["foreign-hook"] == foreign_entry
+    assert "/foreign/hooks" in internal_hooks["load"]["extraDirs"]

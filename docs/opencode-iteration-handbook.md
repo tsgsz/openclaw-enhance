@@ -231,12 +231,23 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Post-development checklist integration in `AGENTS.md`.
 - Success criteria: CLI command functional, all docs aligned on mandatory gate, reports generated.
 
+**config-schema-compatible-runtime-registration** — COMPLETE
+- Date: 2026-03-16
+- Scope: Removed the unsupported top-level OpenClaw config namespace and moved runtime registration onto supported config surfaces.
+- Deliverables:
+  - Installer writes `oe-*` agent registrations to `agents.list`.
+  - Installer writes hook registration to `hooks.internal.entries` and `hooks.internal.load.extraDirs`.
+  - Hook assets are synced into `~/.openclaw/openclaw-enhance/hooks/`.
+  - Legacy `openclawEnhance` config is migrated away during reinstall.
+  - Uninstall removes only enhancement-owned runtime registrations from supported surfaces.
+- Success criteria: `openclaw agents list`, `openclaw hooks list`, and live `openclaw agent --agent oe-orchestrator ...` succeed after redeploy.
+
 ### Current Durable Status
 
 The repository is in **stable maintenance mode** for the bounded-loop orchestration architecture:
 - Core orchestration: Bounded multi-round loop + `sessions_yield`.
 - Core routing: skill contracts + native `sessions_spawn`.
-- Installer: syncs main skills, symmetric uninstall.
+- Installer: syncs main skills and hook assets, writes supported runtime config surfaces, symmetric uninstall.
 - Validation: `docs-check` enforces alignment.
 - Workers: 5 specialized agents with strict boundaries.
 - No planned breaking changes to architecture.

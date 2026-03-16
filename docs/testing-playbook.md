@@ -55,9 +55,11 @@ Target: Default `~/.openclaw`
    - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
-1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | grep "openclawEnhance"`
-   - *Pass*: Hooks are correctly registered in OpenClaw config.
-2. **Watchdog Trigger**: (Specific trigger command or scenario)
+1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | jq '.hooks.internal'`
+   - *Pass*: `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is `true` and `hooks.internal.load.extraDirs` includes the managed hook directory.
+2. **Hook Discovery**: `openclaw hooks list`
+   - *Pass*: `oe-subagent-spawn-enrich` is listed as ready.
+3. **Watchdog Trigger**: (Specific trigger command or scenario)
    - *Pass*: Watchdog identifies timeout or state change as expected.
 
 ### 2.5 Docs Check Only (`docs-test-only`)
@@ -114,7 +116,7 @@ This section tracks the canonical backfill slugs for features already shipped in
 | CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; rendered content matches; docs-check passes; validator self-surface ok |
 | Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
 | Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
-| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` | `openclawEnhance` hooks present in `openclaw.json` |
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
 
 ### 6.1 Method Contracts & Expectations
 
@@ -156,5 +158,5 @@ This section tracks the canonical backfill slugs for features already shipped in
 
 #### `backfill-watchdog-reminder`
 - **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`
-- **Expectation**: Verifies openclaw.json hook config (or workspace contract fallback) and live reminder delivery.
+- **Expectation**: Verifies supported `hooks.internal` config (or workspace contract fallback) and live reminder delivery.
 - **Proof**: JSON output with `marker: PROBE_WATCHDOG_REMINDER_OK`, `proof: config_hook_plus_live_reminder` or `workspace_contract_plus_live_reminder`, and session_id evidence.

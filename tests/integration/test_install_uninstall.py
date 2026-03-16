@@ -235,6 +235,47 @@ class TestInstallUninstallSymmetry:
             contents = list(target_root.iterdir())
             assert len(contents) == 0, f"Unexpected contents: {contents}"
 
+    def test_uninstall_removes_hook_internal_enabled_when_introduced_by_install(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        config_path = mock_openclaw_home / "config.json"
+        install_result = install(mock_openclaw_home, user_home=isolated_user_home)
+        assert install_result.success
+
+        uninstall_result = uninstall(
+            openclaw_home=mock_openclaw_home,
+            user_home=isolated_user_home,
+        )
+        assert uninstall_result.success
+
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        assert "hooks" not in config
+
+    def test_uninstall_restores_previous_hook_internal_enabled_value(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        config_path = mock_openclaw_home / "config.json"
+        config_path.write_text(
+            json.dumps({"hooks": {"internal": {"enabled": False}}}) + "\n",
+            encoding="utf-8",
+        )
+
+        install_result = install(mock_openclaw_home, user_home=isolated_user_home)
+        assert install_result.success
+
+        uninstall_result = uninstall(
+            openclaw_home=mock_openclaw_home,
+            user_home=isolated_user_home,
+        )
+        assert uninstall_result.success
+
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        assert config == {"hooks": {"internal": {"enabled": False}}}
+
     def test_complete_lifecycle_cli_style(
         self,
         mock_openclaw_home: Path,

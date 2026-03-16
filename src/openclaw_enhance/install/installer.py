@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import sys
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -35,9 +36,10 @@ from openclaw_enhance.paths import (
     managed_root,
     resolve_openclaw_config_path,
 )
-from openclaw_enhance.runtime.config_patch import (
-    ConfigPatchError,
-    apply_owned_config_patch,
+from openclaw_enhance.runtime.ownership import (
+    OWNED_AGENT_SPECS,
+    OWNED_HOOK_ENTRY_IDS,
+    OWNED_NAMESPACE,
 )
 from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
 from openclaw_enhance.workspaces import WORKSPACES_DIR, list_workspaces
@@ -224,140 +226,172 @@ def _sync_workspaces(
     return components
 
 
-def _register_agents(
+def _sync_hooks(target_root: Path, dev_mode: bool = False) -> list[ComponentInstall]:
+    components: list[ComponentInstall] = []
+
+    source_path = Path(__file__).resolve().parents[3] / "hooks"
+    if not source_path.exists() or not source_path.is_dir():
+        return components
+
+    target_path = target_root / "hooks"
+    if target_path.exists() or target_path.is_symlink():
+        if target_path.is_symlink():
+            target_path.unlink()
+        else:
+            shutil.rmtree(target_path)
+
+    if dev_mode:
+        target_path.symlink_to(source_path.absolute())
+    else:
+        shutil.copytree(source_path, target_path)
+
+    components.append(
+        ComponentInstall(
+            name="hooks:assets",
+            version=VERSION,
+            install_time=datetime.utcnow(),
+            source_path=str(source_path.absolute()),
+            target_path=str(target_path.absolute()),
+            is_symlink=dev_mode,
+        )
+    )
+    return components
+
+
+def _write_openclaw_config(config_path: Path, config: dict[str, Any]) -> str:
+    backup_path = config_path.with_name(f"{config_path.name}.bak")
+    temp_path = config_path.with_name(f"{config_path.name}.tmp")
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    if config_path.exists():
+        shutil.copy2(config_path, backup_path)
+
+    try:
+        with temp_path.open("w", encoding="utf-8") as handle:
+            json.dump(config, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp_path, config_path)
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink()
+        if backup_path.exists():
+            shutil.copy2(backup_path, config_path)
+        raise
+
+    return str(backup_path)
+
+
+def _register_runtime_surfaces(
     manifest: InstallManifest,
     openclaw_home: Path,
     target_root: Path,
 ) -> list[ComponentInstall]:
-    """Register agents with OpenClaw configuration.
-
-    Uses JSON read-modify-write with backup for config changes.
-    """
-    components: list[ComponentInstall] = []
     config_path = resolve_openclaw_config_path(openclaw_home)
+    config = _load_openclaw_config(config_path)
 
-    # Define the agents configuration patch
-    # NOTE: Registry descriptions are non-authoritative.
-    # Actual routing metadata (capabilities, constraints) is read from
-    # each worker's AGENTS.md frontmatter at runtime.
-    agents_patch = {
-        "openclawEnhance": {
-            "agents": {
-                "enabled": True,
-                "registry": {
-                    "oe-orchestrator": {
-                        "workspace": "oe-orchestrator",
-                        "description": "Orchestrator agent for task planning and dispatch",
-                        "version": VERSION,
-                    },
-                    "oe-searcher": {
-                        "workspace": "oe-searcher",
-                        "description": "Search and research agent",
-                        "version": VERSION,
-                    },
-                    "oe-syshelper": {
-                        "workspace": "oe-syshelper",
-                        "description": "System helper for grep and file operations",
-                        "version": VERSION,
-                    },
-                    "oe-script-coder": {
-                        "workspace": "oe-script-coder",
-                        "description": "Script coding and testing agent",
-                        "version": VERSION,
-                    },
-                    "oe-watchdog": {
-                        "workspace": "oe-watchdog",
-                        "description": "Session monitoring and timeout handling",
-                        "version": VERSION,
-                    },
-                    "oe-tool-recovery": {
-                        "workspace": "oe-tool-recovery",
-                        "description": "Tool failure recovery and retry agent",
-                        "version": VERSION,
-                    },
-                },
-            },
-        },
-    }
+    config.pop(OWNED_NAMESPACE, None)
+
+    owned_agent_ids = {agent_id for agent_id, _ in OWNED_AGENT_SPECS}
+    agents_obj = config.get("agents")
+    if not isinstance(agents_obj, dict):
+        agents_obj = {}
+        config["agents"] = agents_obj
+
+    current_list = agents_obj.get("list")
+    existing_agents: list[dict[str, Any]] = []
+    if isinstance(current_list, list):
+        for entry in current_list:
+            if not isinstance(entry, dict):
+                continue
+            entry_id = entry.get("id")
+            if isinstance(entry_id, str) and entry_id in owned_agent_ids:
+                continue
+            existing_agents.append(dict(entry))
+
+    managed_agents = []
+    for agent_id, workspace in OWNED_AGENT_SPECS:
+        workspace_path = str((target_root / "workspaces" / workspace).absolute())
+        managed_agents.append(
+            {
+                "id": agent_id,
+                "workspace": workspace_path,
+                "agentDir": workspace_path,
+            }
+        )
+    agents_obj["list"] = existing_agents + managed_agents
+
+    hooks_obj = config.get("hooks")
+    if not isinstance(hooks_obj, dict):
+        hooks_obj = {}
+        config["hooks"] = hooks_obj
+
+    internal_obj = hooks_obj.get("internal")
+    if not isinstance(internal_obj, dict):
+        internal_obj = {}
+        hooks_obj["internal"] = internal_obj
+
+    previous_enabled_present = "enabled" in internal_obj
+    previous_enabled_value = internal_obj.get("enabled")
+
+    entries_obj = internal_obj.get("entries")
+    entry_values: dict[str, Any] = {}
+    if isinstance(entries_obj, dict):
+        for hook_id, hook_config in entries_obj.items():
+            if isinstance(hook_id, str):
+                entry_values[hook_id] = deepcopy(hook_config)
+    elif isinstance(entries_obj, list):
+        for hook_id in entries_obj:
+            if isinstance(hook_id, str):
+                entry_values[hook_id] = {"enabled": True}
+
+    for hook_id in OWNED_HOOK_ENTRY_IDS:
+        entry_values[hook_id] = {"enabled": True}
+    internal_obj["entries"] = entry_values
+    internal_obj["enabled"] = True
+
+    load_obj = internal_obj.get("load")
+    if not isinstance(load_obj, dict):
+        load_obj = {}
+        internal_obj["load"] = load_obj
+
+    extra_dirs_obj = load_obj.get("extraDirs")
+    extra_dirs: list[str] = []
+    if isinstance(extra_dirs_obj, list):
+        extra_dirs = [v for v in extra_dirs_obj if isinstance(v, str)]
+
+    managed_hooks_dir = str((target_root / "hooks").absolute())
+    if managed_hooks_dir not in extra_dirs:
+        extra_dirs.append(managed_hooks_dir)
+    load_obj["extraDirs"] = extra_dirs
 
     try:
-        result = apply_owned_config_patch(
-            config_path,
-            agents_patch,
-            fail_on_write=False,
-        )
+        backup_path = _write_openclaw_config(config_path, config)
+    except OSError as exc:
+        raise InstallError(f"Failed to write OpenClaw config: {exc}") from exc
 
-        component = ComponentInstall(
+    manifest.add_rollback_point(
+        description="Runtime registration",
+        backup_paths={"config": backup_path},
+    )
+
+    return [
+        ComponentInstall(
             name="agents:registry",
             version=VERSION,
             install_time=datetime.utcnow(),
             target_path=str(config_path.absolute()),
-        )
-        components.append(component)
-
-        # Track backup for rollback
-        manifest.add_rollback_point(
-            description="Agent registration",
-            backup_paths={"config": result.backup_path},
-        )
-    except ConfigPatchError as exc:
-        raise InstallError(f"Failed to register agents: {exc}") from exc
-
-    return components
-
-
-def _enable_hooks(
-    manifest: InstallManifest,
-    openclaw_home: Path,
-    target_root: Path,
-) -> list[ComponentInstall]:
-    """Enable hooks for OpenClaw events.
-
-    Uses JSON read-modify-write with backup for config changes.
-    """
-    components: list[ComponentInstall] = []
-    config_path = resolve_openclaw_config_path(openclaw_home)
-
-    # Define the hooks configuration patch
-    hooks_patch = {
-        "openclawEnhance": {
-            "hooks": {
-                "enabled": True,
-                "subscribers": [
-                    {
-                        "event": "subagent_spawning",
-                        "handler": "oe-subagent-spawn-enrich",
-                        "priority": 100,
-                    },
-                ],
-            },
-        },
-    }
-
-    try:
-        result = apply_owned_config_patch(
-            config_path,
-            hooks_patch,
-            fail_on_write=False,
-        )
-
-        component = ComponentInstall(
+        ),
+        ComponentInstall(
             name="hooks:subagent-spawn-enrich",
             version=VERSION,
             install_time=datetime.utcnow(),
             target_path=str(config_path.absolute()),
-        )
-        components.append(component)
-
-        # Track backup for rollback
-        manifest.add_rollback_point(
-            description="Hook enablement",
-            backup_paths={"config": result.backup_path},
-        )
-    except ConfigPatchError as exc:
-        raise InstallError(f"Failed to enable hooks: {exc}") from exc
-
-    return components
+            metadata={
+                "previous_enabled_present": previous_enabled_present,
+                "previous_enabled_value": previous_enabled_value,
+            },
+        ),
+    ]
 
 
 def _install_runtime_state(
@@ -457,25 +491,25 @@ def install(
             errors.append(f"Main skill sync failed: {exc}")
             raise InstallError(f"Main skill sync failed: {exc}") from exc
 
-        # Step 5: Register agents
         try:
-            agent_components = _register_agents(manifest, openclaw_home, target_root)
-            all_components.extend(agent_components)
-        except InstallError:
-            raise
+            hook_asset_components = _sync_hooks(target_root, dev_mode=dev_mode)
+            all_components.extend(hook_asset_components)
         except Exception as exc:
-            errors.append(f"Agent registration failed: {exc}")
-            raise InstallError(f"Agent registration failed: {exc}") from exc
+            errors.append(f"Hook asset sync failed: {exc}")
+            raise InstallError(f"Hook asset sync failed: {exc}") from exc
 
-        # Step 6: Enable hooks
         try:
-            hook_components = _enable_hooks(manifest, openclaw_home, target_root)
-            all_components.extend(hook_components)
+            runtime_registration_components = _register_runtime_surfaces(
+                manifest,
+                openclaw_home,
+                target_root,
+            )
+            all_components.extend(runtime_registration_components)
         except InstallError:
             raise
         except Exception as exc:
-            errors.append(f"Hook enablement failed: {exc}")
-            raise InstallError(f"Hook enablement failed: {exc}") from exc
+            errors.append(f"Runtime registration failed: {exc}")
+            raise InstallError(f"Runtime registration failed: {exc}") from exc
 
         # Step 7: Initialize runtime state
         try:

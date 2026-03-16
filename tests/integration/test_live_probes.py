@@ -1,5 +1,6 @@
 """Tests for live validation probes."""
 
+import json
 import os
 from pathlib import Path
 
@@ -67,3 +68,108 @@ def test_dev_symlink_probe_succeeds_with_symlink(mock_openclaw_home: Path, tmp_p
     assert result.exit_code == 0
     assert str(target_link) in result.output
     assert str(source_dir) in result.output
+
+
+def test_watchdog_reminder_prefers_supported_hook_config(mock_openclaw_home: Path):
+    managed_hook_dir = mock_openclaw_home / "openclaw-enhance" / "hooks"
+    config_path = mock_openclaw_home / "openclaw.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "internal": {
+                        "enabled": True,
+                        "entries": {"oe-subagent-spawn-enrich": {"enabled": True}},
+                        "load": {"extraDirs": [str(managed_hook_dir)]},
+                    }
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "watchdog-reminder",
+            "--openclaw-home",
+            str(mock_openclaw_home),
+            "--session-id",
+            "watchdog-test-session",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert '"proof": "config_hook_plus_live_reminder"' in result.output
+    assert '"config_fragment"' in result.output
+
+
+def test_watchdog_reminder_requires_enabled_hook_entry(mock_openclaw_home: Path):
+    managed_hook_dir = mock_openclaw_home / "openclaw-enhance" / "hooks"
+    config_path = mock_openclaw_home / "openclaw.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "internal": {
+                        "enabled": True,
+                        "entries": {"oe-subagent-spawn-enrich": {"enabled": False}},
+                        "load": {"extraDirs": [str(managed_hook_dir)]},
+                    }
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "watchdog-reminder",
+            "--openclaw-home",
+            str(mock_openclaw_home),
+            "--session-id",
+            "watchdog-disabled-hook",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert '"proof": "workspace_contract_plus_live_reminder"' in result.output
+
+
+def test_watchdog_reminder_requires_managed_hook_dir(mock_openclaw_home: Path):
+    config_path = mock_openclaw_home / "openclaw.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "internal": {
+                        "enabled": True,
+                        "entries": {"oe-subagent-spawn-enrich": {"enabled": True}},
+                        "load": {"extraDirs": ["/tmp/hooks"]},
+                    }
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "watchdog-reminder",
+            "--openclaw-home",
+            str(mock_openclaw_home),
+            "--session-id",
+            "watchdog-missing-dir",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert '"proof": "workspace_contract_plus_live_reminder"' in result.output
