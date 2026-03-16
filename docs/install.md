@@ -119,8 +119,8 @@ The installer will:
 1. Create managed namespace at `~/.openclaw/openclaw-enhance/`
 2. Register `oe-*` agents with OpenClaw
 3. Copy main-session skills to active workspace
-4. Enable hooks via OpenClaw CLI
-5. Update config with owned keys only (openclaw.json)
+4. Sync hook assets into `~/.openclaw/openclaw-enhance/hooks/`
+5. Update supported runtime config surfaces in `openclaw.json` (`agents.list`, `hooks.internal`)
 6. Create backup of original config
 
 **Installation order** (symmetric with uninstall):
@@ -129,9 +129,9 @@ The installer will:
 3. Create/verify namespace
 4. Sync worker workspaces
 5. Copy main skills
-6. Register agents
-7. Enable hooks
-8. Apply config changes
+6. Sync hook assets
+7. Register agents and hooks on supported OpenClaw config surfaces
+8. Apply config backup/rollback guardrails
 
 ### Step 6: Verify Installation
 
@@ -147,15 +147,17 @@ Installation Path: /Users/you/.openclaw/openclaw-enhance
 Installed: Yes
 Version: 1.0.0
 Install Time: 2026-03-13T10:30:00
-Components (8):
+Components (13):
   - oe-orchestrator agent
   - oe-searcher agent
   - oe-syshelper agent
   - oe-script_coder agent
   - oe-watchdog agent
+  - oe-tool-recovery agent
   - oe-eta-estimator skill
   - oe-toolcall-router skill
   - oe-timeout-state-sync skill
+  - managed hook assets
   - oe-subagent-spawn-enrich hook
 ```
 
