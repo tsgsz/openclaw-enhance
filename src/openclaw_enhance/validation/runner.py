@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 from openclaw_enhance.validation.guardrails import verify_ownership
+from openclaw_enhance.validation.model_pin import pinned_openclaw_runtime_model
 from openclaw_enhance.validation.types import (
     BaselineState,
     CommandResult,
@@ -57,18 +58,20 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
 
     env = os.environ.copy()
     project_root = Path(__file__).parent.parent.parent.parent
+    config_path = _resolve_config_path(openclaw_home)
     env["OPENCLAW_ENHANCE_WORKSPACES_DIR"] = str(project_root / "workspaces")
     env["OPENCLAW_HOME"] = str(openclaw_home)
-    env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
+    env["OPENCLAW_CONFIG_PATH"] = str(config_path)
 
-    result = subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-        text=True,
-        cwd=openclaw_home.parent,
-        env=env,
-    )
+    with pinned_openclaw_runtime_model(config_path):
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=openclaw_home.parent,
+            env=env,
+        )
     duration = time.time() - start
 
     return CommandResult(
