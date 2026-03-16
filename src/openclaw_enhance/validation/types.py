@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-import sys
 
 
 class FeatureClass(Enum):
