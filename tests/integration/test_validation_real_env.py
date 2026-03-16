@@ -11,6 +11,7 @@ Tests the validate-feature CLI command with mocked subprocess calls to verify:
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import sys
 
 import pytest
 from click.testing import CliRunner
@@ -132,31 +133,33 @@ class TestValidateFeatureCommandOrdering:
         """Install lifecycle should execute commands in correct order."""
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-        runner = CliRunner()
-        runner.invoke(
-            cli,
-            [
-                "validate-feature",
-                "--feature-class",
-                "install-lifecycle",
-                "--report-slug",
-                "order-test",
-                "--openclaw-home",
-                str(mock_openclaw_home),
-                "--reports-dir",
-                str(reports_dir),
-            ],
-        )
+        with patch("openclaw_enhance.validation.types.sys.platform", "darwin"):
+            runner = CliRunner()
+            runner.invoke(
+                cli,
+                [
+                    "validate-feature",
+                    "--feature-class",
+                    "install-lifecycle",
+                    "--report-slug",
+                    "order-test",
+                    "--openclaw-home",
+                    str(mock_openclaw_home),
+                    "--reports-dir",
+                    str(reports_dir),
+                ],
+            )
 
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        assert len(calls) >= 5
+        assert len(calls) >= 6
         assert "uninstall" in calls[0]
         assert "install" in calls[1]
         assert "--dev" not in calls[1]
-        assert "status" in calls[2]
-        assert "doctor" in calls[3]
-        assert "uninstall" in calls[4]
+        assert calls[2] == "launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor"
+        assert "status" in calls[3]
+        assert "doctor" in calls[4]
+        assert "uninstall" in calls[5]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_install_lifecycle_dev_mode_slug(

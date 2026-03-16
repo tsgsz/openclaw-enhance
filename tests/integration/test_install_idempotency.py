@@ -5,7 +5,9 @@ consistent results.
 """
 
 import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -40,6 +42,17 @@ def isolated_user_home(tmp_path: Path) -> Path:
 
 class TestInstallIdempotency:
     """Tests that install is idempotent."""
+
+    @pytest.fixture(autouse=True)
+    def stub_monitor_service(self):
+        if sys.platform != "darwin":
+            yield
+            return
+        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+            mock_run.return_value = type(
+                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+            )()
+            yield
 
     def test_double_install_succeeds(
         self,
@@ -187,6 +200,17 @@ class TestInstallIdempotency:
 
 class TestUninstallIdempotency:
     """Tests that uninstall is idempotent."""
+
+    @pytest.fixture(autouse=True)
+    def stub_monitor_service(self):
+        if sys.platform != "darwin":
+            yield
+            return
+        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+            mock_run.return_value = type(
+                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+            )()
+            yield
 
     def test_double_uninstall_succeeds(
         self,

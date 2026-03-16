@@ -206,6 +206,9 @@ ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
 **Diagnosis**:
 1. Check monitor is running:
    ```bash
+   # On macOS
+   launchctl print gui/$UID/ai.openclaw.enhance.monitor
+
    # If using cron
    crontab -l | grep monitor_runtime
    
@@ -219,22 +222,28 @@ ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
    ```
 
 **Solution**:
-1. Ensure monitor script is executable:
+1. On macOS, reinstall or restart the managed LaunchAgent:
+   ```bash
+   python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
+   launchctl kickstart -k gui/$UID/ai.openclaw.enhance.monitor
+   ```
+
+2. Ensure monitor script is executable:
    ```bash
    chmod +x scripts/monitor_runtime.py
    ```
 
-2. Test monitor manually:
+3. Test monitor manually:
    ```bash
    python scripts/monitor_runtime.py --once \
      --openclaw-home "$HOME/.openclaw" \
      --state-root "$HOME/.openclaw/openclaw-enhance"
    ```
 
-3. Re-setup monitoring:
+4. Re-setup cron-based monitoring:
    ```bash
-   # Add to crontab
-   (crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python scripts/monitor_runtime.py --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
+    # Add to crontab
+    (crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python scripts/monitor_runtime.py --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
    ```
 
 ## State Corruption

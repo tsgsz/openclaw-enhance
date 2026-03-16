@@ -31,6 +31,7 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     save_manifest,
 )
+from openclaw_enhance.install.monitor_service import install_monitor_launchagent
 from openclaw_enhance.paths import (
     ensure_managed_directories,
     managed_root,
@@ -460,6 +461,7 @@ def install(
     all_components: list[ComponentInstall] = []
     backup_paths: dict[str, str] = {}
     errors: list[str] = []
+    monitor_service_component: ComponentInstall | None = None
 
     try:
         # Step 3: Create namespace
@@ -519,6 +521,19 @@ def install(
             errors.append(f"Runtime state initialization failed: {exc}")
             # Non-fatal - continue
 
+        try:
+            monitor_service_component = install_monitor_launchagent(
+                manifest=manifest,
+                openclaw_home=openclaw_home,
+                target_root=target_root,
+                user_home=user_home,
+            )
+            if monitor_service_component is not None:
+                all_components.append(monitor_service_component)
+        except Exception as exc:
+            errors.append(f"Monitor service installation failed: {exc}")
+            raise InstallError(f"Monitor service installation failed: {exc}") from exc
+
         # Update manifest with all components
         for component in all_components:
             manifest.add_component(component)
@@ -528,7 +543,23 @@ def install(
             backup_paths.update(rp.get("backup_paths", {}))
 
         # Save manifest
-        save_manifest(manifest, target_root)
+        try:
+            save_manifest(manifest, target_root)
+        except Exception:
+            if monitor_service_component is not None:
+                try:
+                    from openclaw_enhance.install.monitor_service import (
+                        uninstall_monitor_launchagent,
+                    )
+
+                    uninstall_monitor_launchagent(
+                        manifest=None,
+                        target_root=target_root,
+                        user_home=user_home,
+                    )
+                except Exception:
+                    pass
+            raise
 
         return InstallResult(
             success=True,

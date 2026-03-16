@@ -20,15 +20,17 @@ Validation requirements are determined by the feature class of the change.
 Target: Default `~/.openclaw`
 
 1. **Cleanup**: `python -m openclaw_enhance.cli uninstall`
-   - *Pass*: `~/.openclaw/openclaw-enhance` is removed or empty.
+    - *Pass*: `~/.openclaw/openclaw-enhance` is removed or empty.
 2. **Install**: `python -m openclaw_enhance.cli install`
-   - *Pass*: Exit code 0, "Installation successful" in output.
-3. **Verify Status**: `python -m openclaw_enhance.cli status`
-   - *Pass*: `installed: true` in output.
-4. **Doctor Check**: `python -m openclaw_enhance.cli doctor`
-   - *Pass*: Exit code 0.
-5. **Final Cleanup**: `python -m openclaw_enhance.cli uninstall`
-   - *Pass*: Environment restored to original state.
+    - *Pass*: Exit code 0, "Installation successful" in output.
+3. **Monitor Service (macOS)**: `launchctl print gui/$UID/ai.openclaw.enhance.monitor`
+    - *Pass*: LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` with `RunAtLoad` and a 60-second interval.
+4. **Verify Status**: `python -m openclaw_enhance.cli status`
+    - *Pass*: `installed: true` in output.
+5. **Doctor Check**: `python -m openclaw_enhance.cli doctor`
+    - *Pass*: Exit code 0.
+6. **Final Cleanup**: `python -m openclaw_enhance.cli uninstall`
+    - *Pass*: Environment restored to original state.
 
 ### 2.2 CLI Surface Bundle (`cli-surface`)
 1. **Status**: `python -m openclaw_enhance.cli status`
@@ -112,6 +114,7 @@ This section tracks the canonical backfill slugs for features already shipped in
 | Feature Capability | Canonical Slug | Feature Class | Method Contract | Observable Proof |
 | :--- | :--- | :--- | :--- | :--- |
 | Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
+| Monitor Auto-Start (macOS) | `backfill-monitor-auto-start` | `install-lifecycle` | `python -m openclaw_enhance.cli install` + `launchctl print gui/$UID/ai.openclaw.enhance.monitor` | LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` |
 | Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
 | CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; rendered content matches; docs-check passes; validator self-surface ok |
 | Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |

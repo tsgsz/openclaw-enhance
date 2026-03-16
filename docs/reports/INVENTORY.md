@@ -9,6 +9,7 @@ These are the authoritative validation reports for each feature slug:
 | Slug | Report File | Date | Conclusion |
 |------|-------------|------|------------|
 | backfill-core-install | [2026-03-14-backfill-core-install-install-lifecycle.md](./2026-03-14-backfill-core-install-install-lifecycle.md) | 2026-03-14 | PASS |
+| backfill-monitor-auto-start | [2026-03-16-backfill-monitor-auto-start-install-lifecycle.md](./2026-03-16-backfill-monitor-auto-start-install-lifecycle.md) | 2026-03-16 | PASS |
 | backfill-dev-install | [2026-03-14-backfill-dev-install-install-lifecycle.md](./2026-03-14-backfill-dev-install-install-lifecycle.md) | 2026-03-14 | PASS |
 | backfill-cli-surface | [2026-03-14-backfill-cli-surface-cli-surface.md](./2026-03-14-backfill-cli-surface-cli-surface.md) | 2026-03-14 | PASS |
 | backfill-routing-yield | [2026-03-15-backfill-routing-yield-workspace-routing.md](./2026-03-15-backfill-routing-yield-workspace-routing.md) | 2026-03-15 | PASS |
