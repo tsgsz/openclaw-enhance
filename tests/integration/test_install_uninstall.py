@@ -5,6 +5,7 @@ uninstalling should leave the system in a clean state.
 """
 
 import json
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -46,6 +47,17 @@ def isolated_user_home(tmp_path: Path) -> Path:
 
 class TestInstallUninstallSymmetry:
     """Tests that install→uninstall is symmetric."""
+
+    @pytest.fixture(autouse=True)
+    def stub_monitor_service(self):
+        if sys.platform != "darwin":
+            yield
+            return
+        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+            mock_run.return_value = type(
+                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
+            )()
+            yield
 
     def test_install_creates_managed_root(
         self,
