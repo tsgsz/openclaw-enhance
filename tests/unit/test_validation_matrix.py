@@ -12,6 +12,7 @@ def test_canonical_slugs_present():
         "backfill-cli-surface",
         "backfill-routing-yield",
         "backfill-recovery-worker",
+        "backfill-main-escalation",
         "backfill-watchdog-reminder",
     }
 
