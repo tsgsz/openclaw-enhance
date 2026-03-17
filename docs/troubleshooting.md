@@ -108,13 +108,35 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
 **Symptom**: Complex tasks stay on main session instead of routing to orchestrator.
 
 **Diagnosis**:
-1. Check that `oe-toolcall-router` skill is installed:
+1. Identify your active main workspace (depends on config and OPENCLAW_PROFILE):
    ```bash
-   ls ~/.openclaw/workspace-default*/skills/oe-toolcall-router/
+   python3 -c "
+   import json
+   from pathlib import Path
+   home = Path.home() / '.openclaw'
+   config_path = home / 'openclaw.json'
+   if not config_path.exists():
+       config_path = home / 'config.json'
+   config = json.loads(config_path.read_text()) if config_path.exists() else {}
+   
+   # Resolution: agent.workspace > agents.defaults.workspace > profile fallback
+   ws = config.get('agent', {}).get('workspace') or config.get('agents', {}).get('defaults', {}).get('workspace')
+   if ws:
+       print(Path(ws).expanduser())
+   else:
+       import os
+       profile = os.environ.get('OPENCLAW_PROFILE', 'default')
+       print(home / f'workspace-{profile}' if profile != 'default' else home / 'workspace')
+   "
    ```
-2. Verify skill content is correct:
+2. Check that `oe-toolcall-router` skill is installed in that workspace:
    ```bash
-   cat ~/.openclaw/workspace-default*/skills/oe-toolcall-router/SKILL.md
+   # Use the workspace path from step 1
+   ls <workspace-path>/skills/oe-toolcall-router/
+   ```
+3. Verify skill content is correct:
+   ```bash
+   cat <workspace-path>/skills/oe-toolcall-router/SKILL.md
    ```
 
 **Solution**:
