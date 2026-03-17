@@ -81,9 +81,9 @@ def _build_main_session_command(probe: str, message: str, env: dict[str, str]) -
         _fail(probe, "main_entrypoint_unsupported", "No supported main session command found")
 
     if entrypoint == "agent":
-        return ["openclaw", "agent", "-m", message, "--json"]
+        return ["openclaw", "agent", "--agent", "main", "-m", message, "--json"]
     else:  # chat
-        return ["openclaw", "chat", "-m", message, "--json"]
+        return ["openclaw", "chat", "--agent", "main", "-m", message, "--json"]
 
 
 def _parse_agent_output(output: str) -> dict[str, object] | None:
@@ -602,7 +602,11 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
             _fail("main-escalation", "no_json_output", result.stdout[:500])
             assert False, "unreachable"
 
-        raw_session_id = parsed.get("sessionId")
+        # Extract session ID from nested structure: result.meta.agentMeta.sessionId
+        result_obj = parsed.get("result", {})
+        meta = result_obj.get("meta", {}) if isinstance(result_obj, dict) else {}
+        agent_meta = meta.get("agentMeta", {}) if isinstance(meta, dict) else {}
+        raw_session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
         if not isinstance(raw_session_id, str):
             _fail("main-escalation", "missing_main_session_id")
             assert False, "unreachable"
