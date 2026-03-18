@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw-enhance/runtime",
+  "name": "@openclaw-enhance/oe-runtime",
   "version": "0.1.0",
   "description": "OpenClaw extension for runtime integration bridge",
   "type": "module",
