@@ -61,8 +61,6 @@ def test_runtime_registration_uses_supported_shape(
     mock_openclaw_home: Path,
     isolated_user_home: Path,
 ) -> None:
-    from unittest.mock import call
-
     from openclaw_enhance.runtime.ownership import OWNED_AGENT_SPECS
 
     mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
