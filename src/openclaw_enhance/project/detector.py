@@ -1,16 +1,21 @@
-"""Project type detection and data model.
-
-NOTE: This is a stub for Task 2 (registry) to depend on.
-Task 1 (parallel) creates the full implementation.
-If Task 1 completes first, this file will be replaced.
-"""
+"""Project type detection and data model."""
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
 
 
 class ProjectType(str, Enum):
@@ -34,7 +39,7 @@ class ProjectKind(str, Enum):
     temporary = "temporary"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectInfo:
     """Information about a detected project."""
 
@@ -48,28 +53,107 @@ class ProjectInfo:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-def detect_project(path: Path) -> ProjectInfo | None:
-    """Detect project type from directory.
+def _parse_pyproject(path: Path) -> tuple[str, str, dict[str, Any]]:
+    """Lazy parser for pyproject.toml."""
+    if not tomllib:
+        return "", "", {}
 
-    Stub implementation — checks for common indicator files.
-    Full implementation in Task 1.
-    """
-    indicators = {
-        "pyproject.toml": (ProjectType.python, "pyproject"),
-        "package.json": (ProjectType.nodejs, "npm"),
-        "Cargo.toml": (ProjectType.rust, "cargo"),
-        "go.mod": (ProjectType.go, "module"),
-    }
-    for filename, (ptype, subtype) in indicators.items():
+    try:
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+    except Exception:
+        return "", "", {}
+
+    name = ""
+    subtype = "setuptools"
+    metadata = {}
+
+    # Try poetry first
+    poetry = data.get("tool", {}).get("poetry", {})
+    if poetry:
+        name = poetry.get("name", "")
+        subtype = "poetry"
+        dev_deps = poetry.get("group", {}).get("dev", {}).get("dependencies", {})
+        if "pytest" in dev_deps or "pytest" in poetry.get("dev-dependencies", {}):
+            metadata["has_pytest"] = True
+    else:
+        # Try PEP 621 [project]
+        project = data.get("project", {})
+        if project:
+            name = project.get("name", "")
+            # Check for pytest in optional-dependencies or dependencies
+            deps = str(project.get("dependencies", [])) + str(
+                project.get("optional-dependencies", {})
+            )
+            if "pytest" in deps:
+                metadata["has_pytest"] = True
+
+    return name, subtype, metadata
+
+
+def _parse_package_json(path: Path) -> tuple[str, str, dict[str, Any]]:
+    """Lazy parser for package.json."""
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return "", "", {}
+
+    name = data.get("name", "")
+    subtype = "npm"
+    metadata = {}
+
+    deps = data.get("dependencies", {})
+    dev_deps = data.get("devDependencies", {})
+    if "typescript" in deps or "typescript" in dev_deps:
+        metadata["has_typescript"] = True
+
+    return name, subtype, metadata
+
+
+# Mapping filename -> (ProjectType, default_subtype, lazy_parser_or_None)
+INDICATOR_MAP: dict[
+    str, tuple[ProjectType, str, Callable[[Path], tuple[str, str, dict[str, Any]]] | None]
+] = {
+    "pyproject.toml": (ProjectType.python, "setuptools", _parse_pyproject),
+    "package.json": (ProjectType.nodejs, "npm", _parse_package_json),
+    "Cargo.toml": (ProjectType.rust, "cargo", None),
+    "go.mod": (ProjectType.go, "module", None),
+    "pom.xml": (ProjectType.java, "maven", None),
+    "build.gradle": (ProjectType.java, "gradle", None),
+    "Gemfile": (ProjectType.ruby, "bundler", None),
+    "composer.json": (ProjectType.php, "composer", None),
+    "Makefile": (ProjectType.cpp, "make", None),
+    "CMakeLists.txt": (ProjectType.cpp, "cmake", None),
+}
+
+
+def detect_project(path: Path) -> ProjectInfo | None:
+    """Detect project type from directory."""
+    for filename, (ptype, default_subtype, parser) in INDICATOR_MAP.items():
         indicator = path / filename
         if indicator.exists():
+            name = path.name
+            subtype = default_subtype
+            metadata = {}
+
+            if parser:
+                p_name, p_subtype, p_metadata = parser(indicator)
+                if p_name:
+                    name = p_name
+                if p_subtype:
+                    subtype = p_subtype
+                if p_metadata:
+                    metadata = p_metadata
+
             return ProjectInfo(
                 path=path.resolve(),
-                name=path.name,
+                name=name,
                 type=ptype,
                 subtype=subtype,
                 indicator_file=filename,
                 indicator_mtime=indicator.stat().st_mtime,
+                metadata=metadata,
             )
     return None
 
@@ -77,11 +161,19 @@ def detect_project(path: Path) -> ProjectInfo | None:
 def find_project_root(path: Path) -> Path | None:
     """Walk up from path to find project root.
 
-    Stub — full implementation in Task 1.
+    Finds .git dir OR first indicator file. .git closest to cwd wins.
     """
     current = path.resolve()
     while current != current.parent:
+        # Check for .git first as it's a strong indicator of a project root
         if (current / ".git").exists():
             return current
+
+        # Check for indicators
+        for filename in INDICATOR_MAP:
+            if (current / filename).exists():
+                return current
+
         current = current.parent
+
     return None
