@@ -1,0 +1,34 @@
+=== project scan (python project) ===
+Detected: python
+Name:     scan-test
+Subtype:  setuptools
+EXIT_CODE=0
+
+=== project scan --register ===
+Detected: python
+Name:     scan-test
+Subtype:  setuptools
+Registered as permanent project.
+EXIT_CODE=0
+
+=== project scan nonexistent ===
+Error: path does not exist: /private/tmp/does-not-exist-xyz
+EXIT_CODE=2
+
+=== project info (registered) ===
+name: scan-test
+type: python
+subtype: setuptools
+kind: permanent
+path: /private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/tmp.GcaTVzaRvS
+indicator_file: pyproject.toml
+indicator_mtime: 1773846586.11765
+github_remote: None
+detected_at: 2026-03-18T15:09:46.263236+00:00
+last_accessed: 2026-03-18T15:09:46.263236+00:00
+metadata: {}
+EXIT_CODE=0
+
+=== project info (unregistered) ===
+Project not in registry: /private/tmp/nonexistent
+EXIT_CODE=1

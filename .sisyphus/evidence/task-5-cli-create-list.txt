@@ -1,0 +1,39 @@
+=== project list ===
+No projects registered.
+EXIT_CODE=0
+
+=== project list --json ===
+[]
+EXIT_CODE=0
+
+=== project create (auto-detected) ===
+Project 'evidence-test' registered at /private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/tmp.0iWUIarXOF (kind=temporary)
+EXIT_CODE=0
+
+=== project list after create ===
+Name                           Type         Kind         Path
+-------------------------------------------------------------
+evidence-test                  python       temporary    /private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/tmp.0iWUIarXOF
+EXIT_CODE=0
+
+=== project list --json after create ===
+[
+  {
+    "name": "evidence-test",
+    "type": "python",
+    "subtype": "setuptools",
+    "kind": "temporary",
+    "path": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/tmp.0iWUIarXOF",
+    "indicator_file": "pyproject.toml",
+    "indicator_mtime": 1773846583.48917,
+    "github_remote": null,
+    "detected_at": "2026-03-18T15:09:43.550541+00:00",
+    "last_accessed": "2026-03-18T15:09:43.550541+00:00",
+    "metadata": {}
+  }
+]
+EXIT_CODE=0
+
+=== pytest results ===
+..........                                                                                                                                                                                                             [100%]
+10 passed in 0.03s
