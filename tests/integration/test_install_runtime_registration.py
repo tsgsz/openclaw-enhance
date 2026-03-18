@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -60,26 +61,32 @@ def test_runtime_registration_uses_supported_shape(
     mock_openclaw_home: Path,
     isolated_user_home: Path,
 ) -> None:
-    result = install(mock_openclaw_home, user_home=isolated_user_home)
+    from openclaw_enhance.runtime.ownership import OWNED_AGENT_SPECS
+
+    mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+    with patch(
+        "openclaw_enhance.install.installer._run_openclaw_cli",
+        return_value=mock_result,
+    ) as mock_cli:
+        result = install(mock_openclaw_home, user_home=isolated_user_home)
     assert result.success
+
+    expected_workspaces_root = managed_root(isolated_user_home) / "workspaces"
+    for agent_id, workspace_name in OWNED_AGENT_SPECS:
+        expected_workspace = str((expected_workspaces_root / workspace_name).absolute())
+        mock_cli.assert_any_call(
+            [
+                "agents",
+                "add",
+                agent_id,
+                "--workspace",
+                expected_workspace,
+                "--non-interactive",
+            ]
+        )
 
     config_path = resolve_openclaw_config_path(mock_openclaw_home)
     config = json.loads(config_path.read_text(encoding="utf-8"))
-
-    assert "agents" in config, "Top-level 'agents' key should exist"
-    assert "list" in config["agents"], "Top-level 'agents.list' should exist"
-
-    agent_ids = [a["id"] for a in config["agents"]["list"]]
-    expected_agents = [
-        "oe-orchestrator",
-        "oe-searcher",
-        "oe-syshelper",
-        "oe-script_coder",
-        "oe-watchdog",
-        "oe-tool-recovery",
-    ]
-    for agent_id in expected_agents:
-        assert agent_id in agent_ids, f"Agent {agent_id} should be in top-level agents.list"
 
     assert "hooks" in config, "Top-level 'hooks' key should exist"
     assert "internal" in config["hooks"], "Top-level 'hooks.internal' should exist"
@@ -109,16 +116,6 @@ def test_runtime_registration_uses_supported_shape(
     assert expected_hook_dir in internal_hooks["load"]["extraDirs"], (
         "Managed hook directory should be registered for hook discovery"
     )
-
-    managed_agents = [agent for agent in config["agents"]["list"] if agent["id"] in expected_agents]
-    expected_workspaces_root = managed_root(isolated_user_home) / "workspaces"
-    for agent in managed_agents:
-        assert "agentDir" in agent, f"Agent {agent['id']} should declare agentDir"
-        assert "workspace" in agent, f"Agent {agent['id']} should declare workspace"
-        expected_workspace = str(expected_workspaces_root / agent["id"])
-        assert agent["workspace"] == expected_workspace, (
-            f"Agent {agent['id']} should use managed workspace path"
-        )
 
     assert "openclawEnhance" not in config, "Registration should not be under 'openclawEnhance'"
 

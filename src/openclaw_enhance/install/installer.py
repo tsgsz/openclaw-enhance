@@ -340,6 +340,54 @@ def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
             break
 
 
+def _register_agents_via_cli(
+    target_root: Path,
+) -> list[ComponentInstall]:
+    """Register owned agents using ``openclaw agents add`` CLI.
+
+    Workspaces must already be synced before calling this function.
+    ``openclaw agents add`` will not overwrite existing files in the workspace.
+    """
+    existing_ids: set[str] = set()
+    check = _run_openclaw_cli(["agents", "list", "--json"], check=False)
+    if check.returncode == 0:
+        try:
+            agents_data = json.loads(check.stdout)
+            existing_ids = {a["id"] for a in agents_data if isinstance(a, dict) and "id" in a}
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    components: list[ComponentInstall] = []
+    for agent_id, workspace_name in OWNED_AGENT_SPECS:
+        workspace_path = str((target_root / "workspaces" / workspace_name).absolute())
+        source_workspace = str((WORKSPACES_DIR / workspace_name).absolute())
+
+        if agent_id not in existing_ids:
+            _run_openclaw_cli(
+                [
+                    "agents",
+                    "add",
+                    agent_id,
+                    "--workspace",
+                    workspace_path,
+                    "--non-interactive",
+                ]
+            )
+
+        components.append(
+            ComponentInstall(
+                name=f"agent:{agent_id}",
+                version=VERSION,
+                install_time=datetime.utcnow(),
+                source_path=source_workspace,
+                target_path=workspace_path,
+                is_symlink=False,
+            )
+        )
+
+    return components
+
+
 def _register_runtime_surfaces(
     manifest: InstallManifest,
     openclaw_home: Path,
@@ -350,36 +398,12 @@ def _register_runtime_surfaces(
 
     config.pop(OWNED_NAMESPACE, None)
 
-    owned_agent_ids = {agent_id for agent_id, _ in OWNED_AGENT_SPECS}
     agents_obj = config.get("agents")
     if not isinstance(agents_obj, dict):
         agents_obj = {}
         config["agents"] = agents_obj
 
     _ensure_main_orchestrator_allowlist(agents_obj)
-
-    current_list = agents_obj.get("list")
-    existing_agents: list[dict[str, Any]] = []
-    if isinstance(current_list, list):
-        for entry in current_list:
-            if not isinstance(entry, dict):
-                continue
-            entry_id = entry.get("id")
-            if isinstance(entry_id, str) and entry_id in owned_agent_ids:
-                continue
-            existing_agents.append(dict(entry))
-
-    managed_agents = []
-    for agent_id, workspace in OWNED_AGENT_SPECS:
-        workspace_path = str((target_root / "workspaces" / workspace).absolute())
-        managed_agents.append(
-            {
-                "id": agent_id,
-                "workspace": workspace_path,
-                "agentDir": workspace_path,
-            }
-        )
-    agents_obj["list"] = existing_agents + managed_agents
 
     hooks_obj = config.get("hooks")
     if not isinstance(hooks_obj, dict):
@@ -582,6 +606,13 @@ def install(
         except Exception as exc:
             errors.append(f"Hook asset sync failed: {exc}")
             raise InstallError(f"Hook asset sync failed: {exc}") from exc
+
+        try:
+            agent_components = _register_agents_via_cli(target_root)
+            all_components.extend(agent_components)
+        except Exception as exc:
+            errors.append(f"Agent CLI registration failed: {exc}")
+            raise InstallError(f"Agent CLI registration failed: {exc}") from exc
 
         try:
             runtime_registration_components = _register_runtime_surfaces(

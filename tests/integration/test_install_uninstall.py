@@ -49,15 +49,24 @@ class TestInstallUninstallSymmetry:
     """Tests that install→uninstall is symmetric."""
 
     @pytest.fixture(autouse=True)
-    def stub_monitor_service(self):
-        if sys.platform != "darwin":
-            yield
-            return
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
-            mock_run.return_value = type(
-                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-            )()
-            yield
+    def stub_external_cli(self):
+        """Stub both monitor service and openclaw CLI calls."""
+        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        patches = [
+            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
+        ]
+        if sys.platform == "darwin":
+            patches.append(
+                patch(
+                    "openclaw_enhance.install.monitor_service.subprocess.run",
+                    return_value=mock_result,
+                )
+            )
+        for p in patches:
+            p.start()
+        yield
+        for p in patches:
+            p.stop()
 
     def test_install_creates_managed_root(
         self,
@@ -344,6 +353,25 @@ class TestInstallUninstallSymmetry:
 class TestInstallBackupAndRollback:
     """Tests for install backup and rollback functionality."""
 
+    @pytest.fixture(autouse=True)
+    def stub_external_cli(self):
+        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        patches = [
+            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
+        ]
+        if sys.platform == "darwin":
+            patches.append(
+                patch(
+                    "openclaw_enhance.install.monitor_service.subprocess.run",
+                    return_value=mock_result,
+                )
+            )
+        for p in patches:
+            p.start()
+        yield
+        for p in patches:
+            p.stop()
+
     def test_install_creates_backup(
         self,
         mock_openclaw_home: Path,
@@ -377,6 +405,25 @@ class TestInstallBackupAndRollback:
 
 class TestUninstallEdgeCases:
     """Tests for uninstall edge cases."""
+
+    @pytest.fixture(autouse=True)
+    def stub_external_cli(self):
+        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        patches = [
+            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
+        ]
+        if sys.platform == "darwin":
+            patches.append(
+                patch(
+                    "openclaw_enhance.install.monitor_service.subprocess.run",
+                    return_value=mock_result,
+                )
+            )
+        for p in patches:
+            p.start()
+        yield
+        for p in patches:
+            p.stop()
 
     def test_uninstall_when_not_installed(
         self,
