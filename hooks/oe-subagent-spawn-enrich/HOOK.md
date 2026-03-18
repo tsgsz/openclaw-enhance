@@ -1,3 +1,9 @@
+---
+name: oe-subagent-spawn-enrich
+description: Enrich and normalize subagent spawn events for OpenClaw Enhance.
+metadata: { "openclaw": { "emoji": "🔗", "events": ["subagent_spawning"] } }
+---
+
 # oe-subagent-spawn-enrich
 
 OpenClaw-native hook for enriching subagent spawn events with enhanced metadata.

@@ -1,43 +1,53 @@
-/**
- * OpenClaw Enhance Runtime Extension
- *
- * Thin plugin surface for namespaced runtime integration.
- * The native subagent announce chain remains the only worker communication path.
- */
+const isMainSession = (sessionKey: string): boolean =>
+  sessionKey.startsWith("agent:main:");
 
-export { RuntimeBridge, type RuntimeBridgeConfig } from "./src/runtime-bridge.js";
-export { createRuntimeBridge } from "./src/runtime-bridge.js";
+// These tools are FORBIDDEN in the main session.
+// Main should only route, read, and spawn subagents.
+const MAIN_FORBIDDEN_TOOLS = new Set([
+  "edit",
+  "write",
+  "exec", // bash is named exec internally
+  "process",
+  "browser",
+  "playwright"
+]);
 
-// Extension metadata
-export const EXTENSION_NAME = "openclaw-enhance-runtime";
-export const EXTENSION_VERSION = "0.1.0";
-export const EXTENSION_NAMESPACE = "oe";
-
-/**
- * Extension activation entry point.
- *
- * Called by OpenClaw when the extension is loaded.
- */
-export function activate(): void {
-  // Extension activation logic
-  console.log(`[${EXTENSION_NAME}] Extension activated`);
-}
-
-/**
- * Extension deactivation entry point.
- *
- * Called by OpenClaw when the extension is unloaded.
- */
-export function deactivate(): void {
-  // Extension cleanup logic
-  console.log(`[${EXTENSION_NAME}] Extension deactivated`);
-}
-
-// Default export for OpenClaw plugin system
 export default {
-  name: EXTENSION_NAME,
-  version: EXTENSION_VERSION,
-  namespace: EXTENSION_NAMESPACE,
-  activate,
-  deactivate,
+  id: "oe-runtime",
+  name: "openclaw-enhance-runtime",
+  description: "Runtime integration bridge for OpenClaw Enhance",
+  configSchema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      enableBridge: { type: "boolean" },
+      logLevel: { type: "string", enum: ["debug", "info", "warn", "error"] }
+    }
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  register(api: any) {
+    api.logger.info("oe-runtime: Registering tool execution gate");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    api.on("before_tool_call", async (context: any) => {
+      const sessionKey = context.sessionKey;
+      
+      // Only restrict the main session. Subagents (like opencode) can use any tool.
+      if (!isMainSession(sessionKey)) {
+        return;
+      }
+
+      const toolName = context.toolName;
+      
+      if (MAIN_FORBIDDEN_TOOLS.has(toolName)) {
+        api.logger.warn(`oe-runtime: BLOCKED tool call [${toolName}] in main session`);
+        
+        return {
+          block: true,
+          blockReason: `CRITICAL RULE VIOLATION: The 'main' session is strictly FORBIDDEN from using the '${toolName}' tool to mutate files or execute commands directly.\n\nYou are a ROUTER. For any task that requires writing code, editing files, or running commands, you MUST use 'sessions_spawn' to delegate the work to the 'opencode' or 'worker' agent. Do not attempt to retry this tool.`
+        };
+      }
+      return undefined;
+    });
+  }
 };

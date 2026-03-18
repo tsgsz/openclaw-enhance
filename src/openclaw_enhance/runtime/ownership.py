@@ -13,7 +13,10 @@ OWNED_AGENT_SPECS: tuple[tuple[str, str], ...] = (
     ("oe-tool-recovery", "oe-tool-recovery"),
 )
 
-OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = ("oe-subagent-spawn-enrich",)
+OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = (
+    "oe-subagent-spawn-enrich",
+    "oe-main-routing-gate",
+)
 
 
 def filter_owned_keys(

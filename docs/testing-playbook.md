@@ -51,10 +51,16 @@ Target: Default `~/.openclaw`
    - *Pass*: Exit code 0, produces a report with `Conclusion: EXEMPT`.
 
 ### 2.3 Routing & Agent Bundle (`workspace-routing`)
+
+#### Direct Orchestrator Proof (`backfill-routing-yield`)
 1. **Agent List**: `openclaw agents list`
    - *Pass*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
 2. **Routing Surface Test**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
    - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
+
+#### Main-to-Orchestrator Escalation Proof (`backfill-main-escalation`)
+3. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
+   - *Pass*: Heavy main-session request triggers `oe-orchestrator` spawn, main session transcript contains `sessions_spawn` tool call for `oe-orchestrator`, probe emits `PROBE_MAIN_ESCALATION_OK` marker with both main and orchestrator session evidence.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
 1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | jq '.hooks.internal'`

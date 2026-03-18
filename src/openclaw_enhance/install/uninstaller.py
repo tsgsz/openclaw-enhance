@@ -16,6 +16,7 @@ Supports rollback to restore on failure.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from openclaw_enhance.install.lock import InstallLock, InstallLockError
+from openclaw_enhance.install.main_tool_gate import remove_main_tool_gate
 from openclaw_enhance.install.manifest import (
     InstallManifest,
     load_manifest,
@@ -32,7 +34,10 @@ from openclaw_enhance.install.monitor_service import (
     monitor_launch_agent_path,
     uninstall_monitor_launchagent,
 )
-from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
+from openclaw_enhance.paths import (
+    managed_root,
+    resolve_openclaw_config_path,
+)
 from openclaw_enhance.runtime.ownership import (
     OWNED_AGENT_SPECS,
     OWNED_HOOK_ENTRY_IDS,
@@ -445,6 +450,24 @@ def uninstall(
             failed.append(f"main-skills: {exc}")
             if not force:
                 raise
+
+        # Step 4b: Remove main tool gate
+        try:
+            config_path = resolve_openclaw_config_path(openclaw_home)
+            config = (
+                json.loads(config_path.read_text(encoding="utf-8"))
+                if config_path.exists()
+                else None
+            )
+            gate_removed = remove_main_tool_gate(
+                openclaw_home=openclaw_home,
+                config=config,
+                env=os.environ,
+            )
+            if gate_removed:
+                removed.append("main-tool-gate")
+        except Exception as exc:
+            failed.append(f"main-tool-gate: {exc}")
 
         # Step 5: Remove workspaces
         try:

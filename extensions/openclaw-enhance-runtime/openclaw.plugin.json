@@ -1,4 +1,5 @@
 {
+  "id": "oe-runtime",
   "name": "openclaw-enhance-runtime",
   "version": "0.1.0",
   "displayName": "OpenClaw Enhance Runtime Bridge",
@@ -6,51 +7,12 @@
   "type": "extension",
   "entryPoint": "./index.ts",
   "namespace": "oe",
-  "hooks": {
-    "subagent_spawning": {
-      "handler": "./src/runtime-bridge.ts",
-      "priority": 50
-    }
-  },
-  "runtime": {
-    "enabled": true,
-    "namespace": "oe",
-    "bridge": {
-      "enabled": true,
-      "eventTypes": [
-        "subagent_spawning",
-        "subagent_completed",
-        "task_timeout"
-      ]
-    }
-  },
-  "permissions": [
-    "read:runtime",
-    "write:runtime",
-    "read:session",
-    "event:subscribe"
-  ],
-  "config": {
-    "schema": {
-      "type": "object",
-      "properties": {
-        "enableBridge": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable the runtime bridge"
-        },
-        "namespace": {
-          "type": "string",
-          "default": "oe",
-          "description": "Namespace for runtime integration"
-        },
-        "logLevel": {
-          "type": "string",
-          "enum": ["debug", "info", "warn", "error"],
-          "default": "info",
-          "description": "Logging level for the bridge"
-        }
-      }
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enableBridge": { "type": "boolean" },
+      "logLevel": { "type": "string", "enum": ["debug", "info", "warn", "error"] }
     }
   }
 }

@@ -126,7 +126,14 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             return commands
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
-        if "recovery" in slug:
+        if "main-escalation" in slug:
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes main-escalation "
+                '--openclaw-home "$OPENCLAW_HOME" '
+                '--message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，'
+                '并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"'
+            )
+        elif "recovery" in slug:
             live_probe_cmd = (
                 "python -m openclaw_enhance.validation.live_probes recovery-worker "
                 '--openclaw-home "$OPENCLAW_HOME" '

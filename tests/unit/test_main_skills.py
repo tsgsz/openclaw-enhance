@@ -103,7 +103,7 @@ class TestSkillRegistry:
     def test_toolcall_router_has_special_heuristics(self):
         """Toolcall router should have toolcall-specific heuristics."""
         router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-toolcall-router")
-        assert router_skill.routing_heuristics["escalation_threshold"] == 2
+        assert router_skill.routing_heuristics["escalation_threshold"] == 0
 
 
 class TestRenderSkillContract:
@@ -171,7 +171,7 @@ class TestSkillContracts:
             "version:",
             "description:",
             "oe-toolcall-router",
-            "Routes tasks",
+            "Main session",
         ]
         for field in required_fields:
             assert field in contract, f"Missing field: {field}"
