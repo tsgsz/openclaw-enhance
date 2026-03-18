@@ -1,128 +1,72 @@
 ---
 name: oe-toolcall-router
-version: 1.0.0
-description: Routes tasks to main or escalates to oe-orchestrator based on heuristics. Keeps main thin - simple tasks stay local, heavy tasks escalate.
+version: 2.0.0
+description: MANDATORY router. Main session is a ROUTER ONLY - all execution MUST go through sessions_spawn.
 user-invocable: true
-allowed-tools: "Read, Write, Bash"
+allowed-tools: "Read"
 metadata:
   routing_heuristics:
-    max_toolcalls: 2
-    max_duration_minutes: 30
-    escalation_threshold: 2
-    parallel_escalation: true
-    long_running_threshold_minutes: 30
+    max_toolcalls: 0
+    escalation_threshold: 0
 ---
 
 # Toolcall Router
 
-Route tasks between main session and oe-orchestrator.
+Main session is a **router only**. It does NOT execute tasks directly.
 
-## Philosophy
+## Iron Rule
 
-Keep `main` thin and responsive:
-- **Simple tasks**: Stay in main (≤2 toolcalls, no parallelism)
-- **Heavy tasks**: Escalate to oe-orchestrator (native subagent path)
+Main session is FORBIDDEN from using these tools:
+- `edit`, `write`, `exec`, `process`, `browser`, `playwright`
+- `web_search`, `web_fetch` (for research tasks)
 
-**Rule**: Router decides, native subagent flow executes.
+Main session is ONLY allowed to use:
+- `read` (read-only file access)
+- `memory_search` (search memories)
+- `sessions_spawn` (delegate to subagents)
+- `sessions_list`, `sessions_history`, `session_status` (monitor sessions)
+- `sessions_send` (communicate with subagents)
+- `agents_list` (list available agents)
+- `message` (reply to user)
 
-## Routing Heuristics
+## Routing Decision
 
-### Stay in Main (route)
+For ANY user request that requires file modification, command execution, research, or analysis:
 
-| Criteria | Threshold |
-|----------|-----------|
-| Toolcalls | ≤ 2 |
-| Parallelism | Not required |
-| Duration | ≤ 15 minutes |
-| Scope | Single file or simple query |
+1. Immediately use `sessions_spawn` with `agentId: "oe-orchestrator"`
+2. Do NOT attempt to do the work yourself
+3. Do NOT use `edit`/`exec`/`write` even for "simple" tasks
 
-### Escalate to Orchestrator (escalate)
-
-| Criteria | Threshold |
-|----------|-----------|
-| Toolcalls | > 2 |
-| Parallelism | Required |
-| Duration | > 30 minutes |
-| Scope | Multi-file, research, or complex |
-
-## Escalation via Native Subagent Flow
-
-When escalation is needed, use OpenClaw's native `sessions_spawn` tool:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Main Session                             │
-│                         ↓                                   │
-│                   [Assess Task]                             │
-│                         ↓                                   │
-│              ┌──────────────────────┐                       │
-│              │ Toolcalls > 2 ?      │────Yes────┐          │
-│              └──────────────────────┘            │          │
-│                      No ↓                        │          │
-│              ┌──────────────────────┐            │          │
-│              │ Requires Parallel?   │────Yes─────┤          │
-│              └──────────────────────┘            │          │
-│                      No ↓                        │          │
-│              ┌──────────────────────┐            │          │
-│              │ Duration > 30 min?   │────Yes─────┤          │
-│              └──────────────────────┘            │          │
-│                      No ↓                        ↓          │
-│                   [main]              [oe-orchestrator]     │
-│                   (local)            (native subagent)      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Escalation Command
-
-Use `sessions_spawn` to escalate to the orchestrator:
+## Escalation Command
 
 ```json
 {
-  "task": "Description of the complex task to perform",
-  "agentId": "oe-orchestrator",
-  "label": "optional-task-label"
+  "task": "<restate user request clearly>",
+  "agentId": "oe-orchestrator"
 }
 ```
 
-The orchestrator will:
-1. Assess the escalated task
-2. Plan execution using planning-with-files if needed
-3. Dispatch to appropriate workers via native announce
-4. Synthesize results
-5. Return final result to main
+## Examples
 
-## Decision Contract
+### Config change request
+- User: "把 litellm 里的 vertex 模型加到 openclaw"
+- Action: `sessions_spawn` to `oe-orchestrator`
+- NOT: Use `edit` to modify openclaw.json yourself
 
-When assessing a task, determine:
-- `action`: `"route"` | `"escalate"`
-- `target`: `"main"` | `"oe-orchestrator"`
-- `reason`: Human-readable explanation
-- `estimated_duration`: Expected time to complete
+### Research request
+- User: "搜索东南亚 iGaming 行业现状"
+- Action: `sessions_spawn` to `oe-orchestrator`
+- NOT: Use `web_search` yourself
 
-## Important Notes
+### Code task
+- User: "写一个 hello world"
+- Action: `sessions_spawn` to `oe-orchestrator`
+- NOT: Use `write`/`exec` yourself
 
-- **NEVER** route directly to workers from main
-- **NEVER** create wrapper functions around `sessions_spawn`
-- Always escalate to `oe-orchestrator` first
-- Orchestrator handles worker delegation via native announce
-- Native subagent path (`sessions_spawn` → announce) is the ONLY execution mechanism
+### Simple query (stays in main)
+- User: "今天天气怎么样"
+- Action: Reply directly (no tools needed)
 
-## Escalation Examples
-
-### Simple Task (stays in main)
-- User: "Fix typo in README"
-- Assessment: 1 toolcall, no parallelism
-- Action: route to main
-- Execution: Handle directly in main session
-
-### Complex Task (escalates to orchestrator)
-- User: "Refactor auth module across 5 files"
-- Assessment: 8 toolcalls, multi-file scope
-- Action: escalate to oe-orchestrator
-- Execution: Use `sessions_spawn` with agentId="oe-orchestrator"
-
-### Research Task (escalates to orchestrator)
-- User: "Research Python async patterns and update codebase"
-- Assessment: Multiple searches + code changes, >30 min
-- Action: escalate to oe-orchestrator
-- Execution: Use `sessions_spawn` with agentId="oe-orchestrator"
+### Read-only check (stays in main)
+- User: "看看 openclaw.json 里有什么模型"
+- Action: Use `read` to check, then reply

@@ -58,6 +58,17 @@ SHIPPED_FEATURES = [
         ],
     },
     {
+        "slug": "backfill-main-escalation",
+        "feature_class": FeatureClass.WORKSPACE_ROUTING,
+        "capability": "Main-to-Orchestrator Escalation",
+        "proof_expectations": [
+            "heavy main-session prompts trigger oe-orchestrator spawn",
+            "main session transcript contains sessions_spawn for oe-orchestrator",
+            "orchestrator session created with proper evidence",
+            "probe emits PROBE_MAIN_ESCALATION_OK marker on success",
+        ],
+    },
+    {
         "slug": "backfill-watchdog-reminder",
         "feature_class": FeatureClass.RUNTIME_WATCHDOG,
         "capability": "Watchdog Reminder Delivery",

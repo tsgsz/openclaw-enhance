@@ -171,7 +171,7 @@ class TestSkillContracts:
             "version:",
             "description:",
             "oe-toolcall-router",
-            "Routes tasks",
+            "Main session",
         ]
         for field in required_fields:
             assert field in contract, f"Missing field: {field}"

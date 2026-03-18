@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
+    "build": "tsc && npm run copy:json",
+    "copy:json": "cp extensions/openclaw-enhance-runtime/package.json dist/extensions/openclaw-enhance-runtime/ && cp extensions/openclaw-enhance-runtime/openclaw.plugin.json dist/extensions/openclaw-enhance-runtime/",
     "clean": "rm -rf dist",
     "lint": "eslint hooks extensions scripts --ext .ts",
     "test": "npm run build && node --test dist/extensions/openclaw-enhance-runtime/src/runtime-bridge.test.js"

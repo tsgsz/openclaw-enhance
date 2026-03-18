@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import uuid
 from pathlib import Path
 
 import click
@@ -52,6 +53,63 @@ def _probe_env(openclaw_home: Path) -> dict[str, str]:
     env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
     env["OPENCLAW_HOME"] = str(openclaw_home)
     return env
+
+
+def _resolve_main_session_entrypoint(env: dict[str, str]) -> str | None:
+    """Discover supported main session CLI command from openclaw --help."""
+    result = subprocess.run(
+        ["openclaw", "--help"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode != 0:
+        return None
+
+    help_text = result.stdout.lower()
+    # Prefer 'agent' if available, fall back to 'chat' if present
+    if "agent" in help_text:
+        return "agent"
+    if "chat" in help_text:
+        return "chat"
+    return None
+
+
+def _build_main_session_command(
+    probe: str,
+    message: str,
+    env: dict[str, str],
+    session_id: str,
+) -> list[str]:
+    """Build main session command or fail with unsupported entrypoint error."""
+    entrypoint = _resolve_main_session_entrypoint(env)
+    if entrypoint is None:
+        _fail(probe, "main_entrypoint_unsupported", "No supported main session command found")
+
+    if entrypoint == "agent":
+        return [
+            "openclaw",
+            "agent",
+            "--agent",
+            "main",
+            "--session-id",
+            session_id,
+            "-m",
+            message,
+            "--json",
+        ]
+    else:  # chat
+        return [
+            "openclaw",
+            "chat",
+            "--agent",
+            "main",
+            "--session-id",
+            session_id,
+            "-m",
+            message,
+            "--json",
+        ]
 
 
 def _parse_agent_output(output: str) -> dict[str, object] | None:
@@ -178,6 +236,85 @@ def _search_transcript(transcript_path: Path, *search_terms: str) -> bool:
         return all(term in content for term in search_terms)
     except (OSError, UnicodeDecodeError):
         return False
+
+
+def _line_count(path: Path) -> int:
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as handle:
+            return sum(1 for _ in handle)
+    except OSError:
+        return 0
+
+
+def _search_transcript_segment(
+    transcript_path: Path,
+    start_line: int,
+    *search_terms: str,
+) -> bool:
+    lowered_terms = [term.lower() for term in search_terms if term]
+    if not lowered_terms:
+        return False
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                lowered_line = line.lower()
+                if all(term in lowered_line for term in lowered_terms):
+                    return True
+        return False
+    except OSError:
+        return False
+
+
+def _latest_main_transcript_snapshot(openclaw_home: Path) -> tuple[Path, int] | None:
+    sessions_dir = openclaw_home / "agents" / "main" / "sessions"
+    if not sessions_dir.exists():
+        return None
+    candidates = sorted(
+        sessions_dir.glob("*.jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    transcript_path = candidates[0]
+    return (transcript_path, _line_count(transcript_path))
+
+
+def _latest_main_transcript_path(openclaw_home: Path) -> Path | None:
+    snapshot = _latest_main_transcript_snapshot(openclaw_home)
+    if snapshot is None:
+        return None
+    return snapshot[0]
+
+
+def _extract_main_session_id(parsed: dict[str, object]) -> str | None:
+    result_obj = parsed.get("result")
+    if not isinstance(result_obj, dict):
+        return None
+
+    meta_obj = result_obj.get("meta")
+    if not isinstance(meta_obj, dict):
+        return None
+
+    agent_meta = meta_obj.get("agentMeta")
+    if isinstance(agent_meta, dict):
+        session_id = agent_meta.get("sessionId")
+        if isinstance(session_id, str) and session_id:
+            return session_id
+
+    system_prompt_report = meta_obj.get("systemPromptReport")
+    if isinstance(system_prompt_report, dict):
+        session_id = system_prompt_report.get("sessionId")
+        if isinstance(session_id, str) and session_id:
+            return session_id
+
+    root_session_id = parsed.get("sessionId")
+    if isinstance(root_session_id, str) and root_session_id:
+        return root_session_id
+
+    return None
 
 
 def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, str]) -> bool:
@@ -534,6 +671,122 @@ def watchdog_reminder(openclaw_home: Path, config_path: Path | None, session_id:
             payload["config_fragment"] = json.dumps(hooks_fragment, sort_keys=True)
 
         _emit(payload)
+
+
+@cli.command("main-escalation")
+@click.option("--openclaw-home", type=click.Path(path_type=Path), required=True)
+@click.option("--message", required=True, help="Heavy task message to send to main session")
+def main_escalation(openclaw_home: Path, message: str) -> None:
+    """Verify heavy main-session requests escalate to oe-orchestrator."""
+    home = _require_openclaw_home("main-escalation", openclaw_home)
+    env = _probe_env(home)
+    config_path = _resolve_config_path(home)
+
+    with pinned_openclaw_runtime_model(config_path) as configured_model:
+        baseline = _latest_main_transcript_snapshot(home)
+        probe_session_id = str(uuid.uuid4())
+        # Build the main session command (will fail if no supported entrypoint)
+        cmd = _build_main_session_command("main-escalation", message, env, probe_session_id)
+
+        # Start main session
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=300,
+        )
+
+        if result.returncode != 0:
+            _fail(
+                "main-escalation",
+                "main_session_failed",
+                result.stderr[:500] if result.stderr else None,
+            )
+
+        parsed = _parse_agent_output(result.stdout)
+        if parsed is None:
+            _fail("main-escalation", "no_json_output", result.stdout[:500])
+            assert False, "unreachable"
+
+        raw_session_id = _extract_main_session_id(parsed)
+        if not isinstance(raw_session_id, str):
+            _fail("main-escalation", "missing_main_session_id")
+            assert False, "unreachable"
+        main_session_id: str = raw_session_id
+
+        main_transcript = _get_transcript_path("main", main_session_id, home, env)
+        if main_transcript is None:
+            fallback_transcript = _latest_main_transcript_path(home)
+            if fallback_transcript is None:
+                _fail("main-escalation", "missing_main_transcript", main_session_id)
+                assert False, "unreachable"
+            main_transcript = fallback_transcript
+
+        start_line = 1
+        if baseline is not None:
+            baseline_path, baseline_lines = baseline
+            if baseline_path == main_transcript:
+                start_line = baseline_lines + 1
+
+        invalid_stream_to = _search_transcript_segment(
+            main_transcript,
+            start_line,
+            "sessions_spawn",
+            "streamto",
+        )
+        if invalid_stream_to:
+            _fail("main-escalation", "invalid_stream_to", main_session_id)
+
+        orchestrator_spawned = _search_transcript_segment(
+            main_transcript,
+            start_line,
+            "sessions_spawn",
+            "oe-orchestrator",
+        )
+
+        if not orchestrator_spawned:
+            _fail("main-escalation", "orchestrator_handoff_missing", str(main_session_id))
+
+        # Get orchestrator session evidence
+        orch_transcript = None
+        orchestrator_session_id = None
+        sessions_result = subprocess.run(
+            ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        if sessions_result.returncode == 0:
+            try:
+                sessions_data = json.loads(sessions_result.stdout)
+                sessions = sessions_data.get("sessions", [])
+                if sessions:
+                    # Get most recent orchestrator session
+                    orchestrator_session_id = sessions[0].get("sessionId")
+                    orch_transcript_path = sessions[0].get("transcriptPath")
+                    if orch_transcript_path:
+                        orch_transcript = Path(orch_transcript_path).expanduser()
+            except (json.JSONDecodeError, IndexError):
+                pass
+
+        if not orchestrator_session_id:
+            _fail("main-escalation", "missing_orchestrator_session")
+
+        _emit(
+            {
+                "ok": True,
+                "probe": "main-escalation",
+                "marker": "PROBE_MAIN_ESCALATION_OK",
+                "main_session_id": main_session_id,
+                "orchestrator_session_id": orchestrator_session_id,
+                "main_transcript_path": str(main_transcript),
+                "orchestrator_transcript_path": str(orch_transcript) if orch_transcript else None,
+                "proof": "orchestrator_handoff_confirmed",
+                "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
+            }
+        )
 
 
 def main() -> None:

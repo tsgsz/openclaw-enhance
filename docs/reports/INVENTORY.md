@@ -14,6 +14,7 @@ These are the authoritative validation reports for each feature slug:
 | backfill-cli-surface | [2026-03-14-backfill-cli-surface-cli-surface.md](./2026-03-14-backfill-cli-surface-cli-surface.md) | 2026-03-14 | PASS |
 | backfill-routing-yield | [2026-03-15-backfill-routing-yield-workspace-routing.md](./2026-03-15-backfill-routing-yield-workspace-routing.md) | 2026-03-15 | PASS |
 | backfill-recovery-worker | [2026-03-15-backfill-recovery-worker-workspace-routing.md](./2026-03-15-backfill-recovery-worker-workspace-routing.md) | 2026-03-15 | PASS |
+| backfill-main-escalation | [2026-03-17-backfill-main-escalation-workspace-routing.md](./2026-03-17-backfill-main-escalation-workspace-routing.md) | 2026-03-17 | PASS |
 | backfill-watchdog-reminder | [2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md](./2026-03-15-backfill-watchdog-reminder-runtime-watchdog.md) | 2026-03-15 | PASS |
 
 ## Superseded Reports

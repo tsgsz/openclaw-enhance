@@ -25,6 +25,7 @@ from typing import Any
 from openclaw_enhance.constants import VERSION
 from openclaw_enhance.install.lock import InstallLock, InstallLockError
 from openclaw_enhance.install.main_skill_sync import sync_main_skills
+from openclaw_enhance.install.main_tool_gate import inject_main_tool_gate
 from openclaw_enhance.install.manifest import (
     ComponentInstall,
     InstallManifest,
@@ -35,6 +36,7 @@ from openclaw_enhance.install.monitor_service import install_monitor_launchagent
 from openclaw_enhance.paths import (
     ensure_managed_directories,
     managed_root,
+    resolve_main_workspace,
     resolve_openclaw_config_path,
 )
 from openclaw_enhance.runtime.ownership import (
@@ -282,6 +284,43 @@ def _write_openclaw_config(config_path: Path, config: dict[str, Any]) -> str:
     return str(backup_path)
 
 
+def _ensure_allow_agent_id(
+    subagents_obj: dict[str, Any],
+    agent_id: str,
+) -> None:
+    allow_agents_obj = subagents_obj.get("allowAgents")
+    allow_agents: list[str] = []
+    if isinstance(allow_agents_obj, list):
+        allow_agents = [v for v in allow_agents_obj if isinstance(v, str)]
+
+    if agent_id not in allow_agents:
+        allow_agents.append(agent_id)
+
+    subagents_obj["allowAgents"] = allow_agents
+
+
+def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
+    defaults_obj = agents_obj.get("defaults")
+    if isinstance(defaults_obj, dict):
+        defaults_subagents = defaults_obj.get("subagents")
+        if isinstance(defaults_subagents, dict):
+            defaults_subagents.pop("allowAgents", None)
+
+    list_obj = agents_obj.get("list")
+    if isinstance(list_obj, list):
+        for entry in list_obj:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("id") != "main":
+                continue
+            subagents_obj = entry.get("subagents")
+            if not isinstance(subagents_obj, dict):
+                subagents_obj = {}
+                entry["subagents"] = subagents_obj
+            _ensure_allow_agent_id(subagents_obj, "oe-orchestrator")
+            break
+
+
 def _register_runtime_surfaces(
     manifest: InstallManifest,
     openclaw_home: Path,
@@ -297,6 +336,8 @@ def _register_runtime_surfaces(
     if not isinstance(agents_obj, dict):
         agents_obj = {}
         config["agents"] = agents_obj
+
+    _ensure_main_orchestrator_allowlist(agents_obj)
 
     current_list = agents_obj.get("list")
     existing_agents: list[dict[str, Any]] = []
@@ -492,6 +533,29 @@ def install(
         except Exception as exc:
             errors.append(f"Main skill sync failed: {exc}")
             raise InstallError(f"Main skill sync failed: {exc}") from exc
+
+        try:
+            injected = inject_main_tool_gate(
+                openclaw_home=openclaw_home,
+                config=config,
+                env=os.environ,
+            )
+            if injected:
+                all_components.append(
+                    ComponentInstall(
+                        name="main-tool-gate",
+                        version=VERSION,
+                        install_time=datetime.utcnow(),
+                        source_path="openclaw_enhance.install.main_tool_gate",
+                        target_path=str(
+                            resolve_main_workspace(openclaw_home, config=config, env=os.environ)
+                            / "AGENTS.md"
+                        ),
+                        is_symlink=False,
+                    )
+                )
+        except Exception as exc:
+            errors.append(f"Main tool gate injection failed: {exc}")
 
         try:
             hook_asset_components = _sync_hooks(target_root, dev_mode=dev_mode)

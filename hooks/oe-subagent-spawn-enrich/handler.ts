@@ -36,6 +36,11 @@ export interface SpawnEnrichOutput {
     eta_bucket: "short" | "medium" | "long";
     dedupe_key: string;
   };
+  spawn_patch?: {
+    agentId: string;
+    runtime: "subagent";
+    streamTo?: undefined;
+  };
 }
 
 /** ETA bucket categories */
@@ -108,6 +113,17 @@ export function enrichSpawnEvent(
   input: SpawnEnrichInput,
 ): SpawnEnrichOutput {
   const { payload, context } = input;
+  const requestedAgent = payload.subagent_type;
+  const normalizedAgent =
+    requestedAgent && requestedAgent !== "main" ? requestedAgent : "oe-orchestrator";
+
+  const mutablePayload = payload as Record<string, unknown>;
+  mutablePayload.subagent_type = normalizedAgent;
+  mutablePayload.agentId = normalizedAgent;
+  mutablePayload.runtime = "subagent";
+  if ("streamTo" in mutablePayload) {
+    delete mutablePayload.streamTo;
+  }
 
   // Generate unique task ID
   const taskId = generateTaskId();
@@ -140,6 +156,11 @@ export function enrichSpawnEvent(
       parent_session: parentSession,
       eta_bucket: etaBucket,
       dedupe_key: dedupeKey,
+    },
+    spawn_patch: {
+      agentId: normalizedAgent,
+      runtime: "subagent",
+      streamTo: undefined,
     },
   };
 }
