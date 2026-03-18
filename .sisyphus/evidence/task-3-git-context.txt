@@ -1,0 +1,18 @@
+==================================================================================================== test session starts =====================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance/.worktrees/project-registry
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 8 items
+
+tests/unit/test_project_git_ops.py::test_gather_git_context_real_repo PASSED                                                                                                                                           [ 12%]
+tests/unit/test_project_git_ops.py::test_gather_git_context_not_a_repo PASSED                                                                                                                                          [ 25%]
+tests/unit/test_project_git_ops.py::test_gather_git_context_gh_fallback PASSED                                                                                                                                         [ 37%]
+tests/unit/test_project_git_ops.py::test_should_auto_commit_clean_repo_with_remote PASSED                                                                                                                              [ 50%]
+tests/unit/test_project_git_ops.py::test_should_auto_commit_detached_head PASSED                                                                                                                                       [ 62%]
+tests/unit/test_project_git_ops.py::test_should_auto_commit_file_outside_allowed_paths PASSED                                                                                                                          [ 75%]
+tests/unit/test_project_git_ops.py::test_auto_commit_with_changes PASSED                                                                                                                                               [ 87%]
+tests/unit/test_project_git_ops.py::test_auto_commit_no_changes PASSED                                                                                                                                                 [100%]
+
+===================================================================================================== 8 passed in 1.02s ======================================================================================================
