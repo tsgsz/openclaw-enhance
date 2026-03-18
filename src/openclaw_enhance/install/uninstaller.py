@@ -36,7 +36,6 @@ from openclaw_enhance.install.monitor_service import (
 from openclaw_enhance.install.main_tool_gate import remove_main_tool_gate
 from openclaw_enhance.paths import (
     managed_root,
-    resolve_main_workspace,
     resolve_openclaw_config_path,
 )
 from openclaw_enhance.runtime.ownership import (

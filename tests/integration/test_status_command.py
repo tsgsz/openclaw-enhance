@@ -371,7 +371,7 @@ class TestStatusInstallTime:
         assert result.exit_code == 0
         if "Install Time:" in result.output:
             # Either N/A (not installed) or a timestamp (installed)
-            line = [l for l in result.output.splitlines() if "Install Time:" in l][0]
+            line = [ln for ln in result.output.splitlines() if "Install Time:" in ln][0]
             value = line.split("Install Time:")[1].strip()
             assert value == "N/A" or len(value) > 10  # ISO timestamp is >10 chars
 

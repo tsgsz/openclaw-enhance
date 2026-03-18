@@ -47,7 +47,10 @@ SKILLS_REGISTRY: list[SkillMetadata] = [
     ),
     SkillMetadata(
         name="oe-toolcall-router",
-        description="MANDATORY router. Main session is a ROUTER ONLY - all execution MUST go through sessions_spawn.",
+        description=(
+            "MANDATORY router. Main session is a ROUTER ONLY - "
+            "all execution MUST go through sessions_spawn."
+        ),
         version="2.0.0",
         user_invocable=True,
         allowed_tools=["Read"],

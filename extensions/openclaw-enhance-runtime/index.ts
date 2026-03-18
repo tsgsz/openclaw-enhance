@@ -24,9 +24,11 @@ export default {
       logLevel: { type: "string", enum: ["debug", "info", "warn", "error"] }
     }
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register(api: any) {
     api.logger.info("oe-runtime: Registering tool execution gate");
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     api.on("before_tool_call", async (context: any) => {
       const sessionKey = context.sessionKey;
       
