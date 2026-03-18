@@ -1,8 +1,10 @@
 """Unit tests for live_probes helper functions."""
 
 import json
+import os
 from unittest.mock import MagicMock, patch
 
+from openclaw_enhance.validation import live_probes
 from openclaw_enhance.validation.live_probes import (
     _ensure_bootstrap_ready,
     _get_transcript_path,
@@ -118,3 +120,70 @@ class TestEnsureBootstrapReady:
         assert "agent" in call_args
         assert "--agent" in call_args
         assert "oe-orchestrator" in call_args
+
+
+class TestMainSessionCommand:
+    @patch("openclaw_enhance.validation.live_probes._resolve_main_session_entrypoint")
+    def test_build_main_command_includes_session_id(self, mock_entrypoint):
+        mock_entrypoint.return_value = "agent"
+
+        build_main_cmd = getattr(live_probes, "_build_main_session_command")
+        cmd = build_main_cmd(
+            "main-escalation",
+            "hello",
+            {},
+            "session-abc",
+        )
+
+        assert cmd[:4] == ["openclaw", "agent", "--agent", "main"]
+        assert "--session-id" in cmd
+        assert "session-abc" in cmd
+
+
+class TestMainSessionExtraction:
+    def test_extract_main_session_id_prefers_agent_meta(self):
+        parsed = {
+            "result": {
+                "meta": {
+                    "agentMeta": {"sessionId": "agent-meta-id"},
+                    "systemPromptReport": {"sessionId": "system-prompt-id"},
+                }
+            }
+        }
+
+        extract_main_session_id = getattr(live_probes, "_extract_main_session_id")
+        assert extract_main_session_id(parsed) == "agent-meta-id"
+
+
+class TestTranscriptDeltaSearch:
+    def test_search_transcript_segment_respects_start_line(self, tmp_path):
+        transcript = tmp_path / "probe.jsonl"
+        transcript.write_text(
+            "old line sessions_spawn\nnew line oe-orchestrator\n", encoding="utf-8"
+        )
+
+        search_segment = getattr(live_probes, "_search_transcript_segment")
+        assert search_segment(transcript, 1, "sessions_spawn") is True
+        assert search_segment(transcript, 2, "sessions_spawn") is False
+
+    def test_latest_main_transcript_snapshot_returns_newest(self, tmp_path):
+        sessions_dir = tmp_path / "agents" / "main" / "sessions"
+        sessions_dir.mkdir(parents=True)
+        old_file = sessions_dir / "old.jsonl"
+        new_file = sessions_dir / "new.jsonl"
+        old_file.write_text("old\n", encoding="utf-8")
+        new_file.write_text("new\n", encoding="utf-8")
+
+        old_stat = old_file.stat()
+        new_stat = new_file.stat()
+        old_file.touch()
+        new_file.touch()
+        os.utime(old_file, (old_stat.st_atime, old_stat.st_mtime - 10))
+        os.utime(new_file, (new_stat.st_atime, new_stat.st_mtime + 10))
+
+        latest_snapshot = getattr(live_probes, "_latest_main_transcript_snapshot")
+        snapshot = latest_snapshot(tmp_path)
+        assert snapshot is not None
+        transcript_path, line_count = snapshot
+        assert transcript_path == new_file
+        assert line_count == 1

@@ -141,7 +141,8 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
 
 4. **Non-invasive to OpenClaw core**:
    - No edits to OpenClaw source
-   - No runtime modifications to main's AGENTS.md/TOOLS.md
+   - No **runtime** modifications to main's AGENTS.md/TOOLS.md (heartbeat/session code must not mutate these files)
+   - **Install-time injection is allowed**: The installer may append idempotent, marker-delimited blocks to main's AGENTS.md (e.g., tool-gate rules). These blocks must be cleanly removable by the uninstaller.
    - CLI-first preference for all operations
 
 ### Worker Role Boundaries (Do Not Cross)
@@ -241,6 +242,18 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Legacy `openclawEnhance` config is migrated away during reinstall.
   - Uninstall removes only enhancement-owned runtime registrations from supported surfaces.
 - Success criteria: `openclaw agents list`, `openclaw hooks list`, and live `openclaw agent --agent oe-orchestrator ...` succeed after redeploy.
+
+**main-tool-gate-enforcement** — COMPLETE
+- Date: 2026-03-18
+- Scope: Enforced main session as router-only via install-time AGENTS.md injection.
+- Deliverables:
+  - `src/openclaw_enhance/install/main_tool_gate.py` — idempotent, marker-delimited injection/removal
+  - `installer.py` calls `inject_main_tool_gate` during install
+  - `uninstaller.py` calls `remove_main_tool_gate` during uninstall
+  - `skills/oe-toolcall-router/SKILL.md` v2.0 — "main = router only" model
+  - `extensions/openclaw-enhance-runtime/index.ts` — `before_tool_call` plugin gate (backup defense)
+  - `hooks/oe-main-routing-gate/` — advisory hook (secondary layer)
+- Success criteria: Installer injects tool gate idempotently, uninstaller removes it cleanly, all tests pass.
 
 ### Current Durable Status
 

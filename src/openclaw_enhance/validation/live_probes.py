@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import uuid
 from pathlib import Path
 
 import click
@@ -74,16 +75,41 @@ def _resolve_main_session_entrypoint(env: dict[str, str]) -> str | None:
     return None
 
 
-def _build_main_session_command(probe: str, message: str, env: dict[str, str]) -> list[str]:
+def _build_main_session_command(
+    probe: str,
+    message: str,
+    env: dict[str, str],
+    session_id: str,
+) -> list[str]:
     """Build main session command or fail with unsupported entrypoint error."""
     entrypoint = _resolve_main_session_entrypoint(env)
     if entrypoint is None:
         _fail(probe, "main_entrypoint_unsupported", "No supported main session command found")
 
     if entrypoint == "agent":
-        return ["openclaw", "agent", "--agent", "main", "-m", message, "--json"]
+        return [
+            "openclaw",
+            "agent",
+            "--agent",
+            "main",
+            "--session-id",
+            session_id,
+            "-m",
+            message,
+            "--json",
+        ]
     else:  # chat
-        return ["openclaw", "chat", "--agent", "main", "-m", message, "--json"]
+        return [
+            "openclaw",
+            "chat",
+            "--agent",
+            "main",
+            "--session-id",
+            session_id,
+            "-m",
+            message,
+            "--json",
+        ]
 
 
 def _parse_agent_output(output: str) -> dict[str, object] | None:
@@ -210,6 +236,85 @@ def _search_transcript(transcript_path: Path, *search_terms: str) -> bool:
         return all(term in content for term in search_terms)
     except (OSError, UnicodeDecodeError):
         return False
+
+
+def _line_count(path: Path) -> int:
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as handle:
+            return sum(1 for _ in handle)
+    except OSError:
+        return 0
+
+
+def _search_transcript_segment(
+    transcript_path: Path,
+    start_line: int,
+    *search_terms: str,
+) -> bool:
+    lowered_terms = [term.lower() for term in search_terms if term]
+    if not lowered_terms:
+        return False
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                lowered_line = line.lower()
+                if all(term in lowered_line for term in lowered_terms):
+                    return True
+        return False
+    except OSError:
+        return False
+
+
+def _latest_main_transcript_snapshot(openclaw_home: Path) -> tuple[Path, int] | None:
+    sessions_dir = openclaw_home / "agents" / "main" / "sessions"
+    if not sessions_dir.exists():
+        return None
+    candidates = sorted(
+        sessions_dir.glob("*.jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    transcript_path = candidates[0]
+    return (transcript_path, _line_count(transcript_path))
+
+
+def _latest_main_transcript_path(openclaw_home: Path) -> Path | None:
+    snapshot = _latest_main_transcript_snapshot(openclaw_home)
+    if snapshot is None:
+        return None
+    return snapshot[0]
+
+
+def _extract_main_session_id(parsed: dict[str, object]) -> str | None:
+    result_obj = parsed.get("result")
+    if not isinstance(result_obj, dict):
+        return None
+
+    meta_obj = result_obj.get("meta")
+    if not isinstance(meta_obj, dict):
+        return None
+
+    agent_meta = meta_obj.get("agentMeta")
+    if isinstance(agent_meta, dict):
+        session_id = agent_meta.get("sessionId")
+        if isinstance(session_id, str) and session_id:
+            return session_id
+
+    system_prompt_report = meta_obj.get("systemPromptReport")
+    if isinstance(system_prompt_report, dict):
+        session_id = system_prompt_report.get("sessionId")
+        if isinstance(session_id, str) and session_id:
+            return session_id
+
+    root_session_id = parsed.get("sessionId")
+    if isinstance(root_session_id, str) and root_session_id:
+        return root_session_id
+
+    return None
 
 
 def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, str]) -> bool:
@@ -578,8 +683,10 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
     config_path = _resolve_config_path(home)
 
     with pinned_openclaw_runtime_model(config_path) as configured_model:
+        baseline = _latest_main_transcript_snapshot(home)
+        probe_session_id = str(uuid.uuid4())
         # Build the main session command (will fail if no supported entrypoint)
-        cmd = _build_main_session_command("main-escalation", message, env)
+        cmd = _build_main_session_command("main-escalation", message, env, probe_session_id)
 
         # Start main session
         result = subprocess.run(
@@ -602,11 +709,7 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
             _fail("main-escalation", "no_json_output", result.stdout[:500])
             assert False, "unreachable"
 
-        # Extract session ID from nested structure: result.meta.agentMeta.sessionId
-        result_obj = parsed.get("result", {})
-        meta = result_obj.get("meta", {}) if isinstance(result_obj, dict) else {}
-        agent_meta = meta.get("agentMeta", {}) if isinstance(meta, dict) else {}
-        raw_session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
+        raw_session_id = _extract_main_session_id(parsed)
         if not isinstance(raw_session_id, str):
             _fail("main-escalation", "missing_main_session_id")
             assert False, "unreachable"
@@ -614,11 +717,32 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
 
         main_transcript = _get_transcript_path("main", main_session_id, home, env)
         if main_transcript is None:
-            _fail("main-escalation", "missing_main_transcript", main_session_id)
-            assert False, "unreachable"
+            fallback_transcript = _latest_main_transcript_path(home)
+            if fallback_transcript is None:
+                _fail("main-escalation", "missing_main_transcript", main_session_id)
+                assert False, "unreachable"
+            main_transcript = fallback_transcript
 
-        orchestrator_spawned = _search_transcript(
-            main_transcript, "sessions_spawn", "oe-orchestrator"
+        start_line = 1
+        if baseline is not None:
+            baseline_path, baseline_lines = baseline
+            if baseline_path == main_transcript:
+                start_line = baseline_lines + 1
+
+        invalid_stream_to = _search_transcript_segment(
+            main_transcript,
+            start_line,
+            "sessions_spawn",
+            "streamto",
+        )
+        if invalid_stream_to:
+            _fail("main-escalation", "invalid_stream_to", main_session_id)
+
+        orchestrator_spawned = _search_transcript_segment(
+            main_transcript,
+            start_line,
+            "sessions_spawn",
+            "oe-orchestrator",
         )
 
         if not orchestrator_spawned:
