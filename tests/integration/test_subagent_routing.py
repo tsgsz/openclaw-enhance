@@ -32,9 +32,9 @@ class TestSkillContractRendering:
         """Should render oe-toolcall-router contract."""
         contract = render_skill_contract("oe-toolcall-router")
 
-        assert "Toolcall Router" in contract
         assert "oe-toolcall-router" in contract
-        assert "Routes tasks" in contract
+        assert "MANDATORY router" in contract
+        assert "ROUTER ONLY" in contract
 
     def test_render_timeout_state_sync_contract(self):
         """Should render oe-timeout-state-sync contract."""
@@ -247,7 +247,7 @@ class TestSkillRegistryIntegration:
         """Toolcall router should have escalation threshold in heuristics."""
         router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-toolcall-router")
         assert "escalation_threshold" in router_skill.routing_heuristics
-        assert router_skill.routing_heuristics["escalation_threshold"] == 2
+        assert router_skill.routing_heuristics["escalation_threshold"] == 0
 
     def test_eta_estimator_has_base_time_per_toolcall(self):
         """ETA estimator should have base time per toolcall in heuristics."""

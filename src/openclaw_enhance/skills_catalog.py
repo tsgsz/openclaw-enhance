@@ -47,16 +47,16 @@ SKILLS_REGISTRY: list[SkillMetadata] = [
     ),
     SkillMetadata(
         name="oe-toolcall-router",
-        description="Routes tasks to main or escalates to oe-orchestrator based on heuristics",
-        version="1.0.0",
+        description="MANDATORY router. Main session is a ROUTER ONLY - all execution MUST go through sessions_spawn.",
+        version="2.0.0",
         user_invocable=True,
-        allowed_tools=["Read", "Write", "Bash"],
+        allowed_tools=["Read"],
         routing_heuristics={
-            "max_toolcalls": 2,
-            "max_duration_minutes": 30,
-            "escalation_threshold": 2,  # toolcalls > 2 escalates
+            "max_toolcalls": 0,
+            "max_duration_minutes": 0,
+            "escalation_threshold": 0,
             "parallel_escalation": True,
-            "long_running_threshold_minutes": 30,
+            "long_running_threshold_minutes": 0,
         },
     ),
     SkillMetadata(

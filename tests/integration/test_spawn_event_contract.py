@@ -65,17 +65,18 @@ class TestSpawnEventContract:
         config = json.loads(plugin_path.read_text())
         assert config["name"] == "openclaw-enhance-runtime"
         assert config["namespace"] == "oe"
-        assert "subagent_spawning" in config.get("hooks", {})
+        assert config["type"] == "extension"
+        assert config["entryPoint"] == "./index.ts"
 
     def test_extension_index_exists(self):
-        """Verify extension index.ts exists."""
+        """Verify extension index.ts exists with tool-gate registration."""
         index_path = PROJECT_ROOT / "extensions" / "openclaw-enhance-runtime" / "index.ts"
         assert index_path.exists(), f"Extension index not found: {index_path}"
 
         content = index_path.read_text()
-        assert "RuntimeBridge" in content
-        assert "EXTENSION_NAME" in content
-        assert "activate" in content
+        assert "before_tool_call" in content
+        assert "register" in content
+        assert "MAIN_FORBIDDEN_TOOLS" in content
 
     def test_runtime_bridge_exists(self):
         """Verify runtime bridge implementation exists."""
