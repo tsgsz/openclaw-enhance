@@ -1,0 +1,25 @@
+==================================================================================================== test session starts =====================================================================================================
+platform darwin -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/tsgsz/workspace/openclaw-enhance/.worktrees/project-registry
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.7, cov-7.0.0
+collecting ... collected 4 items
+
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_spawn_with_active_project PASSED                                                                                                        [ 25%]
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_spawn_fallback_no_active_project PASSED                                                                                                 [ 50%]
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_hook_ts_source_has_resolution_logic PASSED                                                                                              [ 75%]
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_hook_ts_project_context_shape PASSED                                                                                                    [100%]
+
+====================================================================================================== warnings summary ======================================================================================================
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_spawn_with_active_project
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_spawn_fallback_no_active_project
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/integration/test_spawn_project_context.py::TestSpawnProjectContext::test_spawn_with_active_project
+  /Users/tsgsz/workspace/openclaw-enhance/.worktrees/project-registry/src/openclaw_enhance/runtime/project_state.py:32: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    state["last_updated_utc"] = datetime.utcnow().isoformat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================================================================================== 4 passed, 3 warnings in 0.02s ================================================================================================

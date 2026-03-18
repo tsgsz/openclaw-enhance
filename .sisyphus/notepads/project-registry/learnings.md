@@ -80,3 +80,28 @@
 - 5 integration tests using `tmp_path` for both registry and user_home isolation.
 - Evidence files: `task-7-permanent-lock.txt` (blocking test) and `task-7-temp-no-lock.txt` (no-lock test).
 - Full suite: 366 tests pass (up from 361 baseline).
+
+## 2026-03-18 Task: T10 - Documentation Update
+- Updated PLAYBOOK.md with project registry system details, CLI commands, and installation artifacts.
+- Updated AGENTS.md Source of Truth Map with project-registry.json.
+- Verified documentation with `docs-check`.
+- Saved evidence to `.sisyphus/evidence/`.
+
+## 2026-03-18 Task: T8 - Spawn-Enrich Hook Project Context
+
+### Patterns
+- TypeScript hook reads `runtime-state.json` and `project-registry.json` via `readFileSync` + `JSON.parse` in try/catch — null on any error.
+- `os.homedir()` + `path.join()` to resolve `~/.openclaw/openclaw-enhance/` managed root.
+- Resolution chain: explicit context.project → active_project from runtime state → "default" fallback.
+- Registry lookup extracts `name`, `type`, `kind` fields; missing entries get "unknown" defaults.
+
+### Design Decisions
+- `SpawnEnrichInput` interface NOT modified — backward compatible. Only `SpawnEnrichOutput` gets new `project_context` field.
+- `project_context` shape: `{project_id, project_name, project_type, project_kind}` — mirrors Python `build_project_context()` shape.
+- `project` field in `enriched_payload` still set (= project_id) for backward compat with existing consumers.
+- Hook never throws on missing files — always graceful fallback to DEFAULT_PROJECT_CONTEXT.
+
+### Test Infrastructure
+- Hybrid test approach: 2 functional (Python runtime state functions) + 2 structural (grep handler.ts source).
+- Functional tests use `tmp_path` + `user_home` parameter for isolation.
+- Evidence: `task-8-enrich-active-project.txt` (test results), `task-8-enrich-fallback.txt` (fallback scenarios).
