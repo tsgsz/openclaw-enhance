@@ -1,0 +1,19 @@
+- `python -m openclaw_enhance.cli project list [--kind permanent|temporary|all] [--json]`
+- `python -m openclaw_enhance.cli project scan <path> [--kind permanent] [--register]`
+- No background project scanning or automatic discovery.
+The Orchestrator uses this skill to decide which project to work in, manage permanent versus temporary project lifecycles, and provide git context for task startup. It ensures that work is scoped correctly and that project-level metadata is available to all workers.
+- **permanent**: User-specified projects, typically linked to a GitHub repository. These require an occupancy lock to ensure only one Orchestrator session works on them at a time.
+- `python -m openclaw_enhance.cli project list [--kind permanent|temporary|all] [--json]`
+- `python -m openclaw_enhance.cli project scan <path> [--kind permanent] [--register]`
+- `python -m openclaw_enhance.cli project create <path> --name <name> --kind permanent|temporary [--github-remote <url>]`
+For permanent projects, the Orchestrator must acquire a lock before starting work:
+The Orchestrator uses this skill to decide which project to work in, manage permanent versus temporary project lifecycles, and provide git context for task startup. It ensures that work is scoped correctly and that project-level metadata is available to all workers.
+- **temporary**: Orchestrator-created projects for specific tasks. These do not require occupancy locks and are typically short-lived.
+- `python -m openclaw_enhance.cli project list [--kind permanent|temporary|all] [--json]`
+- `python -m openclaw_enhance.cli project create <path> --name <name> --kind permanent|temporary [--github-remote <url>]`
+- No automatic cleanup of temporary projects.
+- **permanent**: User-specified projects, typically linked to a GitHub repository. These require an occupancy lock to ensure only one Orchestrator session works on them at a time.
+- **temporary**: Orchestrator-created projects for specific tasks. These do not require occupancy locks and are typically short-lived.
+- After completing work, use `auto_commit(project_path, message)` if appropriate.
+- `should_auto_commit()` verifies safety: the repository must not be in a detached HEAD state, must have a remote configured, and the tree must be clean within the project scope.
+workspaces/oe-orchestrator/skills/oe-project-registry/SKILL.md
