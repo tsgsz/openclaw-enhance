@@ -44,15 +44,23 @@ class TestInstallIdempotency:
     """Tests that install is idempotent."""
 
     @pytest.fixture(autouse=True)
-    def stub_monitor_service(self):
-        if sys.platform != "darwin":
-            yield
-            return
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
-            mock_run.return_value = type(
-                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-            )()
-            yield
+    def stub_external_cli(self):
+        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        patches = [
+            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
+        ]
+        if sys.platform == "darwin":
+            patches.append(
+                patch(
+                    "openclaw_enhance.install.monitor_service.subprocess.run",
+                    return_value=mock_result,
+                )
+            )
+        for p in patches:
+            p.start()
+        yield
+        for p in patches:
+            p.stop()
 
     def test_double_install_succeeds(
         self,
@@ -202,15 +210,23 @@ class TestUninstallIdempotency:
     """Tests that uninstall is idempotent."""
 
     @pytest.fixture(autouse=True)
-    def stub_monitor_service(self):
-        if sys.platform != "darwin":
-            yield
-            return
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
-            mock_run.return_value = type(
-                "Result", (), {"returncode": 0, "stdout": "", "stderr": ""}
-            )()
-            yield
+    def stub_external_cli(self):
+        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+        patches = [
+            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
+        ]
+        if sys.platform == "darwin":
+            patches.append(
+                patch(
+                    "openclaw_enhance.install.monitor_service.subprocess.run",
+                    return_value=mock_result,
+                )
+            )
+        for p in patches:
+            p.start()
+        yield
+        for p in patches:
+            p.stop()
 
     def test_double_uninstall_succeeds(
         self,
