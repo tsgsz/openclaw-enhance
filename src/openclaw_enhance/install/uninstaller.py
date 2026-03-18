@@ -504,6 +504,14 @@ def uninstall(
         lock_removed = _remove_lock_file(target_root)
         removed.extend(lock_removed)
 
+        playbook_file = target_root / "PLAYBOOK.md"
+        if playbook_file.exists():
+            try:
+                playbook_file.unlink()
+                removed.append("playbook")
+            except OSError as exc:
+                failed.append(f"playbook: {exc}")
+
         if target_root.exists():
             try:
                 # Only remove if directory is empty or contains only empty subdirs

@@ -50,7 +50,7 @@ class TestSpawnEventContract:
         import json
 
         pkg = json.loads(pkg_path.read_text())
-        assert pkg["name"] == "@openclaw-enhance/runtime"
+        assert pkg["name"] == "@openclaw-enhance/oe-runtime"
         assert "exports" in pkg
 
     def test_extension_plugin_config_exists(self):
@@ -214,6 +214,22 @@ class TestTypeScriptCompilation:
             if "openclaw-enhance-runtime" in line or "hooks/oe-subagent" in line
         ]
         assert len(extension_errors) == 0, f"TypeScript errors: {extension_errors}"
+
+
+class TestPlaybookExists:
+    """Verify PLAYBOOK.md exists in project root."""
+
+    def test_playbook_file_exists(self):
+        """PLAYBOOK.md must exist at project root for installer to deploy."""
+        playbook_path = PROJECT_ROOT / "PLAYBOOK.md"
+        assert playbook_path.exists(), f"PLAYBOOK.md not found: {playbook_path}"
+
+    def test_playbook_has_required_sections(self):
+        """PLAYBOOK.md must contain all required sections."""
+        content = (PROJECT_ROOT / "PLAYBOOK.md").read_text()
+        required = ["Agent", "Hook", "Skill", "Extension", "Tool Gate", "openclaw.json", "CLI"]
+        for section in required:
+            assert section in content, f"Missing section containing '{section}'"
 
 
 if __name__ == "__main__":

@@ -261,6 +261,25 @@ def _sync_hooks(target_root: Path, dev_mode: bool = False) -> list[ComponentInst
     return components
 
 
+def _sync_playbook(target_root: Path) -> ComponentInstall | None:
+    """Copy PLAYBOOK.md to managed root for AI/human reference."""
+    source_path = Path(__file__).resolve().parents[3] / "PLAYBOOK.md"
+    if not source_path.exists():
+        return None
+
+    target_path = target_root / "PLAYBOOK.md"
+    shutil.copy2(source_path, target_path)
+
+    return ComponentInstall(
+        name="playbook",
+        version=VERSION,
+        install_time=datetime.utcnow(),
+        source_path=str(source_path.absolute()),
+        target_path=str(target_path.absolute()),
+        is_symlink=False,
+    )
+
+
 def _write_openclaw_config(config_path: Path, config: dict[str, Any]) -> str:
     backup_path = config_path.with_name(f"{config_path.name}.bak")
     temp_path = config_path.with_name(f"{config_path.name}.tmp")
@@ -583,7 +602,13 @@ def install(
             all_components.append(runtime_component)
         except Exception as exc:
             errors.append(f"Runtime state initialization failed: {exc}")
-            # Non-fatal - continue
+
+        try:
+            playbook_component = _sync_playbook(target_root)
+            if playbook_component is not None:
+                all_components.append(playbook_component)
+        except Exception as exc:
+            errors.append(f"Playbook sync failed: {exc}")
 
         try:
             monitor_service_component = install_monitor_launchagent(

@@ -36,6 +36,7 @@
 | Workspace-specific rules | `workspaces/{name}/AGENTS.md` |
 | Worker routing metadata | AGENTS.md frontmatter in each workspace |
 | Worker tool definitions | `workspaces/{name}/TOOLS.md` |
+| System capability playbook | `PLAYBOOK.md` (安装时部署到 `~/.openclaw/openclaw-enhance/PLAYBOOK.md`) |
 
 ## Session State vs Permanent Memory
 
@@ -92,7 +93,19 @@ After completing any feature development:
   - [ ] `python -m openclaw_enhance.cli validate-feature --feature-class <class> --report-slug <slug>` passes
   - [ ] Validation report saved to `docs/reports/`
 - [ ] `python -m openclaw_enhance.cli docs-check` passes
+- [ ] **PLAYBOOK.md 已更新**（如果本次变更影响了以下任何内容）：
+  - Agent 新增/删除/职责变更
+  - Hook 新增/删除/行为变更
+  - Skill 新增/删除/行为变更
+  - Extension 变更
+  - openclaw.json 配置修改项变更
+  - 安装产物（新增/删除文件或目录）
+  - 工具限制（Tool Gate）规则变更
+  - Watchdog/监控机制变更
+  - CLI 命令新增/删除
 
 **Critical Rule**: Features cannot be merged without a successful real-environment validation report in `docs/reports/`. Unit/integration tests verify code correctness, but only real-environment testing verifies actual functionality in the OpenClaw environment.
+
+**Critical Rule**: `PLAYBOOK.md` 是系统能力的权威清单，安装时会部署到 `~/.openclaw/openclaw-enhance/PLAYBOOK.md` 供 AI 和人类查阅。每次 commit 前必须检查是否需要同步更新。
 
 See `docs/testing-playbook.md` for the feature-class matrix and detailed validation procedures.

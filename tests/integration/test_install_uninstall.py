@@ -115,6 +115,24 @@ class TestInstallUninstallSymmetry:
         assert "main-skill:oe-toolcall-router" in component_names
         assert "main-skill:oe-timeout-state-sync" in component_names
 
+    def test_install_deploys_playbook(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        """Install should copy PLAYBOOK.md to managed root."""
+        result = install(mock_openclaw_home, user_home=isolated_user_home)
+        assert result.success
+
+        target_root = managed_root(isolated_user_home)
+        playbook_path = target_root / "PLAYBOOK.md"
+        assert playbook_path.exists()
+        assert playbook_path.stat().st_size > 0
+
+        manifest = load_manifest(target_root)
+        assert manifest is not None
+        assert "playbook" in [c.name for c in manifest.components]
+
     def test_status_reports_installed(
         self,
         mock_openclaw_home: Path,
