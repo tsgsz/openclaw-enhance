@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from openclaw_enhance.install.lock import InstallLock, InstallLockError
+from openclaw_enhance.install.main_tool_gate import remove_main_tool_gate
 from openclaw_enhance.install.manifest import (
     InstallManifest,
     load_manifest,
@@ -33,10 +34,8 @@ from openclaw_enhance.install.monitor_service import (
     monitor_launch_agent_path,
     uninstall_monitor_launchagent,
 )
-from openclaw_enhance.install.main_tool_gate import remove_main_tool_gate
 from openclaw_enhance.paths import (
     managed_root,
-    resolve_main_workspace,
     resolve_openclaw_config_path,
 )
 from openclaw_enhance.runtime.ownership import (

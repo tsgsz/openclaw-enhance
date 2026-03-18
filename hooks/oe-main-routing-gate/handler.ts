@@ -3,14 +3,27 @@ const COMPLEX_TASK_PATTERN =
 
 const ADVISORY_THRESHOLD = 2;
 
-let sessionAdvisoryState = new Map<string, { count: number; lastAdvisory: number }>();
+const sessionAdvisoryState = new Map<string, { count: number; lastAdvisory: number }>();
 
 const isMainSession = (sessionKey: unknown): boolean =>
   typeof sessionKey === "string" && sessionKey.startsWith("agent:main:");
 
 const asString = (value: unknown): string => (typeof value === "string" ? value : "");
 
-const handler = async (event: any): Promise<void> => {
+interface HookContext {
+  bodyForAgent?: unknown;
+  body?: unknown;
+  content?: unknown;
+}
+
+interface HookEvent {
+  type: string;
+  action: string;
+  sessionKey: unknown;
+  context?: HookContext | null;
+}
+
+const handler = async (event: HookEvent): Promise<void> => {
   if (!event || event.type !== "message" || event.action !== "preprocessed") {
     return;
   }
@@ -37,16 +50,19 @@ const handler = async (event: any): Promise<void> => {
     return;
   }
 
-  const sessionId = event.sessionKey;
+  const sessionId = asString(event.sessionKey);
+  if (!sessionId) {
+    return;
+  }
   const state = sessionAdvisoryState.get(sessionId) || { count: 0, lastAdvisory: 0 };
-  
+
   const isComplexTask = COMPLEX_TASK_PATTERN.test(source);
   const hasMultipleSteps = (source.match(/[，,。！!；;]+/g) || []).length >= 2;
-  
+
   if ((isComplexTask || hasMultipleSteps) && state.count < ADVISORY_THRESHOLD) {
     state.count++;
     sessionAdvisoryState.set(sessionId, state);
-    
+
     const advisory = [
       "[ROUTING-ADVISORY]",
       "This request involves multi-step work or synthesis.",
@@ -55,8 +71,8 @@ const handler = async (event: any): Promise<void> => {
       "",
       "If you proceed in main, monitor tool usage and escalate if needed.",
     ].join("\n");
-    
-    context.bodyForAgent = `${advisory}\n\n---\n\nUser request:\n${source}`;
+
+    (context as HookContext).bodyForAgent = `${advisory}\n\n---\n\nUser request:\n${source}`;
   }
 };
 
