@@ -42,3 +42,41 @@
 ### Test Infrastructure
 - tmp_path fixture used to create mock project structures (pyproject.toml).
 - Evidence generation integrated into tests to capture real-world context shapes.
+
+## 2026-03-18 Task: T5 - Project CLI Command Group
+
+### Patterns
+- Click `@cli.group()` for sub-command grouping; `@group.command("name")` for sub-commands.
+- Registry path isolation via `OE_REGISTRY_PATH` env var, read in `_resolve_registry_path()`.
+- `CliRunner(env={"OE_REGISTRY_PATH": str(path)})` provides per-test isolation without monkeypatching.
+- Click's newer versions removed `mix_stderr` from `CliRunner.__init__()` — don't use it.
+- `sys.exit(N)` from Click commands results in `result.exit_code == N` in CliRunner.
+
+### Design Decisions
+- Exit codes: 0=success, 1=not found/not in registry, 2=error (path missing etc.)
+- `project create` falls back to `ProjectInfo(type=unknown)` when `detect_project()` returns None.
+- `project list --json` outputs JSON array (not object) for easy piping.
+- `project scan` without `--register` is read-only; `--register` persists to registry.
+
+### Test Infrastructure
+- Worktree uses `pip install -e .` from worktree dir to override main repo's editable install for CLI testing.
+- Must restore main repo editable install after testing to avoid breaking other worktrees.
+- 10 integration tests covering: empty list, create+list, scan detection, scan+register, info registered/unregistered, kind filtering, github-remote.
+
+## 2026-03-18 Task: T7 - Project Occupancy Lock Bridge
+
+### Patterns
+- `acquire_for_work` and `release_after_work` bridge registry (knows kind) with project_state (manages occupancy).
+- Temporary projects bypass locking entirely — always return `(True, None)`.
+- Permanent projects delegate to `acquire_project`/`release_project`/`get_project_owner` in `project_state.py`.
+- Imports are lazy (inside method body) to avoid circular imports between project and runtime modules.
+
+### Design Decisions
+- Return type `tuple[bool, str | None]` encodes three states: success, blocked-by-owner, not-registered.
+- `release_after_work` returns `True` for unregistered/temporary — nothing to release is success.
+- `_FakeProjectInfo` dataclass in tests avoids importing real `ProjectInfo` which needs detector module.
+
+### Test Infrastructure
+- 5 integration tests using `tmp_path` for both registry and user_home isolation.
+- Evidence files: `task-7-permanent-lock.txt` (blocking test) and `task-7-temp-no-lock.txt` (no-lock test).
+- Full suite: 366 tests pass (up from 361 baseline).

@@ -132,6 +132,60 @@ class ProjectRegistry:
             entry["last_accessed"] = datetime.now(timezone.utc).isoformat()
             self.save()
 
+    def acquire_for_work(
+        self,
+        path: Path,
+        session_id: str,
+        user_home: Path | None = None,
+    ) -> tuple[bool, str | None]:
+        """Try to acquire a project for exclusive work.
+
+        For permanent projects: acquires occupancy lock via runtime state.
+        For temporary projects: always succeeds (no lock needed).
+
+        Returns:
+            (True, None) — acquired successfully
+            (False, owner_session_id) — already owned by another session
+            (False, None) — project not registered
+        """
+        from openclaw_enhance.runtime.project_state import (
+            acquire_project,
+            get_project_owner,
+        )
+
+        entry = self.get(path)
+        if entry is None:
+            return (False, None)
+
+        if entry.get("kind") == "temporary":
+            return (True, None)
+
+        canonical = str(Path(path).resolve())
+        if acquire_project(canonical, session_id, user_home):
+            return (True, None)
+
+        owner = get_project_owner(canonical, user_home)
+        return (False, owner)
+
+    def release_after_work(
+        self,
+        path: Path,
+        session_id: str,
+        user_home: Path | None = None,
+    ) -> bool:
+        """Release project occupation after work is done.
+
+        Returns True if released, False if not owned by this session.
+        """
+        from openclaw_enhance.runtime.project_state import release_project
+
+        entry = self.get(path)
+        if entry is None or entry.get("kind") == "temporary":
+            return True
+
+        canonical = str(Path(path).resolve())
+        return release_project(canonical, session_id, user_home)
+
     def is_stale(self, path: Path) -> bool:
         canonical = str(Path(path).resolve())
         entry = self._data["projects"].get(canonical)
