@@ -5,7 +5,7 @@
   "displayName": "OpenClaw Enhance Runtime Bridge",
   "description": "Runtime integration bridge for OpenClaw Enhance",
   "type": "extension",
-  "entryPoint": "./index.ts",
+  "entryPoint": "./index.js",
   "namespace": "oe",
   "configSchema": {
     "type": "object",

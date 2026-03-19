@@ -449,6 +449,19 @@ def _register_runtime_surfaces(
         extra_dirs.append(managed_hooks_dir)
     load_obj["extraDirs"] = extra_dirs
 
+    plugins_obj = config.get("plugins")
+    if not isinstance(plugins_obj, dict):
+        plugins_obj = {}
+        config["plugins"] = plugins_obj
+
+    allow_list = plugins_obj.get("allow")
+    if not isinstance(allow_list, list):
+        allow_list = []
+        plugins_obj["allow"] = allow_list
+
+    if "oe-runtime" not in allow_list:
+        allow_list.append("oe-runtime")
+
     try:
         backup_path = _write_openclaw_config(config_path, config)
     except OSError as exc:
