@@ -167,6 +167,17 @@ def _remove_hooks(
                 del config["hooks"]
                 changed = True
 
+        plugins_obj = config.get("plugins")
+        if isinstance(plugins_obj, dict):
+            allow_list = plugins_obj.get("allow")
+            if isinstance(allow_list, list) and "oe-runtime" in allow_list:
+                allow_list.remove("oe-runtime")
+                changed = True
+                if not allow_list:
+                    del plugins_obj["allow"]
+                if not plugins_obj:
+                    del config["plugins"]
+
         if OWNED_NAMESPACE in config:
             del config[OWNED_NAMESPACE]
             changed = True

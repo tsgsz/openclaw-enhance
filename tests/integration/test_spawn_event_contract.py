@@ -66,7 +66,7 @@ class TestSpawnEventContract:
         assert config["name"] == "openclaw-enhance-runtime"
         assert config["namespace"] == "oe"
         assert config["type"] == "extension"
-        assert config["entryPoint"] == "./index.ts"
+        assert config["entryPoint"] == "./index.js"
 
     def test_extension_index_exists(self):
         """Verify extension index.ts exists with tool-gate registration."""
