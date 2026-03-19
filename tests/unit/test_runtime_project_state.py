@@ -1,15 +1,15 @@
 import json
-from pathlib import Path
 from datetime import datetime
 
 import pytest
-from openclaw_enhance.paths import runtime_state_file, ensure_managed_directories
+
+from openclaw_enhance.paths import ensure_managed_directories, runtime_state_file
 from openclaw_enhance.runtime.project_state import (
-    get_active_project,
-    set_active_project,
     acquire_project,
-    release_project,
+    get_active_project,
     get_project_owner,
+    release_project,
+    set_active_project,
 )
 
 

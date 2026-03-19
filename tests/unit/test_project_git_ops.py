@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from openclaw_enhance.project.git_ops import (
     auto_commit,
@@ -15,9 +12,9 @@ from openclaw_enhance.project.git_ops import (
 
 
 def _init_git_repo(path: Path, *, commits: int = 0) -> None:
-    run = lambda args: subprocess.run(
-        args, cwd=str(path), capture_output=True, text=True, check=True
-    )
+    def run(args):
+        return subprocess.run(args, cwd=str(path), capture_output=True, text=True, check=True)
+
     run(["git", "init", "-b", "main"])
     run(["git", "config", "user.email", "test@test.com"])
     run(["git", "config", "user.name", "Test"])

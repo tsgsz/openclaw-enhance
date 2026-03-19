@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 
-from openclaw_enhance.project.detector import ProjectInfo, ProjectKind, ProjectType
+from openclaw_enhance.project.detector import ProjectInfo, ProjectType
 from openclaw_enhance.project.registry import (
     REGISTRY_FILENAME,
     REGISTRY_SCHEMA_VERSION,

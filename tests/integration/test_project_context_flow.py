@@ -8,10 +8,8 @@ import subprocess
 import time
 from pathlib import Path
 
-import pytest
-
 from openclaw_enhance.project.context import build_project_context, resolve_project_context
-from openclaw_enhance.project.detector import ProjectInfo, ProjectKind, ProjectType, detect_project
+from openclaw_enhance.project.detector import ProjectKind, ProjectType, detect_project
 from openclaw_enhance.project.git_ops import gather_git_context, should_auto_commit
 from openclaw_enhance.project.registry import ProjectRegistry
 

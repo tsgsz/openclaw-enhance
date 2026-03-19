@@ -1,12 +1,8 @@
 """Unit tests for project detector."""
 
 import json
-from pathlib import Path
-
-import pytest
 
 from openclaw_enhance.project.detector import (
-    ProjectKind,
     ProjectType,
     detect_project,
     find_project_root,
@@ -16,10 +12,11 @@ from openclaw_enhance.project.detector import (
 def test_detect_python_poetry(tmp_path):
     """Test detect python from pyproject.toml with [tool.poetry]."""
     pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text(
-        '[tool.poetry]\nname = "test-project"\n[tool.poetry.group.dev.dependencies]\npytest = "^7.0.0"',
-        encoding="utf-8",
+    content = (
+        "[tool.poetry]\nname = 'test-project'\n"
+        "[tool.poetry.group.dev.dependencies]\npytest = '^7.0.0'"
     )
+    pyproject.write_text(content, encoding="utf-8")
 
     info = detect_project(tmp_path)
     assert info is not None
@@ -107,10 +104,8 @@ def test_find_project_root_nested(tmp_path):
     (subdir / "package.json").write_text(json.dumps({"name": "frontend"}), encoding="utf-8")
 
     # find_project_root should find the closest indicator/git
-    # In our implementation, we check .git first, then indicators.
-    # Wait, the requirement says: ".git closest to cwd wins."
-    # My implementation checks .git at current level, then indicators at current level, then moves up.
-    # So if subdir has package.json and parent has .git, it should find package.json in subdir first.
+    # Implementation: .git at current level, then indicators, then moves up.
+    # So if subdir has package.json and parent has .git, it finds package.json first.
 
     root = find_project_root(subdir)
     assert root == subdir.resolve()

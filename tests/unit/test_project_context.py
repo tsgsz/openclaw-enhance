@@ -1,9 +1,11 @@
-import pytest
 import json
 from pathlib import Path
-from openclaw_enhance.project.registry import ProjectRegistry
-from openclaw_enhance.project.detector import detect_project, ProjectKind
+
+import pytest
+
 from openclaw_enhance.project.context import build_project_context, resolve_project_context
+from openclaw_enhance.project.detector import ProjectKind, detect_project
+from openclaw_enhance.project.registry import ProjectRegistry
 
 
 @pytest.fixture
