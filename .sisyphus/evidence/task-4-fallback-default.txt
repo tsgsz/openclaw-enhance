@@ -1,0 +1,10 @@
+{
+  "project_id": "default",
+  "project_name": "default",
+  "project_type": "unknown",
+  "project_subtype": "",
+  "project_kind": "temporary",
+  "working_dir": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-368/test_resolve_fallback_default0/empty",
+  "git_context": null,
+  "metadata": {}
+}

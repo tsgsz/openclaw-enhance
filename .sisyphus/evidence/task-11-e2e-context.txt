@@ -1,0 +1,13 @@
+...........                                                                                                                                                                                                            [100%]
+====================================================================================================== warnings summary ======================================================================================================
+tests/integration/test_project_context_flow.py::TestFullContextFlow::test_full_end_to_end_context_flow
+tests/integration/test_project_context_flow.py::TestFullContextFlow::test_full_flow_with_explicit_context_override
+tests/integration/test_project_context_flow.py::TestResolutionChainPrecedence::test_resolution_chain_precedence
+tests/integration/test_project_context_flow.py::TestResolutionChainPrecedence::test_resolution_chain_precedence
+tests/integration/test_project_context_flow.py::TestResolutionChainPrecedence::test_resolution_chain_precedence
+tests/integration/test_project_context_flow.py::TestResolutionChainPrecedence::test_resolution_chain_precedence
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 6 warnings in 1.35s

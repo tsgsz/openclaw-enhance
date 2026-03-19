@@ -1,27 +1,37 @@
-## 2026-03-18 Task: T2 — Registry Persistence with Atomic Writes
 
-### Patterns Used
-- `fcntl.flock` on a separate `.lock` file for process-level locking during writes
-- `os.replace()` for atomic file swap (POSIX guarantee: same filesystem)
-- Write to `.tmp` then replace — ensures no partial writes on crash
-- `TYPE_CHECKING` guard for `ProjectInfo` import to avoid circular dependency with parallel Task 1
 
-### Schema Migration
-- v1 format: `{"version": "1.0.0", "projects": []}` (list)
-- v2 format: `{"schema_version": 2, "last_scan": null, "projects": {}}` (dict keyed by canonical path)
-- Migration handles both `version` → `schema_version` rename and `projects` list → dict conversion
+## 2026-03-19 Task 11: End-to-End Context Flow Integration Tests
 
-### Canonical Path Resolution
-- All paths stored as `str(Path(path).resolve())` — handles symlinks, relative paths, deduplication
-- Key in projects dict = canonical path string
+### Test Coverage
+Created 11 integration tests covering:
+1. Full end-to-end context flow (detect → register → set active → build context)
+2. Context override with explicit path
+3. Permanent project occupancy prevents concurrent access
+4. Temporary project has no lock (multiple orch can acquire)
+5. Resolution chain precedence (explicit > active_project > detect from cwd > default)
+6. Stale detection and re-detect
+7. Git context in dispatch (3 commits, branch, clean status)
+8. Git context dirty repo detection
+9. Auto-commit behavior for clean repo
+10. Auto-commit restricted by allowed_paths
+11. Auto-commit allowed within allowed_paths
 
-### Test Conventions
-- Use `tmp_path` fixture exclusively for isolated test directories
-- No docstrings in tests, clear function names describe behavior
-- Helper functions `_make_project_dir` and `_make_project_info` to reduce boilerplate
-- 9 tests covering: roundtrip, list, filter, dedup, migration, corrupt recovery, staleness, atomic save cleanup, missing file
+### Implementation Notes
+- Project modules created: detector.py, registry.py, context.py, git_ops.py
+- RuntimeState extended with active_project and active_project_path fields
+- Project detection returns None for directories without project files (not UNKNOWN type)
+- Stale detection uses config file mtime (pyproject.toml, etc.) not directory mtime
+- Registry uses atomic writes with fcntl.flock for process-level locking
+- Schema version 2 with dict-based projects keyed by canonical path
 
-### Gotchas
-- `time.sleep(0.05)` needed in `test_is_stale` to ensure mtime actually changes on fast filesystems
-- Lock file and tmp file both need cleanup in error paths
-- `detector.py` stub created for parallel task independence — will be replaced by Task 1
+### Test Patterns
+- Used tmp_path fixture exclusively for isolated test directories
+- Real git subprocess calls for authentic git context tests
+- Helper function _create_python_repo reduces boilerplate
+- Tests independent with no shared state
+
+### Key Findings
+- detect_project must return None (not UNKNOWN type) for fallback to "default" to work
+- Git context gathering requires proper git config (user.email, user.name)
+- Stale detection must track config file mtime, not directory mtime
+- Temporary projects skip occupancy locking entirely

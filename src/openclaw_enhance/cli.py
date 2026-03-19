@@ -493,6 +493,144 @@ def validate_feature(
     sys.exit(1)
 
 
+_REGISTRY_PATH_ENVVAR = "OE_REGISTRY_PATH"
+
+
+def _resolve_registry_path() -> Path:
+    import os
+
+    from openclaw_enhance.paths import managed_root
+
+    env_path = os.environ.get(_REGISTRY_PATH_ENVVAR)
+    if env_path:
+        return Path(env_path)
+    return managed_root() / "project-registry.json"
+
+
+@cli.group()
+def project() -> None:
+    """Manage project registry (list, scan, create, info)."""
+    pass
+
+
+@project.command("list")
+@click.option(
+    "--kind",
+    type=click.Choice(["permanent", "temporary", "all"]),
+    default="all",
+    help="Filter by project kind (default: all)",
+)
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON array")
+def project_list(kind: str, output_json: bool) -> None:
+    """List registered projects."""
+    from openclaw_enhance.project.registry import ProjectRegistry
+
+    registry = ProjectRegistry(_resolve_registry_path())
+    kind_filter = None if kind == "all" else kind
+    projects = registry.list_projects(kind=kind_filter)
+
+    if output_json:
+        click.echo(json.dumps(projects, indent=2, default=str))
+        return
+
+    if not projects:
+        click.echo("No projects registered.")
+        return
+
+    header = f"{'Name':<30} {'Type':<12} {'Kind':<12} {'Path'}"
+    click.echo(header)
+    click.echo("-" * len(header))
+    for p in projects:
+        click.echo(
+            f"{p.get('name', '?'):<30} "
+            f"{p.get('type', '?'):<12} "
+            f"{p.get('kind', '?'):<12} "
+            f"{p.get('path', '?')}"
+        )
+
+
+@project.command("scan")
+@click.argument("path", type=click.Path(exists=False))
+@click.option(
+    "--kind",
+    type=click.Choice(["permanent", "temporary"]),
+    default="permanent",
+    help="Kind to assign if registering (default: permanent)",
+)
+@click.option("--register", is_flag=True, help="Persist detected project to registry")
+def project_scan(path: str, kind: str, register: bool) -> None:
+    """Detect project type at PATH."""
+    from openclaw_enhance.project.detector import detect_project
+    from openclaw_enhance.project.registry import ProjectRegistry
+
+    target = Path(path).resolve()
+    if not target.exists():
+        click.echo(f"Error: path does not exist: {target}", err=True)
+        sys.exit(2)
+
+    info = detect_project(target)
+    if info is None:
+        click.echo(f"No project detected at {target}")
+        sys.exit(0)
+
+    click.echo(f"Detected: {info.type.value}")
+    click.echo(f"Name:     {info.name}")
+    click.echo(f"Subtype:  {info.subtype}")
+
+    if register:
+        registry = ProjectRegistry(_resolve_registry_path())
+        registry.register(info, kind=kind)
+        click.echo(f"Registered as {kind} project.")
+
+
+@project.command("info")
+@click.argument("path", type=click.Path(exists=False))
+def project_info(path: str) -> None:
+    """Show full project details from registry."""
+    from openclaw_enhance.project.registry import ProjectRegistry
+
+    target = Path(path).resolve()
+    registry = ProjectRegistry(_resolve_registry_path())
+    entry = registry.get(target)
+
+    if entry is None:
+        click.echo(f"Project not in registry: {target}", err=True)
+        sys.exit(1)
+
+    for key, value in entry.items():
+        click.echo(f"{key}: {value}")
+
+
+@project.command("create")
+@click.argument("path", type=click.Path(exists=False))
+@click.option("--name", required=True, help="Project name")
+@click.option(
+    "--kind",
+    type=click.Choice(["permanent", "temporary"]),
+    required=True,
+    help="Project kind",
+)
+@click.option("--github-remote", default=None, help="GitHub remote URL")
+def project_create(path: str, name: str, kind: str, github_remote: str | None) -> None:
+    """Manually register a project at PATH."""
+    from openclaw_enhance.project.detector import ProjectInfo, ProjectType, detect_project
+    from openclaw_enhance.project.registry import ProjectRegistry
+
+    target = Path(path).resolve()
+
+    info = detect_project(target)
+    if info is None:
+        info = ProjectInfo(
+            path=target,
+            name=name,
+            type=ProjectType.unknown,
+        )
+
+    registry = ProjectRegistry(_resolve_registry_path())
+    registry.register(info, kind=kind, github_remote=github_remote)
+    click.echo(f"Project '{name}' registered at {target} (kind={kind})")
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     try:
