@@ -1,0 +1,17 @@
+QA Scenario: Corrupt registry file recovery
+Date: 2026-03-18
+Task: 2 — Registry Persistence with Atomic Writes
+
+Test Command:
+  python -m pytest tests/unit/test_project_registry.py::test_corrupt_file_recovery tests/unit/test_project_registry.py::test_missing_registry_file_creates_empty_state -v
+
+Result: ALL PASSED (2/2)
+
+Evidence:
+  - test_corrupt_file_recovery: Writes "{{invalid json content" to registry file, creates ProjectRegistry → loads with empty projects list, no exception raised.
+  - test_missing_registry_file_creates_empty_state: Creates ProjectRegistry with path under nonexistent directory → list_projects returns [], get returns None, no error.
+
+Implementation details:
+  - Corrupt JSON triggers json.JSONDecodeError, caught in load() → returns _make_empty()
+  - Missing file checked via Path.exists() → returns _make_empty()
+  - Both paths produce schema_version=2, empty projects dict

@@ -29,7 +29,9 @@ routing:
 
 - 把 frontmatter 当作运行时发现元数据；worker 选择依赖 `workspaces/*/AGENTS.md` 的 frontmatter，而不是正文长描述。
 - 先读 `TOOLS.md` 里的本地路径和仓库约定；不要把它当成第二份技能手册。
+- **首先加载 `oe-memory-sync`**：主动获取 Main Session 的上下文（parent_session 历史、main memory 文件、project context）。
 - 根据任务加载对应 skill：
+  - `oe-memory-sync`：获取 Main 会话上下文，理解用户之前和 main 聊了什么
   - `oe-project-registry`：项目发现、注册表位置、项目类型判断
   - `oe-worker-dispatch`：dispatch loop、checkpoint visibility、recovery flow、result synthesis
   - `oe-git-context`：git 历史和上下文注入
@@ -49,6 +51,7 @@ routing:
 
 ## Skills
 
+- `oe-memory-sync`：获取 Main Session 上下文（parent_session 历史、memory 文件、project context）
 - `oe-project-registry`：发现项目、记录项目路径、给 dispatch 提供项目范围
 - `oe-worker-dispatch`：负责任务拆分、worker 选择、轮次推进、恢复分支与汇总格式
 - `oe-git-context`：为 worker prompt 注入最近变更、文件历史与相关提交
@@ -56,5 +59,5 @@ routing:
 
 ## Version
 
-Version: 1.1.0
-Last Updated: 2026-03-15
+Version: 1.2.0
+Last Updated: 2026-03-19

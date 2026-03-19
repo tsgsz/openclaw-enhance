@@ -29,6 +29,8 @@
 7. 为 Orchestrator 创建一个 skill，用于在编码任务里面完成 agentos 的实践。
 8. 为 Orchestrator 创建一个 skill，用于进行项目级别的 git hisstory 的额外信息注入。
 9. 为 Orchestrator 和 main 都创建一个 skill， 当接收到 task 超时时修改 runtime 状态。
+10. Orchestrator 拥有读取 main 的记忆的 skill，每次在接受任务之后会主动读取对应的session和main的memory 来进行任务。
+11. Orchestrator 在分发子任务的时候，会尽可能将子任务需要知道的信息补全，而不是指望 subagent 自己推断。
 
 ## 多 Agent 方案
 
@@ -41,6 +43,14 @@
      a. 为watchdog创建一个skill，当发现session超时的情况时send到原session进行提醒。
      b. 为watchdog创建一个skill，学会如何判断session的状态。
 5. acp：opencode 用于开发，无需新建专门的Agents，但是要在 Orchestrator 的分发skill体现出来。
+
+## 项目方案
+
+当 orchestrator 被分配任务的时候，他要通过技能决定自己是在哪个项目。
+项目分为两种：
+永久项目：由用户显示指定了位置，通常在~/workspace 下，通常要求和线上的github关联。
+临时项目：由 Orchestrator 指定位置，用git，但是关联github。
+orchstrator分配子任务的时候要指定项目目录之下的某个目录作为子agent的工作目录
 
 ## Quick Start
 

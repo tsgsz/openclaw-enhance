@@ -238,3 +238,4 @@ workspaces/*/
 !workspaces/oe-watchdog/**
 !workspaces/oe-tool-recovery/
 !workspaces/oe-tool-recovery/**
+.worktrees/
