@@ -352,7 +352,13 @@ def _register_agents_via_cli(
     check = _run_openclaw_cli(["agents", "list", "--json"], check=False)
     if check.returncode == 0:
         try:
-            agents_data = json.loads(check.stdout)
+            stdout = check.stdout
+            json_text = stdout.split("\n")[0] if stdout.startswith("[") else stdout
+            for line in stdout.split("\n"):
+                if line.strip().startswith("["):
+                    json_text = line
+                    break
+            agents_data = json.loads(json_text)
             existing_ids = {a["id"] for a in agents_data if isinstance(a, dict) and "id" in a}
         except (json.JSONDecodeError, TypeError):
             pass
@@ -363,7 +369,7 @@ def _register_agents_via_cli(
         source_workspace = str((WORKSPACES_DIR / workspace_name).absolute())
 
         if agent_id not in existing_ids:
-            _run_openclaw_cli(
+            result = _run_openclaw_cli(
                 [
                     "agents",
                     "add",
@@ -371,8 +377,15 @@ def _register_agents_via_cli(
                     "--workspace",
                     workspace_path,
                     "--non-interactive",
-                ]
+                ],
+                check=False,
             )
+            if (
+                result.returncode != 0
+                and "already exists" not in result.stdout
+                and "already exists" not in result.stderr
+            ):
+                raise InstallError(f"Failed to add agent {agent_id}: {result.stderr}")
 
         components.append(
             ComponentInstall(
@@ -492,101 +505,14 @@ def _register_runtime_surfaces(
     ]
 
 
-MODEL_TIER_CONFIGS: dict[str, dict[str, Any]] = {
-    "premium": {
-        "primary": "sss-hk/claude-opus-4-6",
-        "fallbacks": [
-            "openai-codex/gpt-5.4",
-            "google/gemini-3.1-pro-preview",
-            "minimax/MiniMax-M2.7",
-            "kimi-coding/k2p5",
-        ],
-    },
-    "standard": {
-        "primary": "sss-hk/claude-sonnet-4-6",
-        "fallbacks": [
-            "openai-codex/gpt-5.4",
-            "google/gemini-3.1-pro-preview",
-            "minimax/MiniMax-M2.7",
-        ],
-    },
-    "cheap": {
-        "primary": "minimax/MiniMax-M2.1",
-        "fallbacks": [
-            "google/gemini-3-flash-preview",
-        ],
-    },
+AGENT_MODEL_OVERRIDES: dict[str, str] = {
+    "oe-orchestrator": "sss-hk/claude-opus-4-6",
+    "oe-script_coder": "openai-codex/gpt-5.3-codex",
+    "oe-tool-recovery": "sss-hk/claude-opus-4-6",
+    "oe-syshelper": "minimax/MiniMax-M2.7",
+    "oe-searcher": "minimax/MiniMax-M2.1",
+    "oe-watchdog": "minimax/MiniMax-M2.7",
 }
-
-AGENT_MODEL_OVERRIDES: dict[str, dict[str, Any]] = {
-    "oe-orchestrator": {
-        "primary": "sss-hk/claude-opus-4-6",
-        "fallbacks": [
-            "openai-codex/gpt-5.4",
-            "google/gemini-3.1-pro-preview",
-            "minimax/MiniMax-M2.7",
-            "kimi-coding/k2p5",
-        ],
-    },
-    "oe-script_coder": {
-        "primary": "openai-codex/gpt-5.3-codex",
-        "fallbacks": [
-            "kimi-coding/k2p5",
-            "sss-hk/claude-sonnet-4-6",
-            "google/gemini-3-flash-preview",
-        ],
-    },
-    "oe-tool-recovery": {
-        "primary": "sss-hk/claude-opus-4-6",
-        "fallbacks": [
-            "openai-codex/gpt-5.4",
-            "google/gemini-3.1-pro-preview",
-            "minimax/MiniMax-M2.7",
-        ],
-    },
-    "oe-syshelper": {
-        "primary": "minimax/MiniMax-M2.7",
-        "fallbacks": [
-            "google/gemini-3-flash-preview",
-            "kimi-coding/k2p5",
-            "openai-codex/gpt-5.3-codex",
-        ],
-    },
-    "oe-searcher": {
-        "primary": "minimax/MiniMax-M2.1",
-        "fallbacks": [
-            "google/gemini-3-flash-preview",
-        ],
-    },
-    "oe-watchdog": {
-        "primary": "minimax/MiniMax-M2.7",
-        "fallbacks": [
-            "google/gemini-3-flash-preview",
-            "kimi-coding/k2p5",
-        ],
-    },
-}
-
-
-def _get_cost_tier_from_agents_md(agents_md_path: Path) -> str | None:
-    """Extract cost_tier from AGENTS.md frontmatter."""
-    try:
-        import re
-
-        import yaml
-
-        content = agents_md_path.read_text(encoding="utf-8")
-        frontmatter_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
-        if not frontmatter_match:
-            return None
-        data = yaml.safe_load(frontmatter_match.group(1))
-        if isinstance(data, dict):
-            routing = data.get("routing", {})
-            if isinstance(routing, dict):
-                return routing.get("cost_tier")
-    except Exception:
-        pass
-    return None
 
 
 def _configure_agent_models(
@@ -594,7 +520,6 @@ def _configure_agent_models(
     openclaw_home: Path,
     target_root: Path,
 ) -> list[ComponentInstall]:
-    """Configure per-agent model assignments based on cost_tier."""
     config_path = resolve_openclaw_config_path(openclaw_home)
     config = _load_openclaw_config(config_path)
 
@@ -615,20 +540,9 @@ def _configure_agent_models(
         if not agent_id or agent_id == "main":
             continue
 
-        model_config = AGENT_MODEL_OVERRIDES.get(agent_id)
-        if not model_config:
-            workspace_name = agent_id.replace("oe-", "oe-")
-            agents_md_path = target_root / "workspaces" / workspace_name / "AGENTS.md"
-            if agents_md_path.exists():
-                cost_tier = _get_cost_tier_from_agents_md(agents_md_path)
-                if cost_tier and cost_tier in MODEL_TIER_CONFIGS:
-                    model_config = MODEL_TIER_CONFIGS[cost_tier]
-
-        if model_config:
-            agent_entry["model"] = {
-                "primary": model_config["primary"],
-                "fallbacks": model_config["fallbacks"],
-            }
+        model_id = AGENT_MODEL_OVERRIDES.get(agent_id)
+        if model_id:
+            agent_entry["model"] = model_id
 
     try:
         backup_path = _write_openclaw_config(config_path, config)
