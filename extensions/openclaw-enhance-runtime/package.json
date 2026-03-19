@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "OpenClaw extension for runtime integration bridge",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.js",
+  "types": "./index.d.ts",
   "openclaw": {
     "extensions": ["./index.js"]
   },
@@ -14,8 +14,8 @@
       "types": "./dist/index.d.ts"
     },
     "./runtime-bridge": {
-      "import": "./dist/src/runtime-bridge.js",
-      "types": "./dist/src/runtime-bridge.d.ts"
+      "import": "./src/runtime-bridge.js",
+      "types": "./src/runtime-bridge.d.ts"
     }
   },
   "scripts": {
