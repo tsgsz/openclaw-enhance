@@ -492,6 +492,164 @@ def _register_runtime_surfaces(
     ]
 
 
+MODEL_TIER_CONFIGS: dict[str, dict[str, Any]] = {
+    "premium": {
+        "primary": "sss-hk/claude-opus-4-6",
+        "fallbacks": [
+            "openai-codex/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7",
+            "kimi-coding/k2p5",
+        ],
+    },
+    "standard": {
+        "primary": "sss-hk/claude-sonnet-4-6",
+        "fallbacks": [
+            "openai-codex/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7",
+        ],
+    },
+    "cheap": {
+        "primary": "minimax/MiniMax-M2.1",
+        "fallbacks": [
+            "google/gemini-3-flash-preview",
+        ],
+    },
+}
+
+AGENT_MODEL_OVERRIDES: dict[str, dict[str, Any]] = {
+    "oe-orchestrator": {
+        "primary": "sss-hk/claude-opus-4-6",
+        "fallbacks": [
+            "openai-codex/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7",
+            "kimi-coding/k2p5",
+        ],
+    },
+    "oe-script_coder": {
+        "primary": "openai-codex/gpt-5.3-codex",
+        "fallbacks": [
+            "kimi-coding/k2p5",
+            "sss-hk/claude-sonnet-4-6",
+            "google/gemini-3-flash-preview",
+        ],
+    },
+    "oe-tool-recovery": {
+        "primary": "sss-hk/claude-opus-4-6",
+        "fallbacks": [
+            "openai-codex/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7",
+        ],
+    },
+    "oe-syshelper": {
+        "primary": "minimax/MiniMax-M2.7",
+        "fallbacks": [
+            "google/gemini-3-flash-preview",
+            "kimi-coding/k2p5",
+            "openai-codex/gpt-5.3-codex",
+        ],
+    },
+    "oe-searcher": {
+        "primary": "minimax/MiniMax-M2.1",
+        "fallbacks": [
+            "google/gemini-3-flash-preview",
+        ],
+    },
+    "oe-watchdog": {
+        "primary": "minimax/MiniMax-M2.7",
+        "fallbacks": [
+            "google/gemini-3-flash-preview",
+            "kimi-coding/k2p5",
+        ],
+    },
+}
+
+
+def _get_cost_tier_from_agents_md(agents_md_path: Path) -> str | None:
+    """Extract cost_tier from AGENTS.md frontmatter."""
+    try:
+        import re
+
+        import yaml
+
+        content = agents_md_path.read_text(encoding="utf-8")
+        frontmatter_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
+        if not frontmatter_match:
+            return None
+        data = yaml.safe_load(frontmatter_match.group(1))
+        if isinstance(data, dict):
+            routing = data.get("routing", {})
+            if isinstance(routing, dict):
+                return routing.get("cost_tier")
+    except Exception:
+        pass
+    return None
+
+
+def _configure_agent_models(
+    manifest: InstallManifest,
+    openclaw_home: Path,
+    target_root: Path,
+) -> list[ComponentInstall]:
+    """Configure per-agent model assignments based on cost_tier."""
+    config_path = resolve_openclaw_config_path(openclaw_home)
+    config = _load_openclaw_config(config_path)
+
+    agents_obj = config.get("agents")
+    if not isinstance(agents_obj, dict):
+        agents_obj = {}
+        config["agents"] = agents_obj
+
+    list_obj = agents_obj.get("list")
+    if not isinstance(list_obj, list):
+        list_obj = []
+        agents_obj["list"] = list_obj
+
+    for agent_entry in list_obj:
+        if not isinstance(agent_entry, dict):
+            continue
+        agent_id = agent_entry.get("id")
+        if not agent_id or agent_id == "main":
+            continue
+
+        model_config = AGENT_MODEL_OVERRIDES.get(agent_id)
+        if not model_config:
+            workspace_name = agent_id.replace("oe-", "oe-")
+            agents_md_path = target_root / "workspaces" / workspace_name / "AGENTS.md"
+            if agents_md_path.exists():
+                cost_tier = _get_cost_tier_from_agents_md(agents_md_path)
+                if cost_tier and cost_tier in MODEL_TIER_CONFIGS:
+                    model_config = MODEL_TIER_CONFIGS[cost_tier]
+
+        if model_config:
+            agent_entry["model"] = {
+                "primary": model_config["primary"],
+                "fallbacks": model_config["fallbacks"],
+            }
+
+    try:
+        backup_path = _write_openclaw_config(config_path, config)
+    except OSError as exc:
+        raise InstallError(f"Failed to write agent model config: {exc}") from exc
+
+    manifest.add_rollback_point(
+        description="Agent model configuration",
+        backup_paths={"config": backup_path},
+    )
+
+    return [
+        ComponentInstall(
+            name="agents:model-config",
+            version=VERSION,
+            install_time=datetime.utcnow(),
+            target_path=str(config_path.absolute()),
+        ),
+    ]
+
+
 def _install_runtime_state(
     manifest: InstallManifest,
     target_root: Path,
@@ -639,6 +797,16 @@ def install(
         except Exception as exc:
             errors.append(f"Runtime registration failed: {exc}")
             raise InstallError(f"Runtime registration failed: {exc}") from exc
+
+        try:
+            model_config_components = _configure_agent_models(
+                manifest,
+                openclaw_home,
+                target_root,
+            )
+            all_components.extend(model_config_components)
+        except Exception as exc:
+            errors.append(f"Agent model configuration failed: {exc}")
 
         # Step 7: Initialize runtime state
         try:
