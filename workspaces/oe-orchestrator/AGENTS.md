@@ -57,7 +57,15 @@ routing:
 - `oe-git-context`：为 worker prompt 注入最近变更、文件历史与相关提交
 - `oe-agentos-practice`：提供规划、实现、测试与重构约定
 
+## Skills
+
+- `oe-memory-sync`：获取 Main Session 上下文（parent_session 历史、memory 文件、project context）
+- `oe-project-registry`：发现项目、记录项目路径、给 dispatch 提供项目范围
+- `oe-worker-dispatch`：负责任务拆分、worker 选择、轮次推进、恢复分支与汇总格式、**dispatch context enrichment**
+- `oe-git-context`：为 worker prompt 注入最近变更、文件历史与相关提交
+- `oe-agentos-practice`：提供规划、实现、测试与重构约定
+
 ## Version
 
-Version: 1.2.0
+Version: 1.3.0
 Last Updated: 2026-03-19
