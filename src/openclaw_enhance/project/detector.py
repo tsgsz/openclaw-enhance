@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import-not-found]
 except ImportError:
     try:
-        import tomli as tomllib
+        import tomli as tomllib  # type: ignore[import-not-found,no-redef]
     except ImportError:
         tomllib = None
 
