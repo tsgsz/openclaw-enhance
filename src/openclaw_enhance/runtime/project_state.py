@@ -86,4 +86,5 @@ def release_project(path: str, session_id: str, user_home: Path | None = None) -
 def get_project_owner(path: str, user_home: Path | None = None) -> str | None:
     """Get session_id currently occupying path, or None."""
     state = _load_state(user_home)
-    return state.get("project_occupancy", {}).get(path)
+    occupancy: dict[str, str] = state.get("project_occupancy", {})
+    return occupancy.get(path)

@@ -95,7 +95,8 @@ class ProjectRegistry:
 
     def get(self, path: Path) -> dict[str, Any] | None:
         canonical = str(Path(path).resolve())
-        return self._data["projects"].get(canonical)
+        result: dict[str, Any] | None = self._data["projects"].get(canonical)
+        return result
 
     def list_projects(self, kind: str | None = None) -> list[dict[str, Any]]:
         projects = list(self._data["projects"].values())
@@ -197,8 +198,9 @@ class ProjectRegistry:
             return True
 
         current_mtime = indicator_file.stat().st_mtime
-        stored_mtime = entry.get("indicator_mtime", 0.0)
-        return current_mtime != stored_mtime
+        stored_mtime: float = entry.get("indicator_mtime", 0.0)
+        result: bool = current_mtime != stored_mtime
+        return result
 
 
 def _make_empty() -> dict[str, Any]:
