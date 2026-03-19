@@ -82,7 +82,8 @@ def test_runtime_registration_uses_supported_shape(
                 "--workspace",
                 expected_workspace,
                 "--non-interactive",
-            ]
+            ],
+            check=False,
         )
 
     config_path = resolve_openclaw_config_path(mock_openclaw_home)
