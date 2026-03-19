@@ -14,6 +14,15 @@ Skill for discovering, registering, and managing projects within the OpenClaw wo
 
 The Orchestrator uses this skill to decide which project to work in, manage permanent versus temporary project lifecycles, and provide git context for task startup. It ensures that work is scoped correctly and that project-level metadata is available to all workers.
 
+## When to Use
+
+Use this skill when:
+- Orchestrator session starts and needs to identify the active project
+- User requests work on a specific project
+- Need to check if a project is already occupied by another Orchestrator
+- Creating or registering new projects
+- Gathering git context for a project before dispatching workers
+
 ## Project Types
 
 The registry supports two kinds of projects:
