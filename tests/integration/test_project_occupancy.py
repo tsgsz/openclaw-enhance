@@ -10,8 +10,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from openclaw_enhance.project.registry import ProjectRegistry
 
 
