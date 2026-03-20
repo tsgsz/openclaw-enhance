@@ -9,7 +9,9 @@ const MAIN_FORBIDDEN_TOOLS = new Set([
   "exec", // bash is named exec internally
   "process",
   "browser",
-  "playwright"
+  "playwright",
+  "web_search",
+  "web_fetch",
 ]);
 
 export default {

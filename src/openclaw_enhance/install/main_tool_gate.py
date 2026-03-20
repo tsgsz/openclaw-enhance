@@ -26,7 +26,7 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 **当用户要求任何需要修改文件、执行命令、搜索研究的任务时：**
 1. 必须使用 `sessions_spawn` 派发给 `oe-orchestrator`
 2. 绝对不要自己动手，即使任务看起来很简单
-3. 如果你发现自己想调用 `edit`/`exec`/`write`，立刻停下来，改用 `sessions_spawn`
+3. 如果你发现自己想调用 `edit`/`exec`/`write`/`web_search`/`web_fetch`，立刻停下来，改用 `sessions_spawn`
 {TOOL_GATE_MARKER}"""
 
 

@@ -84,6 +84,32 @@ registry = read("~/.openclaw/openclaw-enhance/project-registry.json")
 # - Git associations
 ```
 
+### 5. Main TOOLS.md
+
+Main's `TOOLS.md` describes the tool landscape visible to main session. Since the Orchestrator is Main's delegate for complex tasks, it must inherit Main's tool knowledge to make informed dispatch and planning decisions.
+
+```python
+# Main workspace path follows OpenClaw config resolution:
+#   1. openclaw.json → agent.workspace (if set)
+#   2. OPENCLAW_PROFILE env → ~/.openclaw/workspace-{profile}
+#   3. Default → ~/.openclaw/workspace
+#
+# TOOLS.md location:
+main_tools_path = f"{main_workspace_path}/TOOLS.md"
+
+main_tools = read(main_tools_path)
+# Contains:
+# - Available MCP servers and their tool lists
+# - Tool usage guidelines and restrictions
+# - Custom tool configurations
+# - Tool aliases and preferred invocations
+```
+
+**Why this matters:**
+- Orchestrator needs to know which tools exist system-wide to correctly scope worker tasks
+- Some tools are only available at main level; Orchestrator must know this boundary
+- Tool restrictions/guidelines from main apply transitively to Orchestrator's planning
+
 ## Usage Pattern
 
 ### Session Startup Flow
@@ -105,6 +131,9 @@ Fetch Main Memory ──► read memory/*.md files
     │
     ▼
 Fetch Project Context ──► runtime-state.json + project-registry.json
+    │
+    ▼
+Fetch Main Tools ──► read {main_workspace}/TOOLS.md
     │
     ▼
 Synthesize Context
@@ -138,12 +167,18 @@ async def sync_main_context():
     active_project = runtime_state.get("active_project")
     project_info = registry.get_project(active_project) if active_project else None
     
-    # 5. Synthesize into context
+    # 5. Fetch Main TOOLS.md
+    main_workspace_path = resolve_main_workspace()  # ~/.openclaw/workspace
+    main_tools_path = f"{main_workspace_path}/TOOLS.md"
+    main_tools = read(main_tools_path) if file_exists(main_tools_path) else ""
+    
+    # 6. Synthesize into context
     context = {
         "parent_history_summary": history_summary,
         "main_memory": memory_content,
         "active_project": project_info,
         "parent_session_id": parent_session,
+        "main_tools": main_tools,
     }
     
     return context
@@ -156,7 +191,7 @@ After fetching, inject the context into Orchestrator's understanding:
 ```python
 def inject_orch_context(context):
     """Inject fetched context into Orchestrator prompt."""
-    return f"""
+    parts = [f"""
 ## Main Session Context
 
 ### Prior Conversation Summary
@@ -167,13 +202,25 @@ def inject_orch_context(context):
 
 ### Active Project
 {format_project_info(context['active_project'])}
+"""]
 
+    # Include Main's tool landscape if available
+    if context.get('main_tools'):
+        parts.append(f"""
+### Main Tools
+{context['main_tools']}
+""")
+
+    parts.append(f"""
 ### Task
 {current_task_description}
 
 Use the above context to better understand the user's intent and
 provide more informed orchestration decisions.
-"""
+The Main Tools section describes the full tool landscape available to main session.
+Use this to inform dispatch decisions and worker task scoping.
+""")
+    return "\n".join(parts)
 ```
 
 ## Summarization Strategy
@@ -257,6 +304,7 @@ This skill never:
 | Parent session not found | Log error, continue without history |
 | Memory files missing | Continue without memory, log info |
 | Runtime state unavailable | Use defaults, log warning |
+| Main TOOLS.md missing | Continue with empty main_tools, log info |
 
 ## Example
 
@@ -269,6 +317,9 @@ async def on_session_start():
     if ctx["parent_history_summary"]:
         print(f"📋 Parent conversation context available")
         print(f"   Project: {ctx['active_project']}")
+    
+    if ctx.get("main_tools"):
+        print(f"🔧 Main tool landscape loaded")
     
     # Now proceed with task understanding
     task = current_task()
@@ -288,6 +339,7 @@ context:
     name: string
     path: string
     type: permanent | temporary
+  main_tools: string          # Content of Main's TOOLS.md (empty string if unavailable)
   timestamp: ISO8601
   status: complete | partial | unavailable
 ```

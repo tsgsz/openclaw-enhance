@@ -536,6 +536,7 @@ Before calling `sessions_spawn`, enrich the task prompt with relevant context fr
 | Context | Source Skill | What to Include |
 |---------|-------------|------------------|
 | Main session history | `oe-memory-sync` | Parent conversation summary, user intent |
+| Main tool landscape | `oe-memory-sync` | Main's TOOLS.md — available MCP servers, tool restrictions, usage guidelines |
 | Git context | `oe-git-context` | Recent commits, changed files, related history |
 | Project info | `oe-project-registry` | Project type, path, branch status, coding conventions |
 
@@ -552,10 +553,10 @@ Before sessions_spawn:
     │                          (recent commits, changed files)
     ▼
 3. Load memory context ───► oe-memory-sync
-    │                          (parent session summary)
+    │                          (parent session summary + main tools)
     ▼
 4. Synthesize enriched task
-    │
+    │  (include main_tools when worker needs tool awareness)
     ▼
 sessions_spawn(task=<enriched_task>, ...)
 ```
@@ -577,9 +578,13 @@ sessions_spawn(task=<enriched_task>, ...)
 ## Main Session Context
 {parent_session_summary}
 
+## Main Tools
+{main_tools_content}
+
 ## Guidance
 - Work in: {project_path}
 - Follow project conventions
+- Refer to Main Tools for available system capabilities and restrictions
 ```
 
 ### Implementation Pattern
@@ -603,9 +608,10 @@ async def dispatch_with_context(worker_type, task, context_hints=None):
     related_files = context_hints.get("related_files", infer_related_files(task))
     git_ctx = gather_git_context(project_path, files=related_files, depth=5)
     
-    # 3. Get memory context
+    # 3. Get memory context (includes main_tools)
     memory_ctx = await sync_main_context()
     parent_summary = memory_ctx.get("parent_history_summary", "N/A")
+    main_tools = memory_ctx.get("main_tools", "")
     
     # 4. Compose enriched task
     enriched_task = f"""\
@@ -620,10 +626,20 @@ async def dispatch_with_context(worker_type, task, context_hints=None):
 
 ## Main Session Context
 {parent_summary}
-
+"""
+    
+    # Include main tools when available
+    if main_tools:
+        enriched_task += f"""\
+## Main Tools
+{main_tools}
+"""
+    
+    enriched_task += f"""\
 ## Guidance
 - Work in: {project_info.path}
 - Follow project conventions for {project_info.type}
+- Refer to Main Tools for available system capabilities and restrictions
 """
     
     # 5. Dispatch with enriched task
@@ -638,10 +654,11 @@ async def dispatch_with_context(worker_type, task, context_hints=None):
 
 | Worker Type | Priority Context |
 |-------------|------------------|
-| `oe-script_coder` | Git changes, project type, coding conventions |
-| `oe-searcher` | Main session intent, topic context |
-| `oe-syshelper` | Project structure, file locations |
+| `oe-script_coder` | Git changes, project type, coding conventions, main tools (for tool awareness) |
+| `oe-searcher` | Main session intent, topic context, main tools (for available search tools) |
+| `oe-syshelper` | Project structure, file locations, main tools (for introspection tools) |
 | `oe-watchdog` | Session state, timeout expectations |
+| `oe-tool-recovery` | Main tools (critical — needs full tool landscape to diagnose failures) |
 
 ### What NOT to Include
 
@@ -652,7 +669,7 @@ async def dispatch_with_context(worker_type, task, context_hints=None):
 
 ### Integration with Skills
 
-- **`oe-memory-sync`**: Call `sync_main_context()` to get parent session summary
+- **`oe-memory-sync`**: Call `sync_main_context()` to get parent session summary **and main tools**
 - **`oe-git-context`**: Call `gather_git_context()` with related files
 - **`oe-project-registry`**: Call `get_project_info()` or `detect_project()`
 
