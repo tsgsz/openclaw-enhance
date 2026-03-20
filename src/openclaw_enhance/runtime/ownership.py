@@ -18,6 +18,8 @@ OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = (
     "oe-main-routing-gate",
 )
 
+OWNED_EXTENSION_ID = "oe-runtime"
+
 
 def filter_owned_keys(
     patch: Mapping[str, Any], namespace: str = OWNED_NAMESPACE
