@@ -41,6 +41,7 @@ from openclaw_enhance.paths import (
 )
 from openclaw_enhance.runtime.ownership import (
     OWNED_AGENT_SPECS,
+    OWNED_EXTENSION_ID,
     OWNED_HOOK_ENTRY_IDS,
     OWNED_NAMESPACE,
 )
@@ -401,6 +402,56 @@ def _register_agents_via_cli(
     return components
 
 
+# Extension source directory (relative to this file: src/openclaw_enhance/install/ -> extensions/)
+_EXTENSION_SOURCE_DIR = (
+    Path(__file__).resolve().parents[3] / "extensions" / "openclaw-enhance-runtime"
+)
+
+
+def _install_extension() -> ComponentInstall | None:
+    """Install the oe-runtime plugin via ``openclaw plugins install --link``.
+
+    Using --link records proper install provenance in openclaw.json, which
+    eliminates the "loaded without install/load-path provenance" warning.
+    ``openclaw plugins install`` also handles plugins.allow automatically.
+    """
+    if not _EXTENSION_SOURCE_DIR.exists():
+        return None
+
+    source_path = str(_EXTENSION_SOURCE_DIR.absolute())
+
+    # Uninstall first if already tracked (idempotent reinstall)
+    check = _run_openclaw_cli(["plugins", "list", "--json"], check=False)
+    already_installed = False
+    if check.returncode == 0:
+        try:
+            data = json.loads(check.stdout)
+            already_installed = any(
+                isinstance(p, dict) and p.get("id") == OWNED_EXTENSION_ID for p in data
+            )
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if already_installed:
+        _run_openclaw_cli(["plugins", "uninstall", "--force", OWNED_EXTENSION_ID], check=False)
+
+    result = _run_openclaw_cli(
+        ["plugins", "install", "--link", source_path],
+        check=False,
+    )
+    if result.returncode != 0 and "already exists" not in (result.stdout + result.stderr):
+        raise InstallError(f"Failed to install extension {OWNED_EXTENSION_ID}: {result.stderr}")
+
+    return ComponentInstall(
+        name=f"extension:{OWNED_EXTENSION_ID}",
+        version=VERSION,
+        install_time=datetime.utcnow(),
+        source_path=source_path,
+        target_path=source_path,
+        is_symlink=True,
+    )
+
+
 def _register_runtime_surfaces(
     manifest: InstallManifest,
     openclaw_home: Path,
@@ -461,19 +512,6 @@ def _register_runtime_surfaces(
     if managed_hooks_dir not in extra_dirs:
         extra_dirs.append(managed_hooks_dir)
     load_obj["extraDirs"] = extra_dirs
-
-    plugins_obj = config.get("plugins")
-    if not isinstance(plugins_obj, dict):
-        plugins_obj = {}
-        config["plugins"] = plugins_obj
-
-    allow_list = plugins_obj.get("allow")
-    if not isinstance(allow_list, list):
-        allow_list = []
-        plugins_obj["allow"] = allow_list
-
-    if "oe-runtime" not in allow_list:
-        allow_list.append("oe-runtime")
 
     try:
         backup_path = _write_openclaw_config(config_path, config)
@@ -711,6 +749,14 @@ def install(
         except Exception as exc:
             errors.append(f"Runtime registration failed: {exc}")
             raise InstallError(f"Runtime registration failed: {exc}") from exc
+
+        try:
+            ext_component = _install_extension()
+            if ext_component is not None:
+                all_components.append(ext_component)
+        except Exception as exc:
+            errors.append(f"Extension install failed: {exc}")
+            raise InstallError(f"Extension install failed: {exc}") from exc
 
         try:
             model_config_components = _configure_agent_models(

@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,7 @@ from openclaw_enhance.paths import (
 )
 from openclaw_enhance.runtime.ownership import (
     OWNED_AGENT_SPECS,
+    OWNED_EXTENSION_ID,
     OWNED_HOOK_ENTRY_IDS,
     OWNED_NAMESPACE,
 )
@@ -167,17 +169,6 @@ def _remove_hooks(
                 del config["hooks"]
                 changed = True
 
-        plugins_obj = config.get("plugins")
-        if isinstance(plugins_obj, dict):
-            allow_list = plugins_obj.get("allow")
-            if isinstance(allow_list, list) and "oe-runtime" in allow_list:
-                allow_list.remove("oe-runtime")
-                changed = True
-                if not allow_list:
-                    del plugins_obj["allow"]
-                if not plugins_obj:
-                    del config["plugins"]
-
         if OWNED_NAMESPACE in config:
             del config[OWNED_NAMESPACE]
             changed = True
@@ -264,6 +255,23 @@ def _unregister_agents(
         return removed
     except (json.JSONDecodeError, OSError, KeyError) as exc:
         raise UninstallError(f"Failed to unregister agents: {exc}") from exc
+
+
+def _uninstall_extension() -> list[str]:
+    """Uninstall the oe-runtime plugin via ``openclaw plugins uninstall --force``."""
+    removed: list[str] = []
+    try:
+        result = subprocess.run(
+            ["openclaw", "plugins", "uninstall", "--force", OWNED_EXTENSION_ID],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 or "not found" in (result.stdout + result.stderr).lower():
+            removed.append(f"extension:{OWNED_EXTENSION_ID}")
+    except FileNotFoundError:
+        pass  # openclaw CLI not available; skip
+    return removed
 
 
 def _remove_hook_assets(target_root: Path) -> list[str]:
@@ -435,7 +443,15 @@ def uninstall(
             if not force:
                 raise
 
-        # Step 2: Remove hooks
+        # Step 2a: Uninstall oe-runtime extension
+        try:
+            ext_removed = _uninstall_extension()
+            removed.extend(ext_removed)
+        except Exception as exc:
+            failed.append(f"extension: {exc}")
+            # Non-fatal — continue uninstall
+
+        # Step 2b: Remove hooks
         try:
             hooks_removed = _remove_hooks(manifest or InstallManifest(), openclaw_home)
             removed.extend(hooks_removed)

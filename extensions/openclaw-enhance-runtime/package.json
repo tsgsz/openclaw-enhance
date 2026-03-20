@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "description": "OpenClaw extension for runtime integration bridge",
   "type": "module",
-  "main": "./index.js",
-  "types": "./index.d.ts",
+  "main": "./index.ts",
   "openclaw": {
-    "extensions": ["./index.js"]
+    "extensions": ["./index.ts"]
   },
   "exports": {
     ".": {
