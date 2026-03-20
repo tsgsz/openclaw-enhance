@@ -408,19 +408,22 @@ _EXTENSION_SOURCE_DIR = (
 )
 
 
-def _install_extension() -> ComponentInstall | None:
-    """Install the oe-runtime plugin via ``openclaw plugins install --link``.
+def _verify_extension_in_config(openclaw_home: Path | None = None) -> bool:
+    home = openclaw_home or Path.home() / ".openclaw"
+    config_path = resolve_openclaw_config_path(home)
+    config = _load_openclaw_config(config_path)
+    plugins = config.get("plugins", {})
+    allow_list = plugins.get("allow", [])
+    entries = plugins.get("entries", {})
+    return OWNED_EXTENSION_ID in allow_list and OWNED_EXTENSION_ID in entries
 
-    Using --link records proper install provenance in openclaw.json, which
-    eliminates the "loaded without install/load-path provenance" warning.
-    ``openclaw plugins install`` also handles plugins.allow automatically.
-    """
+
+def _install_extension(openclaw_home: Path | None = None) -> ComponentInstall | None:
     if not _EXTENSION_SOURCE_DIR.exists():
         return None
 
     source_path = str(_EXTENSION_SOURCE_DIR.absolute())
 
-    # Uninstall first if already tracked (idempotent reinstall)
     check = _run_openclaw_cli(["plugins", "list", "--json"], check=False)
     already_installed = False
     if check.returncode == 0:
@@ -441,6 +444,12 @@ def _install_extension() -> ComponentInstall | None:
     )
     if result.returncode != 0 and "already exists" not in (result.stdout + result.stderr):
         raise InstallError(f"Failed to install extension {OWNED_EXTENSION_ID}: {result.stderr}")
+
+    if not _verify_extension_in_config(openclaw_home):
+        raise InstallError(
+            f"Extension {OWNED_EXTENSION_ID} was installed but not found in "
+            f"openclaw.json plugins config. The CLI may have failed silently."
+        )
 
     return ComponentInstall(
         name=f"extension:{OWNED_EXTENSION_ID}",
@@ -751,14 +760,6 @@ def install(
             raise InstallError(f"Runtime registration failed: {exc}") from exc
 
         try:
-            ext_component = _install_extension()
-            if ext_component is not None:
-                all_components.append(ext_component)
-        except Exception as exc:
-            errors.append(f"Extension install failed: {exc}")
-            raise InstallError(f"Extension install failed: {exc}") from exc
-
-        try:
             model_config_components = _configure_agent_models(
                 manifest,
                 openclaw_home,
@@ -767,6 +768,19 @@ def install(
             all_components.extend(model_config_components)
         except Exception as exc:
             errors.append(f"Agent model configuration failed: {exc}")
+
+        # Extension install MUST be after all _write_openclaw_config calls.
+        # openclaw plugins install --link writes to openclaw.json directly;
+        # if _configure_agent_models (or any other function that does
+        # load→modify→write on openclaw.json) runs AFTER, it will overwrite
+        # the plugins.allow/entries that the CLI just added.
+        try:
+            ext_component = _install_extension(openclaw_home=openclaw_home)
+            if ext_component is not None:
+                all_components.append(ext_component)
+        except Exception as exc:
+            errors.append(f"Extension install failed: {exc}")
+            raise InstallError(f"Extension install failed: {exc}") from exc
 
         # Step 7: Initialize runtime state
         try:
