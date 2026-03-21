@@ -41,6 +41,7 @@ from openclaw_enhance.paths import (
 )
 from openclaw_enhance.runtime.ownership import (
     OWNED_AGENT_SPECS,
+    OWNED_EXTENSION_ID,
     OWNED_HOOK_ENTRY_IDS,
     OWNED_NAMESPACE,
 )
@@ -352,7 +353,13 @@ def _register_agents_via_cli(
     check = _run_openclaw_cli(["agents", "list", "--json"], check=False)
     if check.returncode == 0:
         try:
-            agents_data = json.loads(check.stdout)
+            stdout = check.stdout
+            json_text = stdout.split("\n")[0] if stdout.startswith("[") else stdout
+            for line in stdout.split("\n"):
+                if line.strip().startswith("["):
+                    json_text = line
+                    break
+            agents_data = json.loads(json_text)
             existing_ids = {a["id"] for a in agents_data if isinstance(a, dict) and "id" in a}
         except (json.JSONDecodeError, TypeError):
             pass
@@ -363,7 +370,7 @@ def _register_agents_via_cli(
         source_workspace = str((WORKSPACES_DIR / workspace_name).absolute())
 
         if agent_id not in existing_ids:
-            _run_openclaw_cli(
+            result = _run_openclaw_cli(
                 [
                     "agents",
                     "add",
@@ -371,8 +378,15 @@ def _register_agents_via_cli(
                     "--workspace",
                     workspace_path,
                     "--non-interactive",
-                ]
+                ],
+                check=False,
             )
+            if (
+                result.returncode != 0
+                and "already exists" not in result.stdout
+                and "already exists" not in result.stderr
+            ):
+                raise InstallError(f"Failed to add agent {agent_id}: {result.stderr}")
 
         components.append(
             ComponentInstall(
@@ -386,6 +400,65 @@ def _register_agents_via_cli(
         )
 
     return components
+
+
+# Extension source directory (relative to this file: src/openclaw_enhance/install/ -> extensions/)
+_EXTENSION_SOURCE_DIR = (
+    Path(__file__).resolve().parents[3] / "extensions" / "openclaw-enhance-runtime"
+)
+
+
+def _verify_extension_in_config(openclaw_home: Path | None = None) -> bool:
+    home = openclaw_home or Path.home() / ".openclaw"
+    config_path = resolve_openclaw_config_path(home)
+    config = _load_openclaw_config(config_path)
+    plugins = config.get("plugins", {})
+    allow_list = plugins.get("allow", [])
+    entries = plugins.get("entries", {})
+    return OWNED_EXTENSION_ID in allow_list and OWNED_EXTENSION_ID in entries
+
+
+def _install_extension(openclaw_home: Path | None = None) -> ComponentInstall | None:
+    if not _EXTENSION_SOURCE_DIR.exists():
+        return None
+
+    source_path = str(_EXTENSION_SOURCE_DIR.absolute())
+
+    check = _run_openclaw_cli(["plugins", "list", "--json"], check=False)
+    already_installed = False
+    if check.returncode == 0:
+        try:
+            data = json.loads(check.stdout)
+            already_installed = any(
+                isinstance(p, dict) and p.get("id") == OWNED_EXTENSION_ID for p in data
+            )
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if already_installed:
+        _run_openclaw_cli(["plugins", "uninstall", "--force", OWNED_EXTENSION_ID], check=False)
+
+    result = _run_openclaw_cli(
+        ["plugins", "install", "--link", source_path],
+        check=False,
+    )
+    if result.returncode != 0 and "already exists" not in (result.stdout + result.stderr):
+        raise InstallError(f"Failed to install extension {OWNED_EXTENSION_ID}: {result.stderr}")
+
+    if not _verify_extension_in_config(openclaw_home):
+        raise InstallError(
+            f"Extension {OWNED_EXTENSION_ID} was installed but not found in "
+            f"openclaw.json plugins config. The CLI may have failed silently."
+        )
+
+    return ComponentInstall(
+        name=f"extension:{OWNED_EXTENSION_ID}",
+        version=VERSION,
+        install_time=datetime.utcnow(),
+        source_path=source_path,
+        target_path=source_path,
+        is_symlink=True,
+    )
 
 
 def _register_runtime_surfaces(
@@ -475,6 +548,65 @@ def _register_runtime_surfaces(
                 "previous_enabled_present": previous_enabled_present,
                 "previous_enabled_value": previous_enabled_value,
             },
+        ),
+    ]
+
+
+AGENT_MODEL_OVERRIDES: dict[str, str] = {
+    "oe-orchestrator": "sss-hk/claude-opus-4-6",
+    "oe-script_coder": "openai-codex/gpt-5.3-codex",
+    "oe-tool-recovery": "sss-hk/claude-opus-4-6",
+    "oe-syshelper": "minimax/MiniMax-M2.7",
+    "oe-searcher": "minimax/MiniMax-M2.1",
+    "oe-watchdog": "minimax/MiniMax-M2.7",
+}
+
+
+def _configure_agent_models(
+    manifest: InstallManifest,
+    openclaw_home: Path,
+    target_root: Path,
+) -> list[ComponentInstall]:
+    config_path = resolve_openclaw_config_path(openclaw_home)
+    config = _load_openclaw_config(config_path)
+
+    agents_obj = config.get("agents")
+    if not isinstance(agents_obj, dict):
+        agents_obj = {}
+        config["agents"] = agents_obj
+
+    list_obj = agents_obj.get("list")
+    if not isinstance(list_obj, list):
+        list_obj = []
+        agents_obj["list"] = list_obj
+
+    for agent_entry in list_obj:
+        if not isinstance(agent_entry, dict):
+            continue
+        agent_id = agent_entry.get("id")
+        if not agent_id or agent_id == "main":
+            continue
+
+        model_id = AGENT_MODEL_OVERRIDES.get(agent_id)
+        if model_id:
+            agent_entry["model"] = model_id
+
+    try:
+        backup_path = _write_openclaw_config(config_path, config)
+    except OSError as exc:
+        raise InstallError(f"Failed to write agent model config: {exc}") from exc
+
+    manifest.add_rollback_point(
+        description="Agent model configuration",
+        backup_paths={"config": backup_path},
+    )
+
+    return [
+        ComponentInstall(
+            name="agents:model-config",
+            version=VERSION,
+            install_time=datetime.utcnow(),
+            target_path=str(config_path.absolute()),
         ),
     ]
 
@@ -626,6 +758,29 @@ def install(
         except Exception as exc:
             errors.append(f"Runtime registration failed: {exc}")
             raise InstallError(f"Runtime registration failed: {exc}") from exc
+
+        try:
+            model_config_components = _configure_agent_models(
+                manifest,
+                openclaw_home,
+                target_root,
+            )
+            all_components.extend(model_config_components)
+        except Exception as exc:
+            errors.append(f"Agent model configuration failed: {exc}")
+
+        # Extension install MUST be after all _write_openclaw_config calls.
+        # openclaw plugins install --link writes to openclaw.json directly;
+        # if _configure_agent_models (or any other function that does
+        # load→modify→write on openclaw.json) runs AFTER, it will overwrite
+        # the plugins.allow/entries that the CLI just added.
+        try:
+            ext_component = _install_extension(openclaw_home=openclaw_home)
+            if ext_component is not None:
+                all_components.append(ext_component)
+        except Exception as exc:
+            errors.append(f"Extension install failed: {exc}")
+            raise InstallError(f"Extension install failed: {exc}") from exc
 
         # Step 7: Initialize runtime state
         try:

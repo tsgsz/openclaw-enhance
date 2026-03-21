@@ -527,6 +527,152 @@ When some agents succeed and others fail:
 - Max: 5 concurrent agents
 - Override via `maxConcurrent` in spawn calls
 
+## Dispatch Context Enrichment
+
+Before calling `sessions_spawn`, enrich the task prompt with relevant context from existing skills. This ensures workers have the information needed to succeed.
+
+### Context Sources
+
+| Context | Source Skill | What to Include |
+|---------|-------------|------------------|
+| Main session history | `oe-memory-sync` | Parent conversation summary, user intent |
+| Main tool landscape | `oe-memory-sync` | Main's TOOLS.md — available MCP servers, tool restrictions, usage guidelines |
+| Git context | `oe-git-context` | Recent commits, changed files, related history |
+| Project info | `oe-project-registry` | Project type, path, branch status, coding conventions |
+
+### Enrichment Flow
+
+```
+Before sessions_spawn:
+    │
+    ▼
+1. Load project context ──► oe-project-registry
+    │                          (project path, type, branch, status)
+    ▼
+2. Load git context ─────► oe-git-context
+    │                          (recent commits, changed files)
+    ▼
+3. Load memory context ───► oe-memory-sync
+    │                          (parent session summary + main tools)
+    ▼
+4. Synthesize enriched task
+    │  (include main_tools when worker needs tool awareness)
+    ▼
+sessions_spawn(task=<enriched_task>, ...)
+```
+
+### Enriched Task Format
+
+```markdown
+## Task
+{original_task_description}
+
+## Project Context
+- Path: {project_path}
+- Type: {project_type}
+- Branch: {branch_name} ({clean/dirty})
+
+## Git Context
+{recent_commits_formatted}
+
+## Main Session Context
+{parent_session_summary}
+
+## Main Tools
+{main_tools_content}
+
+## Guidance
+- Work in: {project_path}
+- Follow project conventions
+- Refer to Main Tools for available system capabilities and restrictions
+```
+
+### Implementation Pattern
+
+```python
+async def dispatch_with_context(worker_type, task, context_hints=None):
+    """Dispatch task with enriched context from skills."""
+    
+    context_hints = context_hints or {}
+    project_path = context_hints.get("project_path", detect_project())
+    
+    # 1. Get project context
+    project_info = get_project_info(project_path)
+    project_ctx = f"""\
+- Path: {project_info.path}
+- Type: {project_info.type}
+- Branch: {project_info.branch} ({project_info.status})
+"""
+    
+    # 2. Get git context (selective - only relevant files)
+    related_files = context_hints.get("related_files", infer_related_files(task))
+    git_ctx = gather_git_context(project_path, files=related_files, depth=5)
+    
+    # 3. Get memory context (includes main_tools)
+    memory_ctx = await sync_main_context()
+    parent_summary = memory_ctx.get("parent_history_summary", "N/A")
+    main_tools = memory_ctx.get("main_tools", "")
+    
+    # 4. Compose enriched task
+    enriched_task = f"""\
+## Task
+{task}
+
+## Project Context
+{project_ctx}
+
+## Git Context
+{git_ctx.format_compact()}
+
+## Main Session Context
+{parent_summary}
+"""
+    
+    # Include main tools when available
+    if main_tools:
+        enriched_task += f"""\
+## Main Tools
+{main_tools}
+"""
+    
+    enriched_task += f"""\
+## Guidance
+- Work in: {project_info.path}
+- Follow project conventions for {project_info.type}
+- Refer to Main Tools for available system capabilities and restrictions
+"""
+    
+    # 5. Dispatch with enriched task
+    await sessions_spawn(
+        agent=worker_type,
+        task=enriched_task,
+        label=context_hints.get("label"),
+    )
+```
+
+### Context Selection Guidelines
+
+| Worker Type | Priority Context |
+|-------------|------------------|
+| `oe-script_coder` | Git changes, project type, coding conventions, main tools (for tool awareness) |
+| `oe-searcher` | Main session intent, topic context, main tools (for available search tools) |
+| `oe-syshelper` | Project structure, file locations, main tools (for introspection tools) |
+| `oe-watchdog` | Session state, timeout expectations |
+| `oe-tool-recovery` | Main tools (critical — needs full tool landscape to diagnose failures) |
+
+### What NOT to Include
+
+- Full blame history (too verbose)
+- Unrelated project memories
+- Conflicting information from multiple sources
+- Credentials or sensitive data
+
+### Integration with Skills
+
+- **`oe-memory-sync`**: Call `sync_main_context()` to get parent session summary **and main tools**
+- **`oe-git-context`**: Call `gather_git_context()` with related files
+- **`oe-project-registry`**: Call `get_project_info()` or `detect_project()`
+
 ## Best Practices
 
 1. **Match agent to task**: Don't use script_coder for simple searches
@@ -537,6 +683,7 @@ When some agents succeed and others fail:
 6. **Handle failures gracefully**: Partial results are better than none
 7. **Monitor long tasks**: Use watchdog for tasks > 10 minutes
 8. **Never wrap sessions_spawn**: Use native tool directly
+9. **Enrich dispatch context**: Always inject project, git, and memory context
 
 ## Integration
 

@@ -1,23 +1,20 @@
 {
-  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/repo-wide-real-env-backfill.md",
-  "completed_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/dev-install-mode.md",
-  "started_at": "2026-03-14T13:20:30Z",
-  "completed_at": "2026-03-14T15:12:55Z",
+  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/project-registry.md",
+  "started_at": "2026-03-18T14:48:32.313Z",
   "session_ids": [
-    "ses_31d1f8671ffeKAr2VaoYv3NdMU",
-    "ses_30584b05affeB6btGepMxcWroO"
+    "ses_30072158dffeJoz7cHPeaD9m0S",
+    "ses_2fe921c5bffevMRsRNNU8pcHlq",
+    "ses_2fe927b8bffeCM9bJolCS0dCyg",
+    "ses_2fe92e491ffeHX8WbZdTE28IKD",
+    "ses_2fe85df64ffew9PPXqTGuBs9V3",
+    "ses_2fe85432dffer8PQFqOLcDmZJd",
+    "ses_2fe85949fffegbN3IbiZ7dy9EC",
+    "ses_2fe7ab6f5ffexg3Vni59Pp3xkt",
+    "ses_2fe74734dffeEOZhhO7n9nnUys",
+    "ses_2fe742c92ffecK9TfNU3dblCAI",
+    "ses_2fe74e9f5ffeTN2ClAmywMyLZB",
+    "ses_2fe5f71f7ffeJ4UTIJ5hpn6C6v"
   ],
-  "plan_name": "repo-wide-real-env-backfill",
-  "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance",
-  "status": "completed",
-  "tasks_completed": 11,
-  "tasks_total": 11,
-  "final_verification": {
-    "F1": "APPROVE",
-    "F2": "APPROVE",
-    "F3": "APPROVE",
-    "F4": "APPROVE"
-  },
-  "commit": null,
-  "agent": "atlas"
+  "plan_name": "project-registry",
+  "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance/.worktrees/project-registry"
 }

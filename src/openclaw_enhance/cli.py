@@ -68,6 +68,24 @@ def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> 
             click.echo(f"Success: {result.message}")
             if result.components_installed:
                 click.echo(f"Installed components: {', '.join(result.components_installed)}")
+
+            import os, subprocess
+
+            if os.isatty(0):
+                click.echo("Restarting gateway to load new extension code...")
+                restart_result = subprocess.run(
+                    ["openclaw", "gateway", "restart"],
+                    capture_output=True,
+                    text=True,
+                )
+                if restart_result.returncode == 0:
+                    click.echo("Gateway restarted successfully.")
+                else:
+                    click.echo(
+                        "Warning: Gateway restart failed. "
+                        "Run 'openclaw gateway restart' manually to load new code.",
+                        err=True,
+                    )
         else:
             for error in result.errors:
                 click.echo(f"Error: {error}", err=True)
