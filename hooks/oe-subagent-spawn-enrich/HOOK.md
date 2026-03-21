@@ -29,10 +29,27 @@ The hook adds the following fields to the spawn event:
 | Field | Type | Description |
 |-------|------|-------------|
 | `task_id` | string | Unique identifier for this task invocation |
-| `project` | string | Project context from runtime state |
+| `project` | string | Resolved project identifier (canonical path or "default") |
 | `parent_session` | string | Parent session ID that initiated the spawn |
 | `eta_bucket` | string | Categorized ETA: "short" (<5min), "medium" (5-30min), "long" (>30min) |
 | `dedupe_key` | string | Deterministic key for duplicate detection |
+| `project_context` | object | Full project metadata (see below) |
+
+### `project_context` Shape
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `project_id` | string | Canonical project path or "default" |
+| `project_name` | string | Human-readable project name or "default" |
+| `project_type` | string | "python", "nodejs", etc. or "unknown" |
+| `project_kind` | string | "permanent", "temporary", or "default" |
+
+Resolution chain:
+1. If `context.project` is explicitly set (non-empty, non-"default"): use it, look up registry for metadata
+2. Else if `active_project` in `~/.openclaw/openclaw-enhance/runtime-state.json`: use it, look up registry
+3. Else: fall back to `"default"` with `project_type: "unknown"`, `project_kind: "default"`
+
+All file reads are wrapped in try/catch — missing files never cause errors.
 
 ## Example Enriched Event
 
@@ -45,10 +62,16 @@ The hook adds the following fields to the spawn event:
     "task_description": "Refactor auth module",
     "estimated_toolcalls": 5,
     "task_id": "task_abc123_xyz789",
-    "project": "my-project",
+    "project": "/Users/dev/workspace/my-project",
     "parent_session": "sess_parent_001",
     "eta_bucket": "medium",
-    "dedupe_key": "my-project:oe-orchestrator:auth-ref:20240115"
+    "dedupe_key": "/Users/dev/workspace/my-project:oe-orchestrator:auth-ref:20240115",
+    "project_context": {
+      "project_id": "/Users/dev/workspace/my-project",
+      "project_name": "my-project",
+      "project_type": "python",
+      "project_kind": "permanent"
+    }
   }
 }
 ```
@@ -97,6 +120,12 @@ interface SpawnEnrichOutput {
     parent_session: string;
     eta_bucket: 'short' | 'medium' | 'long';
     dedupe_key: string;
+    project_context: {
+      project_id: string;
+      project_name: string;
+      project_type: string;
+      project_kind: string;
+    };
   };
 }
 ```

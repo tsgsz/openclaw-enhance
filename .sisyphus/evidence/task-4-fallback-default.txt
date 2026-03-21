@@ -4,7 +4,7 @@
   "project_type": "unknown",
   "project_subtype": "",
   "project_kind": "temporary",
-  "working_dir": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-369/test_resolve_fallback_default0/empty",
+  "working_dir": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-349/test_resolve_fallback_default0/empty",
   "git_context": null,
   "metadata": {}
 }

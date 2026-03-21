@@ -37,6 +37,7 @@
 | Worker routing metadata | AGENTS.md frontmatter in each workspace |
 | Worker tool definitions | `workspaces/{name}/TOOLS.md` |
 | System capability playbook | `PLAYBOOK.md` (安装时部署到 `~/.openclaw/openclaw-enhance/PLAYBOOK.md`) |
+| Project registry state | `project-registry.json` (at `~/.openclaw/openclaw-enhance/project-registry.json`) |
 
 ## Session State vs Permanent Memory
 

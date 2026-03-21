@@ -1,0 +1,5 @@
+No runtime state: active_project = None
+Null active_project: active_project = None
+Corrupt JSON: active_project = None
+
+All fallback scenarios pass - hook will use default project context.

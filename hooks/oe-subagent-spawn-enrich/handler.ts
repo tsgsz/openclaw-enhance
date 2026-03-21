@@ -10,6 +10,9 @@
  */
 
 import { createHash, randomBytes } from "crypto";
+import { readFileSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 
 /** Input payload for spawn enrichment */
 export interface SpawnEnrichInput {
@@ -35,6 +38,7 @@ export interface SpawnEnrichOutput {
     parent_session: string;
     eta_bucket: "short" | "medium" | "long";
     dedupe_key: string;
+    project_context: ProjectContext;
   };
   spawn_patch?: {
     agentId: string;
@@ -43,8 +47,125 @@ export interface SpawnEnrichOutput {
   };
 }
 
+/** Project context resolved from registry and runtime state */
+export interface ProjectContext {
+  project_id: string;
+  project_name: string;
+  project_type: string;
+  project_kind: string;
+}
+
 /** ETA bucket categories */
 type ETABucket = "short" | "medium" | "long";
+
+/** Default project context when no project is active or resolvable */
+const DEFAULT_PROJECT_CONTEXT: ProjectContext = {
+  project_id: "default",
+  project_name: "default",
+  project_type: "unknown",
+  project_kind: "default",
+};
+
+/**
+ * Safely read and parse a JSON file.
+ * Returns null on any error (missing file, invalid JSON, permissions, etc.).
+ */
+function readJsonFile(filePath: string): Record<string, unknown> | null {
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    return JSON.parse(content) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function managedRoot(): string {
+  return join(homedir(), ".openclaw", "openclaw-enhance");
+}
+
+/**
+ * Resolve project context from runtime state and registry files.
+ *
+ * Resolution chain:
+ * 1. If context.project is explicitly set (non-empty, non-"default"): use it as-is
+ * 2. Else if active_project in runtime-state.json exists: use it, look up registry for metadata
+ * 3. Else: use "default"
+ *
+ * @param contextProject - The project field from the spawn event context
+ * @returns Resolved project context with metadata
+ */
+function resolveProjectContext(contextProject: string | undefined): {
+  projectId: string;
+  projectContext: ProjectContext;
+} {
+  // 1. Explicit project (non-empty, non-default) — use as-is
+  if (contextProject && contextProject !== "default") {
+    const registry = readJsonFile(join(managedRoot(), "project-registry.json"));
+    if (registry) {
+      const projects = registry.projects as Record<string, Record<string, unknown>> | undefined;
+      if (projects && projects[contextProject]) {
+        const entry = projects[contextProject];
+        return {
+          projectId: contextProject,
+          projectContext: {
+            project_id: contextProject,
+            project_name: (entry.name as string) || contextProject,
+            project_type: (entry.type as string) || "unknown",
+            project_kind: (entry.kind as string) || "unknown",
+          },
+        };
+      }
+    }
+    return {
+      projectId: contextProject,
+      projectContext: {
+        project_id: contextProject,
+        project_name: contextProject,
+        project_type: "unknown",
+        project_kind: "unknown",
+      },
+    };
+  }
+
+  // 2. Check runtime state for active_project
+  const runtimeState = readJsonFile(join(managedRoot(), "runtime-state.json"));
+  if (runtimeState) {
+    const activeProject = runtimeState.active_project as string | undefined;
+    if (activeProject && activeProject !== "default") {
+      const registry = readJsonFile(join(managedRoot(), "project-registry.json"));
+      if (registry) {
+        const projects = registry.projects as Record<string, Record<string, unknown>> | undefined;
+        if (projects && projects[activeProject]) {
+          const entry = projects[activeProject];
+          return {
+            projectId: activeProject,
+            projectContext: {
+              project_id: activeProject,
+              project_name: (entry.name as string) || activeProject,
+              project_type: (entry.type as string) || "unknown",
+              project_kind: (entry.kind as string) || "unknown",
+            },
+          };
+        }
+      }
+      return {
+        projectId: activeProject,
+        projectContext: {
+          project_id: activeProject,
+          project_name: activeProject,
+          project_type: "unknown",
+          project_kind: "unknown",
+        },
+      };
+    }
+  }
+
+  // 3. Default fallback
+  return {
+    projectId: "default",
+    projectContext: { ...DEFAULT_PROJECT_CONTEXT },
+  };
+}
 
 /**
  * Generate a unique task ID.
@@ -125,13 +246,11 @@ export function enrichSpawnEvent(
     delete mutablePayload.streamTo;
   }
 
-  // Generate unique task ID
   const taskId = generateTaskId();
 
-  // Extract or default project
-  const project = context.project ?? "default";
+  const { projectId, projectContext } = resolveProjectContext(context.project);
+  const project = projectId;
 
-  // Extract or derive parent session
   const parentSession = context.parent_session ?? context.session_id;
 
   // Categorize ETA from estimated duration or toolcalls
@@ -156,6 +275,7 @@ export function enrichSpawnEvent(
       parent_session: parentSession,
       eta_bucket: etaBucket,
       dedupe_key: dedupeKey,
+      project_context: projectContext,
     },
     spawn_patch: {
       agentId: normalizedAgent,
