@@ -174,7 +174,7 @@ For manual or non-macOS setups, you can still configure the monitor script expli
 
 ```bash
 # Add to crontab (runs every minute)
-(crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python scripts/monitor_runtime.py --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python -m openclaw_enhance.monitor_runtime --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
 ```
 
 Or use systemd timer (Linux):

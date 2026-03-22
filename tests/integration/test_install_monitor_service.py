@@ -147,3 +147,22 @@ def test_uninstall_cleans_orphaned_monitor_launchagent_without_manifest(
     assert "monitor:launchagent" in result.components_removed
     assert not plist_path.exists()
     assert not (logs_dir / "monitor.log").exists()
+
+
+def test_install_launchagent_runs_module_entrypoint_not_wrapper_script(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    with patch.object(sys, "platform", "darwin"):
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
+            mock_run.return_value = _mock_launchctl_run()
+            result = install(mock_openclaw_home, user_home=isolated_user_home)
+
+    assert result.success
+    plist_path = (
+        isolated_user_home / "Library" / "LaunchAgents" / "ai.openclaw.enhance.monitor.plist"
+    )
+    payload = plistlib.loads(plist_path.read_bytes())
+    command_line = " ".join(payload["ProgramArguments"])
+    assert "-m openclaw_enhance.monitor_runtime" in command_line
+    assert "scripts/monitor_runtime.py" not in command_line
