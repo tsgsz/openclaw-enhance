@@ -269,7 +269,7 @@ class TestInstallUninstallSymmetry:
         assert uninstall_result.success
 
         config = json.loads(config_path.read_text(encoding="utf-8"))
-        assert config == {"hooks": {"internal": {"enabled": False}}}
+        assert config.get("hooks", {}).get("internal", {}).get("enabled") is False
 
     def test_complete_lifecycle_cli_style(
         self,

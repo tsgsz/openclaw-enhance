@@ -21,7 +21,7 @@ def test_install_registers_monitor_launchagent_on_macos(
     isolated_user_home: Path,
 ) -> None:
     with patch.object(sys, "platform", "darwin"):
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
             mock_run.return_value = _mock_launchctl_run()
 
             result = install(mock_openclaw_home, user_home=isolated_user_home)
@@ -47,9 +47,8 @@ def test_install_registers_monitor_launchagent_on_macos(
     assert str(isolated_user_home / ".openclaw" / "openclaw-enhance") in payload["ProgramArguments"]
 
     commands = [call.args[0] for call in mock_run.call_args_list]
-    assert ["launchctl", "bootstrap", f"gui/{os.getuid()}", str(plist_path)] in commands
+    assert ["bootstrap", f"gui/{os.getuid()}", str(plist_path)] in commands
     assert [
-        "launchctl",
         "kickstart",
         "-k",
         f"gui/{os.getuid()}/ai.openclaw.enhance.monitor",
@@ -61,7 +60,7 @@ def test_uninstall_removes_monitor_launchagent_on_macos(
     isolated_user_home: Path,
 ) -> None:
     with patch.object(sys, "platform", "darwin"):
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
             mock_run.return_value = _mock_launchctl_run()
             install_result = install(mock_openclaw_home, user_home=isolated_user_home)
             assert install_result.success
@@ -80,7 +79,7 @@ def test_uninstall_removes_monitor_launchagent_on_macos(
     assert not plist_path.exists()
 
     commands = [call.args[0] for call in mock_run.call_args_list]
-    assert ["launchctl", "bootout", f"gui/{os.getuid()}/ai.openclaw.enhance.monitor"] in commands
+    assert ["bootout", f"gui/{os.getuid()}/ai.openclaw.enhance.monitor"] in commands
 
 
 def test_uninstall_removes_monitor_logs_on_macos(
@@ -88,7 +87,7 @@ def test_uninstall_removes_monitor_logs_on_macos(
     isolated_user_home: Path,
 ) -> None:
     with patch.object(sys, "platform", "darwin"):
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
             mock_run.return_value = _mock_launchctl_run()
             install_result = install(mock_openclaw_home, user_home=isolated_user_home)
             assert install_result.success
@@ -113,7 +112,7 @@ def test_install_rolls_back_monitor_launchagent_when_manifest_save_fails(
     isolated_user_home: Path,
 ) -> None:
     with patch.object(sys, "platform", "darwin"):
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
             mock_run.return_value = _mock_launchctl_run()
             with patch("openclaw_enhance.install.installer.save_manifest") as mock_save:
                 mock_save.side_effect = OSError("disk full")
@@ -142,7 +141,7 @@ def test_uninstall_cleans_orphaned_monitor_launchagent_without_manifest(
     (logs_dir / "monitor.log").write_text("monitor output\n", encoding="utf-8")
 
     with patch.object(sys, "platform", "darwin"):
-        with patch("openclaw_enhance.install.monitor_service.subprocess.run") as mock_run:
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
             mock_run.return_value = _mock_launchctl_run()
             result = uninstall(
                 openclaw_home=mock_openclaw_home,
