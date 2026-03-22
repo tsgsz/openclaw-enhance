@@ -276,8 +276,14 @@ def render_workspace(workspace_name: str) -> None:
         rendered = render_workspace(workspace_name)
         click.echo(rendered)
     except ValueError as e:
-        available = ", ".join(list_workspaces()) if list_workspaces() else "none"
-        raise click.ClickException(f"{e}. Available workspaces: {available}") from e
+        workspaces = list_workspaces()
+        if workspaces:
+            available = ", ".join(workspaces)
+            raise click.ClickException(f"{e}. Available workspaces: {available}") from e
+        else:
+            raise click.ClickException(
+                f"{e}. No workspaces registered. See docs for how to set up a workspace."
+            ) from e
 
 
 # Registry of hook contracts for rendering
