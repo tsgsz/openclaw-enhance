@@ -89,5 +89,6 @@ def test_get_bundle_commands():
     assert "docs-check" in docs_cmds[0]
 
     cli_cmds = get_bundle_commands(FeatureClass.CLI_SURFACE)
-    assert len(cli_cmds) == 8
+    assert len(cli_cmds) == 9
     assert "status --json" in cli_cmds[1]
+    assert any("cleanup-sessions --dry-run --json" in cmd for cmd in cli_cmds)

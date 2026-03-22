@@ -45,9 +45,11 @@ Target: Default `~/.openclaw`
    - *Pass*: Output contains skill definition.
 6. **Render Hook**: `python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich`
    - *Pass*: Output contains hook logic.
-7. **Docs Check**: `python -m openclaw_enhance.cli docs-check`
+7. **Cleanup Sessions Dry Run**: `python -m openclaw_enhance.cli cleanup-sessions --dry-run --json`
+   - *Pass*: Valid JSON output containing `safe_to_remove`, `skipped_active`, `skipped_uncertain`, `removed`, and `dry_run`.
+8. **Docs Check**: `python -m openclaw_enhance.cli docs-check`
    - *Pass*: Exit code 0, "Docs check passed".
-8. **Validator Self-Surface**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
+9. **Validator Self-Surface**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
    - *Pass*: Exit code 0, produces a report with `Conclusion: EXEMPT`.
 
 ### 2.3 Routing & Agent Bundle (`workspace-routing`)
@@ -122,7 +124,7 @@ This section tracks the canonical backfill slugs for features already shipped in
 | Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
 | Monitor Auto-Start (macOS) | `backfill-monitor-auto-start` | `install-lifecycle` | `python -m openclaw_enhance.cli install` + `launchctl print gui/$UID/ai.openclaw.enhance.monitor` | LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` |
 | Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
-| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; rendered content matches; docs-check passes; validator self-surface ok |
+| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `cleanup-sessions --dry-run --json`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; cleanup dry-run reports buckets; rendered content matches; docs-check passes; validator self-surface ok |
 | Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
 | Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
 | Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
@@ -144,6 +146,8 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Expectation**: Valid JSON. `installed` is `true`.
 - **Command**: `python -m openclaw_enhance.cli doctor`
 - **Expectation**: Exit code 0. "Doctor checks passed".
+- **Command**: `python -m openclaw_enhance.cli cleanup-sessions --dry-run --json`
+- **Expectation**: Exit code 0. Valid JSON output with cleanup classification buckets and no mutation in dry-run mode.
 - **Command**: `python -m openclaw_enhance.cli render-workspace oe-orchestrator`
 - **Expectation**: Output contains "Workspace: oe-orchestrator".
 - **Command**: `python -m openclaw_enhance.cli render-skill oe-toolcall-router`
