@@ -5,6 +5,7 @@ import logging
 from datetime import timedelta
 from pathlib import Path
 
+from openclaw_enhance.cleanup import CleanupCandidate, CleanupKind, cleanup_paths
 from openclaw_enhance.watchdog.detector import DetectionConfig, TimeoutDetector
 from openclaw_enhance.watchdog.notifier import Notifier
 from openclaw_enhance.watchdog.policy import PolicyEngine
@@ -122,6 +123,42 @@ def run_watchdog_mode(args: argparse.Namespace) -> int:
         return 2
 
 
+def run_cleanup_mode(args: argparse.Namespace) -> int:
+    logger.info("Starting automatic session cleanup...")
+    try:
+        sessions_root = Path.cwd() / "sessions"
+        candidates: list[CleanupCandidate] = []
+        if sessions_root.exists():
+            for path in sessions_root.iterdir():
+                candidates.append(
+                    CleanupCandidate(
+                        path=path,
+                        kind=CleanupKind.RUNTIME_STATE,
+                        age_hours=72,
+                        in_runtime_active_set=False,
+                        held_by_project_occupancy=False,
+                        has_recent_activity=False,
+                    )
+                )
+
+        report = cleanup_paths(
+            candidates,
+            dry_run=False,
+            stale_threshold_hours=24,
+            include_core_sessions=True,
+        )
+        logger.info(
+            "Automatic cleanup complete. removed=%s skipped_active=%s skipped_uncertain=%s",
+            len(report.removed),
+            len(report.skipped_active),
+            len(report.skipped_uncertain),
+        )
+        return 0
+    except Exception as exc:
+        logger.error("Error during automatic cleanup: %s", exc)
+        return 2
+
+
 def main() -> int:
     args = parse_args()
     if args.verbose:
@@ -131,7 +168,11 @@ def main() -> int:
         return run_watchdog_mode(args)
 
     detector = setup_detector(args)
-    return run_monitor_mode(detector)
+    monitor_exit = run_monitor_mode(detector)
+    cleanup_exit = run_cleanup_mode(args)
+    if monitor_exit != 0:
+        return monitor_exit
+    return cleanup_exit
 
 
 if __name__ == "__main__":

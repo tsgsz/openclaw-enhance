@@ -194,7 +194,7 @@ ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
 
 **Symptom**: Healthy sessions marked as timed out.
 
-**Cause**: Monitor script has stale state or incorrect thresholds.
+**Cause**: Managed monitor/cleanup runtime has stale state or incorrect thresholds.
 
 **Diagnosis**:
 1. Check runtime state:
@@ -252,12 +252,12 @@ ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
 
 2. Ensure monitor script is executable:
    ```bash
-   chmod +x scripts/monitor_runtime.py
+   python -m openclaw_enhance.monitor_runtime --help
    ```
 
 3. Test monitor manually:
    ```bash
-   python scripts/monitor_runtime.py --once \
+   python -m openclaw_enhance.monitor_runtime --once \
      --openclaw-home "$HOME/.openclaw" \
      --state-root "$HOME/.openclaw/openclaw-enhance"
    ```
@@ -265,7 +265,7 @@ ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
 4. Re-setup cron-based monitoring:
    ```bash
     # Add to crontab
-    (crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python scripts/monitor_runtime.py --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
+    (crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python -m openclaw_enhance.monitor_runtime --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
    ```
 
 ## State Corruption
