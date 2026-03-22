@@ -15,6 +15,9 @@ const MAIN_FORBIDDEN_TOOLS = new Set([
 // When a before_tool_call fires, we check if its runId is a known main-session run.
 const mainRunIds = new Set<string>();
 
+const isMainSession = (sessionKey: unknown): boolean =>
+  typeof sessionKey === "string" && sessionKey.startsWith("agent:main:");
+
 export default {
   id: "oe-runtime",
   name: "openclaw-enhance-runtime",
@@ -34,8 +37,8 @@ export default {
     // Listen to agent events to track which runIds belong to the main agent.
     // The onAgentEvent callback receives events with sessionKey context.
     if (api.runtime?.events?.onAgentEvent) {
-      api.runtime.events.onAgentEvent((event: { type: string; runId?: string; sessionKey?: string }) => {
-        if (event.runId && typeof event.sessionKey === "string" && event.sessionKey.startsWith("agent:main:")) {
+      api.runtime.events.onAgentEvent((event: { type: string; runId?: string; sessionKey?: unknown; toolName?: string; params?: Record<string, unknown> }) => {
+        if (event.runId && isMainSession(event.sessionKey)) {
           mainRunIds.add(event.runId);
           // Prevent unbounded growth — keep only last 50 runs
           if (mainRunIds.size > 50) {
@@ -43,11 +46,20 @@ export default {
             if (first !== undefined) mainRunIds.delete(first);
           }
         }
+
+        if (event.toolName === "sessions_spawn" && event.params && typeof event.params === "object") {
+          const agentId = event.params.agentId;
+          if (typeof agentId === "string" && agentId !== "oe-orchestrator") {
+            api.logger.warn(`oe-runtime: sessions_spawn from main should target oe-orchestrator first (agentId=${agentId})`);
+          }
+        }
       });
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     api.on("before_tool_call", async (context: any) => {
+      const runIdForFailClosed: unknown = context?.runId;
+      const isMainForFailClosed = typeof runIdForFailClosed === "string" && mainRunIds.has(runIdForFailClosed);
       try {
         const runId: unknown = context.runId;
         const toolName: unknown = context.toolName;
@@ -68,12 +80,15 @@ export default {
         }
         return undefined;
       } catch (err) {
-        // Fail-closed: if the handler crashes, block the tool call for safety.
-        // This prevents main from bypassing the gate due to unexpected errors.
-        api.logger.error(`oe-runtime: before_tool_call handler crashed, failing closed: ${err}`);
+        if (!isMainForFailClosed) {
+          api.logger.error(`oe-runtime: before_tool_call handler crashed for non-main run, allowing: ${err}`);
+          return undefined;
+        }
+
+        api.logger.error(`oe-runtime: before_tool_call handler crashed in main session, failing closed: ${err}`);
         return {
           block: true,
-          blockReason: "oe-runtime encountered an internal error. Tool call blocked for safety. Use sessions_spawn({ agentId: \"oe-orchestrator\" }) to delegate this work."
+          blockReason: "oe-runtime encountered an internal error. Tool call blocked for safety. Use sessions_spawn({ agentId: \"oe-orchestrator\", task: \"<description>\" }) to delegate this work."
         };
       }
     });

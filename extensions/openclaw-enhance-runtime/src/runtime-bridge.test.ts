@@ -286,7 +286,13 @@ describe("RuntimeBridge", () => {
 describe("oe-runtime tool gate (index.ts)", () => {
   const createMockApi = () => {
     const logs: { level: string; msg: string }[] = [];
-    let agentEventCallback: ((event: { type: string; runId?: string; sessionKey?: string }) => void) | null = null;
+    let agentEventCallback: ((event: {
+      type: string;
+      runId?: string;
+      sessionKey?: unknown;
+      toolName?: string;
+      params?: Record<string, unknown>;
+    }) => void) | null = null;
     return {
       logger: {
         info: (msg: string) => logs.push({ level: "info", msg }),
@@ -295,7 +301,13 @@ describe("oe-runtime tool gate (index.ts)", () => {
       },
       runtime: {
         events: {
-          onAgentEvent: (cb: (event: { type: string; runId?: string; sessionKey?: string }) => void) => { agentEventCallback = cb; },
+          onAgentEvent: (cb: (event: {
+            type: string;
+            runId?: string;
+            sessionKey?: unknown;
+            toolName?: string;
+            params?: Record<string, unknown>;
+          }) => void) => { agentEventCallback = cb; },
         },
       },
       logs,
@@ -303,7 +315,13 @@ describe("oe-runtime tool gate (index.ts)", () => {
       on(event: string, handler: (context: Record<string, unknown>) => Promise<unknown>) {
         this.handlers.set(event, handler);
       },
-      simulateAgentEvent(event: { type: string; runId?: string; sessionKey?: string }) {
+      simulateAgentEvent(event: {
+        type: string;
+        runId?: string;
+        sessionKey?: unknown;
+        toolName?: string;
+        params?: Record<string, unknown>;
+      }) {
         if (agentEventCallback) agentEventCallback(event);
       },
     };
@@ -319,6 +337,34 @@ describe("oe-runtime tool gate (index.ts)", () => {
   };
 
   describe("runId-based session identification", () => {
+    it("should only track valid main session keys", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const cases: Array<{ label: string; sessionKey: unknown; shouldBlock: boolean }> = [
+        { label: "undefined", sessionKey: undefined, shouldBlock: false },
+        { label: "null", sessionKey: null, shouldBlock: false },
+        { label: "empty", sessionKey: "", shouldBlock: false },
+        { label: "non-main", sessionKey: "agent:oe-orchestrator:subagent:123", shouldBlock: false },
+        { label: "valid-main", sessionKey: "agent:main:main", shouldBlock: true },
+      ];
+
+      for (const { label, sessionKey, shouldBlock } of cases) {
+        const runId = `run-${label}`;
+        api.simulateAgentEvent({ type: "run_start", runId, sessionKey });
+
+        const result = await handler({ runId, toolName: "edit" });
+        if (shouldBlock) {
+          assert.ok(result, `Expected main session to block for ${label}`);
+          assert.strictEqual((result as { block: boolean }).block, true);
+        } else {
+          assert.strictEqual(result, undefined, `Expected non-main session key to stay unblocked for ${label}`);
+        }
+      }
+    });
+
     it("should not block when runId is unknown (not registered as main)", async () => {
       const api = createMockApi();
       const plugin = await loadPlugin();
@@ -349,6 +395,29 @@ describe("oe-runtime tool gate (index.ts)", () => {
       const result = await handler({ runId: "main-run-1", toolName: "edit" }) as { block: boolean; blockReason?: string } | undefined;
       assert.ok(result);
       assert.strictEqual((result as { block: boolean }).block, true);
+    });
+
+    it("should fail closed for a known main-session run when the handler throws", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const poisonContext = new Proxy({}, {
+        get(_, prop) {
+          if (prop === "runId") return "main-run-1";
+          if (prop === "toolName") throw new Error("simulated crash");
+          return undefined;
+        }
+      });
+
+      const result = await handler(poisonContext);
+      assert.ok(result);
+      assert.strictEqual((result as { block: boolean }).block, true);
+      assert.ok((result as { blockReason: string }).blockReason.includes("oe-orchestrator"));
+      assert.ok((result as { blockReason: string }).blockReason.includes("sessions_spawn"));
+      assert.ok(api.logs.some((log) => log.level === "error" && log.msg.includes("failing closed")));
     });
 
     it("should allow subagent runId to use forbidden tools", async () => {
@@ -419,6 +488,46 @@ describe("oe-runtime tool gate (index.ts)", () => {
       const result = await handler(poisonContext);
       assert.ok(result);
       assert.ok((result as { blockReason: string }).blockReason.includes("oe-orchestrator"));
+    });
+  });
+
+  describe("sessions_spawn routing metadata", () => {
+    it("should inspect agentId rather than agent when warning on non-orchestrator spawn targets", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+
+      api.simulateAgentEvent({
+        type: "tool_call",
+        runId: "main-run-1",
+        sessionKey: "agent:main:main",
+        toolName: "sessions_spawn",
+        params: {
+          agent: "oe-searcher",
+          agentId: "oe-orchestrator",
+        },
+      });
+
+      assert.strictEqual(api.logs.some((log) => log.level === "warn"), false);
+    });
+
+    it("should warn when sessions_spawn agentId is not oe-orchestrator", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+
+      api.simulateAgentEvent({
+        type: "tool_call",
+        runId: "main-run-1",
+        sessionKey: "agent:main:main",
+        toolName: "sessions_spawn",
+        params: {
+          agent: "oe-orchestrator",
+          agentId: "oe-searcher",
+        },
+      });
+
+      assert.ok(api.logs.some((log) => log.level === "warn" && log.msg.includes("agentId=oe-searcher")));
     });
   });
 
