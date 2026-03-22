@@ -15,6 +15,10 @@ const MAIN_FORBIDDEN_TOOLS = new Set([
 // When a before_tool_call fires, we check if its runId is a known main-session run.
 const mainRunIds = new Set<string>();
 
+const isMainSession = (sessionKey: unknown): boolean =>
+  typeof sessionKey === "string" &&
+  (sessionKey === "main" || sessionKey.startsWith("agent:main:"));
+
 export default {
   id: "oe-runtime",
   name: "openclaw-enhance-runtime",
@@ -35,7 +39,7 @@ export default {
     // The onAgentEvent callback receives events with sessionKey context.
     if (api.runtime?.events?.onAgentEvent) {
       api.runtime.events.onAgentEvent((event: { type: string; runId?: string; sessionKey?: string }) => {
-        if (event.runId && typeof event.sessionKey === "string" && event.sessionKey.startsWith("agent:main:")) {
+        if (event.runId && isMainSession(event.sessionKey)) {
           mainRunIds.add(event.runId);
           // Prevent unbounded growth — keep only last 50 runs
           if (mainRunIds.size > 50) {
