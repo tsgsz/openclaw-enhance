@@ -180,6 +180,52 @@ For remaining candidates, rank by narrowest scope first:
 
 Some workers have dedicated routing paths outside normal scoring:
 
+##### ACP/OpenCode Branch (External Development Harness)
+
+**Trigger**: User explicitly requests work via opencode, or task requires formal development workflow (issue → worktree → PR → CI → merge) on an external project.
+
+**Detection signals** (ANY of the following):
+- User says "用 opencode 改" / "让 opencode 去做" / "用 opencode 开发"
+- User requests formal git workflow: "先提 issue，再开 worktree，再 PR，再 merge"
+- Task explicitly names an ACP harness: "opencode", "claude code", "codex"
+
+**Flow**:
+1. Confirm project context via `oe-project-registry` (project path, branch)
+2. Dispatch via ACP runtime using `sessions_spawn`:
+
+```json
+{
+  "task": "<detailed task description with workflow instructions>",
+  "runtime": "acp",
+  "agentId": "opencode",
+  "mode": "persistent",
+  "cwd": "<project_root_path>"
+}
+```
+
+3. Include development workflow instructions in task when user requests formal process:
+   - Create issue describing the work
+   - Create git worktree for isolation
+   - Implement changes with tests
+   - Create PR with description
+   - Run CI checks
+   - Merge after approval
+
+**Constraints**:
+- Only dispatch to ACP when user explicitly requests it or names a harness agent
+- Do NOT automatically route all coding tasks to opencode — `oe-script_coder` handles normal coding within the OpenClaw ecosystem
+- ACP sessions have their own lifecycle; monitor via `oe-watchdog` for long-running sessions
+- `agentId` must match an entry in `openclaw.json` → `acp.allowedAgents` (default: `["opencode", "codex", "claude"]`)
+
+**Example**:
+```
+Task: "用 opencode 修复 openclaw-enhance 的 session 清理 bug，要先提 issue 再开 worktree 再 PR 再 merge"
+Enumerate: Check if ACP harness requested → YES ("用 opencode")
+Dispatch: sessions_spawn({ runtime: "acp", agentId: "opencode", mode: "persistent", cwd: "/path/to/openclaw-enhance", task: "..." })
+```
+
+**Note**: `opencode` is dispatched through ACP runtime, NOT as an OpenClaw native workspace agent. It runs outside OpenClaw's agent system via the ACPX bridge.
+
 ##### Tool Recovery Branch
 **Trigger**: Tool-usage failure (`tool_not_found`, `invalid_parameters`, `permission_denied`, `tool_execution_error`)
 

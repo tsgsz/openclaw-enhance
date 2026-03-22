@@ -283,6 +283,174 @@ describe("RuntimeBridge", () => {
   });
 });
 
+describe("oe-runtime tool gate (index.ts)", () => {
+  const createMockApi = () => {
+    const logs: { level: string; msg: string }[] = [];
+    let agentEventCallback: ((event: { type: string; runId?: string; sessionKey?: string }) => void) | null = null;
+    return {
+      logger: {
+        info: (msg: string) => logs.push({ level: "info", msg }),
+        warn: (msg: string) => logs.push({ level: "warn", msg }),
+        error: (msg: string) => logs.push({ level: "error", msg }),
+      },
+      runtime: {
+        events: {
+          onAgentEvent: (cb: (event: { type: string; runId?: string; sessionKey?: string }) => void) => { agentEventCallback = cb; },
+        },
+      },
+      logs,
+      handlers: new Map<string, (context: Record<string, unknown>) => Promise<unknown>>(),
+      on(event: string, handler: (context: Record<string, unknown>) => Promise<unknown>) {
+        this.handlers.set(event, handler);
+      },
+      simulateAgentEvent(event: { type: string; runId?: string; sessionKey?: string }) {
+        if (agentEventCallback) agentEventCallback(event);
+      },
+    };
+  };
+
+  const loadPlugin = async () => {
+    const mod = await import("../index.js");
+    return mod.default;
+  };
+
+  const registerMainRun = (api: ReturnType<typeof createMockApi>, runId: string) => {
+    api.simulateAgentEvent({ type: "run_start", runId, sessionKey: "agent:main:main" });
+  };
+
+  describe("runId-based session identification", () => {
+    it("should not block when runId is unknown (not registered as main)", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "unknown-run", toolName: "edit" });
+      assert.strictEqual(result, undefined);
+    });
+
+    it("should not block when runId is undefined", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: undefined, toolName: "edit" });
+      assert.strictEqual(result, undefined);
+    });
+
+    it("should block forbidden tool when runId is registered as main", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "main-run-1", toolName: "edit" }) as { block: boolean; blockReason?: string } | undefined;
+      assert.ok(result);
+      assert.strictEqual((result as { block: boolean }).block, true);
+    });
+
+    it("should allow subagent runId to use forbidden tools", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      api.simulateAgentEvent({ type: "run_start", runId: "subagent-run-1", sessionKey: "agent:oe-orchestrator:abc" });
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "subagent-run-1", toolName: "edit" });
+      assert.strictEqual(result, undefined);
+    });
+  });
+
+  describe("fail-closed behavior", () => {
+    it("should block when handler encounters unexpected error", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const poisonContext = new Proxy({}, {
+        get(_, prop) {
+          if (prop === "runId") return "main-run-1";
+          if (prop === "toolName") throw new Error("simulated crash");
+          return undefined;
+        }
+      });
+
+      const result = await handler(poisonContext);
+      assert.ok(result);
+      assert.strictEqual((result as { block: boolean }).block, true);
+      assert.ok((result as { blockReason: string }).blockReason.includes("internal error"));
+    });
+  });
+
+  describe("blockReason routing guidance", () => {
+    it("should recommend oe-orchestrator in blockReason", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "main-run-1", toolName: "edit" }) as { block: boolean; blockReason?: string } | undefined;
+      assert.ok(result);
+      assert.ok((result as { blockReason: string }).blockReason.includes("oe-orchestrator"));
+      assert.ok((result as { blockReason: string }).blockReason.includes("sessions_spawn"));
+    });
+
+    it("should recommend oe-orchestrator in fail-closed blockReason", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const poisonContext = new Proxy({}, {
+        get(_, prop) {
+          if (prop === "runId") return "main-run-1";
+          if (prop === "toolName") throw new Error("boom");
+          return undefined;
+        }
+      });
+
+      const result = await handler(poisonContext);
+      assert.ok(result);
+      assert.ok((result as { blockReason: string }).blockReason.includes("oe-orchestrator"));
+    });
+  });
+
+  describe("forbidden tools enforcement", () => {
+    it("should block all forbidden tools in main session", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const forbidden = ["edit", "write", "exec", "process", "browser", "playwright", "web_search", "web_fetch"];
+      for (const tool of forbidden) {
+        const result = await handler({ runId: "main-run-1", toolName: tool });
+        assert.ok(result, `Expected block for tool: ${tool}`);
+        assert.strictEqual((result as { block: boolean }).block, true, `Expected block=true for tool: ${tool}`);
+      }
+    });
+
+    it("should allow non-forbidden tools in main session", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "main-run-1", toolName: "sessions_spawn" });
+      assert.strictEqual(result, undefined);
+    });
+  });
+});
+
 describe("Integration: Hook and Bridge", () => {
   it("should handle events from oe-subagent-spawn-enrich hook format", () => {
     const bridge = new RuntimeBridge();

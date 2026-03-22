@@ -10,14 +10,6 @@ from click.testing import CliRunner
 from openclaw_enhance.validation.live_probes import cli
 
 
-@pytest.fixture
-def mock_openclaw_home(tmp_path: Path) -> Path:
-    """Create a mock OpenClaw home directory."""
-    openclaw_home = tmp_path / ".openclaw"
-    openclaw_home.mkdir(parents=True)
-    return openclaw_home
-
-
 def test_dev_symlink_probe_fails_when_no_symlinks(mock_openclaw_home: Path):
     """Probe should fail if no symlinks are found in workspaces."""
     workspaces_dir = mock_openclaw_home / "openclaw-enhance" / "workspaces"

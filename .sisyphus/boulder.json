@@ -1,20 +1,10 @@
 {
-  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/project-registry.md",
-  "started_at": "2026-03-18T14:48:32.313Z",
+  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/fix-main-orch-opencode-chain.md",
+  "started_at": "2026-03-22T04:11:28.477Z",
   "session_ids": [
-    "ses_30072158dffeJoz7cHPeaD9m0S",
-    "ses_2fe921c5bffevMRsRNNU8pcHlq",
-    "ses_2fe927b8bffeCM9bJolCS0dCyg",
-    "ses_2fe92e491ffeHX8WbZdTE28IKD",
-    "ses_2fe85df64ffew9PPXqTGuBs9V3",
-    "ses_2fe85432dffer8PQFqOLcDmZJd",
-    "ses_2fe85949fffegbN3IbiZ7dy9EC",
-    "ses_2fe7ab6f5ffexg3Vni59Pp3xkt",
-    "ses_2fe74734dffeEOZhhO7n9nnUys",
-    "ses_2fe742c92ffecK9TfNU3dblCAI",
-    "ses_2fe74e9f5ffeTN2ClAmywMyLZB",
-    "ses_2fe5f71f7ffeJ4UTIJ5hpn6C6v"
+    "ses_2ec7d41b5ffeczGFVJNjNhqErw",
+    "ses_2ec407974ffe0iEO0nDUv7UptA",
+    "ses_2ec407933ffe44SYzee10p1DMG"
   ],
-  "plan_name": "project-registry",
-  "worktree_path": "/Users/tsgsz/workspace/openclaw-enhance/.worktrees/project-registry"
+  "plan_name": "fix-main-orch-opencode-chain"
 }

@@ -14,10 +14,12 @@ MAIN_SKILL_IDS = [
 
 
 def _create_openclaw_home(tmp_path: Path, config: dict) -> Path:
+    import os
     openclaw_home = tmp_path / ".openclaw"
     openclaw_home.mkdir(parents=True)
     (openclaw_home / "VERSION").write_text("2026.3.1\n")
-    (openclaw_home / "config.json").write_text(json.dumps(config) + "\n")
+    (openclaw_home / "openclaw.json").write_text(json.dumps(config) + "\n")
+    os.environ["TEST_OPENCLAW_HOME"] = str(openclaw_home)
     return openclaw_home
 
 

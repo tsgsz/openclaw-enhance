@@ -19,31 +19,6 @@ from openclaw_enhance.cli import cli
 
 
 @pytest.fixture
-def mock_openclaw_home(tmp_path: Path) -> Path:
-    """Create a mock OpenClaw home directory with harness readiness."""
-    openclaw_home = tmp_path / ".openclaw"
-    openclaw_home.mkdir(parents=True)
-
-    version_file = openclaw_home / "VERSION"
-    version_file.write_text("2026.3.1\n")
-
-    config_file = openclaw_home / "openclaw.json"
-    config_payload = {
-        "agents": {
-            "defaults": {
-                "model": {
-                    "primary": "openai-codex/gpt-5.4",
-                    "fallbacks": ["google/gemini-3-flash-preview"],
-                }
-            }
-        }
-    }
-    config_file.write_text(json.dumps(config_payload) + "\n")
-
-    return openclaw_home
-
-
-@pytest.fixture
 def reports_dir(tmp_path: Path) -> Path:
     """Create a reports directory."""
     reports = tmp_path / "reports"

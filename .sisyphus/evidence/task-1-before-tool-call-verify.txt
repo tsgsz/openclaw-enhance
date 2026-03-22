@@ -1,0 +1,21 @@
+# Evidence: before_tool_call event fires for oe-runtime
+
+## Verification Command
+grep "before_tool_call handler from oe-runtime" ~/.openclaw/logs/gateway.err.log | tail -5
+
+## Result: PROVEN - event fires
+
+The `before_tool_call` hook IS being invoked for the `oe-runtime` plugin. The plugin handler crashes, but the event reaches it correctly.
+
+## Timestamped Entries (most recent 5)
+2026-03-22T11:44:58.752+08:00 [plugins] [hooks] before_tool_call handler from oe-runtime failed: TypeError: Cannot read properties of undefined (reading 'startsWith')
+2026-03-22T11:45:03.086+08:00 [plugins] [hooks] before_tool_call handler from oe-runtime failed: TypeError: Cannot read properties of undefined (reading 'startsWith')
+2026-03-22T11:45:08.307+08:00 [plugins] [hooks] before_tool_call handler from oe-runtime failed: TypeError: Cannot read properties of undefined (reading 'startsWith')
+2026-03-22T11:45:12.832+08:00 [plugins] [hooks] before_tool_call handler from oe-runtime failed: TypeError: Cannot read properties of undefined (reading 'startsWith')
+2026-03-22T11:45:16.624+08:00 [plugins] [hooks] before_tool_call handler from oe-runtime failed: TypeError: Cannot read properties of undefined (reading 'startsWith')
+
+## Interpretation
+- The [plugins] [hooks] prefix confirms this is going through OpenClaw's plugin hook system
+- The handler name "oe-runtime" confirms it is the oe-runtime plugin receiving the event
+- The crash is INTERNAL to the handler (trying to call .startsWith on undefined), NOT a failure of event dispatch
+- Event fires on EVERY tool call (continuous stream over ~4 minutes)

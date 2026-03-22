@@ -4,8 +4,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from openclaw_enhance.paths import resolve_openclaw_config_path
 import tempfile
+
+from openclaw_enhance.paths import resolve_openclaw_config_path
 
 with tempfile.TemporaryDirectory() as tmpdir:
     home = Path(tmpdir) / ".openclaw"

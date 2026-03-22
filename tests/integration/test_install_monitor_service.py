@@ -13,25 +13,7 @@ def _mock_launchctl_run() -> MagicMock:
     return MagicMock(returncode=0, stdout="", stderr="")
 
 
-@pytest.fixture(autouse=True)
-def _stub_openclaw_cli():
-    mock_result = MagicMock(returncode=0, stdout="[]", stderr="")
-    with patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result):
-        yield
 
-
-@pytest.fixture
-def mock_openclaw_home(tmp_path: Path) -> Path:
-    openclaw_home = tmp_path / ".openclaw"
-    openclaw_home.mkdir(parents=True)
-    (openclaw_home / "VERSION").write_text("2026.3.1\n", encoding="utf-8")
-    (openclaw_home / "config.json").write_text('{"test": true}\n', encoding="utf-8")
-    return openclaw_home
-
-
-@pytest.fixture
-def isolated_user_home(tmp_path: Path) -> Path:
-    return tmp_path / "user_home"
 
 
 def test_install_registers_monitor_launchagent_on_macos(

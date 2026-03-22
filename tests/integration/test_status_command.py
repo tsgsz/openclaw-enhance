@@ -124,26 +124,6 @@ class TestStatusCommandSubprocess:
 class TestStatusWithInstall:
     """Tests for status command after install/uninstall operations."""
 
-    @pytest.fixture
-    def mock_openclaw_home(self, tmp_path: Path) -> Path:
-        """Create a mock OpenClaw home directory."""
-        openclaw_home = tmp_path / ".openclaw"
-        openclaw_home.mkdir(parents=True)
-
-        # Create VERSION file
-        version_file = openclaw_home / "VERSION"
-        version_file.write_text("2026.3.1\n")
-
-        # Create config file
-        config_file = openclaw_home / "config.json"
-        config_file.write_text(json.dumps({"test": True}) + "\n")
-
-        return openclaw_home
-
-    @pytest.fixture
-    def isolated_user_home(self, tmp_path: Path) -> Path:
-        """Create an isolated user home directory."""
-        return tmp_path / "user_home"
 
     def test_status_after_install_shows_installed(
         self,

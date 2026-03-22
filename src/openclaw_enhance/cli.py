@@ -69,7 +69,8 @@ def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> 
             if result.components_installed:
                 click.echo(f"Installed components: {', '.join(result.components_installed)}")
 
-            import os, subprocess
+            import os
+            import subprocess
 
             if os.isatty(0):
                 click.echo("Restarting gateway to load new extension code...")

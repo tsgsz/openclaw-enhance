@@ -1,0 +1,75 @@
+# Task 4 Evidence: ACPX Plugin State and OpenCode Availability
+
+## Source 1: ~/.openclaw/openclaw.json (lines 53-66)
+```json
+  "acp": {
+    "enabled": true,
+    "backend": "acpx",
+    "defaultAgent": "opencode",
+    "allowedAgents": [
+      "opencode",
+      "codex",
+      "claude"
+    ],
+    "maxConcurrentSessions": 8,
+    "runtime": {
+      "ttlMinutes": 30
+    }
+  },
+```
+
+## Source 2: ~/.openclaw/openclaw.json (plugins.entries.acpx)
+```json
+    "entries": {
+      "acpx": {
+        "enabled": true
+      },
+```
+
+## Source 3: ~/.config/opencode/opencode.json (90 lines total)
+- Providers: sss, sss-us, sss-reverse-hk, cliproxy
+- Models per provider (e.g., sss: claude-sonnet-4-6, claude-opus-4-6, claude-haiku-4-5-20251001)
+- Plugin: ["oh-my-opencode"]
+
+## Source 4: ~/.acpx/sessions/ listing (2026-03-07)
+```
+-rw-------   1 tsgsz  staff  438550 Mar  7 22:24 ses_3376a21e9ffeU3C15qAzjyNBa3.json
+-rw-------   1 tsgsz  staff  420353 Mar  7 22:24 ses_3376a21e9ffeU3C15qAzjyNBa3.stream.ndjson
+-rw-------   1 tsgsz  staff   25624 Mar  7 21:40 ses_337795d37ffejN7sKHRnTDWWUA.json
+-rw-------   1 tsgsz  staff   23716 Mar  7 21:36 ses_3377c6cbfffePoow6s8z3JM6gr.json
+-rw-------   1 tsgsz  staff  694744 Mar  7 20:34 ses_337c0185cffeWFm5wFtJMqYkMq.json
+-rw-------   1 tsgsz  staff  349958 Mar  7 19:59 ses_337d9e6b0ffegP7N8RNChFy4qx.json
+-rw-------   1 tsgsz  staff  506388 Mar  7 18:12 ses_3383bd86cffe08QyhRWj5gLR1Z.json
+```
+
+## Source 5: Canonical ACP sessions_spawn shape (openclaw-subagent-mechanism.md lines 318-324)
+```json
+sessions_spawn(
+  runtime="acp",
+  agentId="opencode",  // default harness
+  mode="persistent",   // default mode
+  cwd=project_root,
+  task="..."
+)
+```
+
+## Source 6: oe-worker-dispatch SKILL.md dispatch examples (lines 388-423)
+Only shows OpenClaw agent dispatch examples:
+```json
+{
+  "task": "Research FastAPI dependency injection patterns",
+  "agentId": "oe-searcher",
+  "label": "auth-research"
+}
+```
+NO ACP/runtime="acp" branch in the skill.
+
+## Verification Checklist
+- [x] acp.enabled: true — CONFIRMED (openclaw.json line 54)
+- [x] backend: "acpx" — CONFIRMED (openclaw.json line 55)
+- [x] defaultAgent: "opencode" — CONFIRMED (openclaw.json line 56)
+- [x] ACP plugin enabled — CONFIRMED (openclaw.json plugins.entries.acpx)
+- [x] opencode config exists — CONFIRMED (~/.config/opencode/opencode.json, 90 lines)
+- [x] Historical ACP sessions exist — CONFIRMED (6 sessions in ~/.acpx/sessions/)
+- [x] ACP sessions_spawn shape documented — CONFIRMED (runtime="acp", agentId, mode, cwd, task)
+- [x] oe-worker-dispatch lacks ACP branch — CONFIRMED (skill has no runtime="acp" examples)

@@ -45,6 +45,41 @@ sessions_spawn → oe-orchestrator
 Results → Orchestrator synthesis → Return to main
 ```
 
+**External ACP Harness Dispatch** (Milestone: main-orch-opencode-chain):
+
+The system now supports routing to external ACP harnesses (opencode, codex, claude) through the orchestrator:
+
+**Trigger Conditions** (ANY of):
+- User explicitly requests: "用 opencode 做..." / "让 opencode 开发..."
+- Task requires formal development workflow: issue → worktree → PR → CI → merge
+- Task explicitly names an ACP harness
+
+**Routing Path**:
+```
+User Request ("用 opencode 修复...")
+    ↓
+Main Session
+    ↓ (routing skill detects ACP intent)
+sessions_spawn → oe-orchestrator
+    ↓
+[ Orchestrator Evaluates Task ]
+    ↓ (ACP branch triggered)
+sessions_spawn({ runtime: "acp", agentId: "opencode", mode: "persistent" })
+    ↓
+[ ACP Harness (opencode) Executes ]
+    ↓
+Results → Announce back to orchestrator → Synthesis → Return to main
+```
+
+**Verified Chains**:
+- ✅ Main → oe-orchestrator (native sessions_spawn)
+- ✅ oe-orchestrator → opencode (ACP runtime)
+- ✅ Full chain: Main → orch → opencode → results back to main
+
+**Configuration Requirements**:
+- `openclaw.json`: `acp.enabled: true`, `defaultAgent: "opencode"`, `allowedAgents: ["opencode", ...]`
+- ACPX plugin installed and gateway restarted
+
 **Worker Discovery and Routing** (AGENTS.md frontmatter):
 
 Worker routing is now **catalog-driven** from YAML frontmatter in each worker's `AGENTS.md`:

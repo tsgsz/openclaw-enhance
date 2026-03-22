@@ -17,50 +17,10 @@ from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
 
 
-@pytest.fixture
-def mock_openclaw_home(tmp_path: Path) -> Path:
-    """Create a mock OpenClaw home directory structure."""
-    openclaw_home = tmp_path / ".openclaw"
-    openclaw_home.mkdir(parents=True)
-
-    # Create VERSION file for support matrix check
-    version_file = openclaw_home / "VERSION"
-    version_file.write_text("2026.3.1\n")
-
-    # Create a minimal config file
-    config_file = openclaw_home / "config.json"
-    config_file.write_text(json.dumps({"test": True}) + "\n")
-
-    return openclaw_home
-
-
-@pytest.fixture
-def isolated_user_home(tmp_path: Path) -> Path:
-    """Create an isolated user home directory for testing."""
-    return tmp_path / "user_home"
-
 
 class TestInstallIdempotency:
     """Tests that install is idempotent."""
 
-    @pytest.fixture(autouse=True)
-    def stub_external_cli(self):
-        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
-        patches = [
-            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
-        ]
-        if sys.platform == "darwin":
-            patches.append(
-                patch(
-                    "openclaw_enhance.install.monitor_service.subprocess.run",
-                    return_value=mock_result,
-                )
-            )
-        for p in patches:
-            p.start()
-        yield
-        for p in patches:
-            p.stop()
 
     def test_double_install_succeeds(
         self,
@@ -209,24 +169,6 @@ class TestInstallIdempotency:
 class TestUninstallIdempotency:
     """Tests that uninstall is idempotent."""
 
-    @pytest.fixture(autouse=True)
-    def stub_external_cli(self):
-        mock_result = type("Result", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
-        patches = [
-            patch("openclaw_enhance.install.installer._run_openclaw_cli", return_value=mock_result),
-        ]
-        if sys.platform == "darwin":
-            patches.append(
-                patch(
-                    "openclaw_enhance.install.monitor_service.subprocess.run",
-                    return_value=mock_result,
-                )
-            )
-        for p in patches:
-            p.start()
-        yield
-        for p in patches:
-            p.stop()
 
     def test_double_uninstall_succeeds(
         self,
