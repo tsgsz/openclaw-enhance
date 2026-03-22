@@ -45,13 +45,12 @@ sessions_spawn → oe-orchestrator
 Results → Orchestrator synthesis → Return to main
 ```
 
-**External ACP Harness Dispatch** (Milestone: main-orch-opencode-chain):
+**External ACP Harness Dispatch** (Milestone: partial-routing-chain-progress):
 
-The system now supports routing to external ACP harnesses (opencode, codex, claude) through the orchestrator:
+The system supports routing to external ACP harnesses (opencode, codex, claude) through the orchestrator with a verified fail-closed runtime gate:
 
-**Trigger Conditions** (ANY of):
+**Trigger Conditions** (Explicit Opt-in):
 - User explicitly requests: "用 opencode 做..." / "让 opencode 开发..."
-- Task requires formal development workflow: issue → worktree → PR → CI → merge
 - Task explicitly names an ACP harness
 
 **Routing Path**:
@@ -63,7 +62,7 @@ Main Session
 sessions_spawn → oe-orchestrator
     ↓
 [ Orchestrator Evaluates Task ]
-    ↓ (ACP branch triggered)
+    ↓ (ACP branch triggered in oe-worker-dispatch skill)
 sessions_spawn({ runtime: "acp", agentId: "opencode", mode: "persistent" })
     ↓
 [ ACP Harness (opencode) Executes ]
@@ -72,9 +71,14 @@ Results → Announce back to orchestrator → Synthesis → Return to main
 ```
 
 **Verified Chains**:
-- ✅ Main → oe-orchestrator (native sessions_spawn)
-- ✅ oe-orchestrator → opencode (ACP runtime)
-- ✅ Full chain: Main → orch → opencode → results back to main
+- ✅ Main → oe-orchestrator (native sessions_spawn) — Verified in isolated probes.
+- ✅ oe-orchestrator → opencode (ACP runtime) — Verified in direct orchestrator probes (Task 8).
+- ❌ Full chain: Main → orch → opencode — **UNPROVEN/BROKEN** in live Feishu-like scenarios. The main session often defaults to "speech-only delegation" (claiming delegation in text without emitting a real `sessions_spawn` tool call).
+
+**Runtime Gate (oe-runtime)**:
+- **Fail-Closed**: Main session tool calls (exec, write, etc.) are strictly blocked by the `oe-runtime` extension.
+- **Null-Safe**: Guarded against undefined session keys and parameters.
+- **Guidance**: Blocked calls return explicit instructions to use `sessions_spawn({ agentId: "oe-orchestrator", ... })`.
 
 **Configuration Requirements**:
 - `openclaw.json`: `acp.enabled: true`, `defaultAgent: "opencode"`, `allowedAgents: ["opencode", ...]`
@@ -267,30 +271,18 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Post-development checklist integration in `AGENTS.md`.
 - Success criteria: CLI command functional, all docs aligned on mandatory gate, reports generated.
 
-**config-schema-compatible-runtime-registration** — COMPLETE
-- Date: 2026-03-16
-- Scope: Removed the unsupported top-level OpenClaw config namespace and moved runtime registration onto supported config surfaces.
+**partial-routing-chain-progress** — COMPLETE
+- Date: 2026-03-22
+- Scope: Verified and hardened the routing chain components, identifying the "speech-only delegation" failure mode in the main session.
 - Deliverables:
-  - Installer writes `oe-*` agent registrations to `agents.list`.
-  - Installer writes hook registration to `hooks.internal.entries` and `hooks.internal.load.extraDirs`.
-  - Hook assets are synced into `~/.openclaw/openclaw-enhance/hooks/`.
-  - Legacy `openclawEnhance` config is migrated away during reinstall.
-  - Uninstall removes only enhancement-owned runtime registrations from supported surfaces.
-- Success criteria: `openclaw agents list`, `openclaw hooks list`, and live `openclaw agent --agent oe-orchestrator ...` succeed after redeploy.
-
-**main-tool-gate-enforcement** — COMPLETE
-- Date: 2026-03-18
-- Scope: Enforced main session as router-only via install-time AGENTS.md injection.
-- Deliverables:
-  - `src/openclaw_enhance/install/main_tool_gate.py` — idempotent, marker-delimited injection/removal
-  - `installer.py` calls `inject_main_tool_gate` during install
-  - `uninstaller.py` calls `remove_main_tool_gate` during uninstall
-  - `skills/oe-toolcall-router/SKILL.md` v2.0 — "main = router only" model
-  - `extensions/openclaw-enhance-runtime/index.ts` — `before_tool_call` plugin gate (backup defense)
-  - `hooks/oe-main-routing-gate/` — advisory hook (secondary layer)
-- Success criteria: Installer injects tool gate idempotently, uninstaller removes it cleanly, all tests pass.
+  - `oe-runtime` null guard, fail-closed logic, and `agentId` correction deployed.
+  - `oe-worker-dispatch` skill updated with explicit opt-in ACP/opencode branch.
+  - Verified direct `oe-orchestrator → ACP/opencode` path.
+  - Documented the `main → oe-orchestrator` real-spawn failure in live scenarios.
+- Success criteria: `oe-runtime` blocks forbidden main tool calls, orchestrator triggers ACP sessions, docs reflect verified limitations.
 
 ### Current Durable Status
+
 
 The repository is in **stable maintenance mode** for the bounded-loop orchestration architecture:
 - Core orchestration: Bounded multi-round loop + `sessions_yield`.

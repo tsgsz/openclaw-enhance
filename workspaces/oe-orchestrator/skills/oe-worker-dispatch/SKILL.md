@@ -182,12 +182,17 @@ Some workers have dedicated routing paths outside normal scoring:
 
 ##### ACP/OpenCode Branch (External Development Harness)
 
-**Trigger**: User explicitly requests work via opencode, or task requires formal development workflow (issue → worktree → PR → CI → merge) on an external project.
+**Trigger**: User explicitly requests OpenCode/opencode/ACP harness execution. This branch is **opt-in only** and is not the default path for ordinary coding work.
 
-**Detection signals** (ANY of the following):
+**Detection signals** (ANY of the following explicit user intent signals):
 - User says "用 opencode 改" / "让 opencode 去做" / "用 opencode 开发"
-- User requests formal git workflow: "先提 issue，再开 worktree，再 PR，再 merge"
-- Task explicitly names an ACP harness: "opencode", "claude code", "codex"
+- User explicitly asks for OpenCode / opencode / ACP harness handling
+- User explicitly names a harness agent such as "opencode" while asking the Orchestrator to delegate execution through that harness
+
+**Non-triggers**:
+- A normal coding task without an explicit OpenCode/opencode/ACP request
+- A request for issue / worktree / PR / CI / merge workflow by itself
+- Ordinary search, diagnosis, or script work that already fits `oe-searcher`, `oe-syshelper`, or `oe-script_coder`
 
 **Flow**:
 1. Confirm project context via `oe-project-registry` (project path, branch)
@@ -203,7 +208,7 @@ Some workers have dedicated routing paths outside normal scoring:
 }
 ```
 
-3. Include development workflow instructions in task when user requests formal process:
+3. When the user also requests a formal development workflow, include that workflow explicitly inside the ACP task:
    - Create issue describing the work
    - Create git worktree for isolation
    - Implement changes with tests
@@ -212,7 +217,8 @@ Some workers have dedicated routing paths outside normal scoring:
    - Merge after approval
 
 **Constraints**:
-- Only dispatch to ACP when user explicitly requests it or names a harness agent
+- Only dispatch to ACP when user explicitly requests OpenCode/opencode/ACP harness execution or explicitly names a harness agent for delegation
+- Do NOT treat issue → worktree → implementation/tests → PR → CI → merge workflow alone as sufficient to enter ACP; workflow wording only enriches the ACP task after the explicit harness trigger is present
 - Do NOT automatically route all coding tasks to opencode — `oe-script_coder` handles normal coding within the OpenClaw ecosystem
 - ACP sessions have their own lifecycle; monitor via `oe-watchdog` for long-running sessions
 - `agentId` must match an entry in `openclaw.json` → `acp.allowedAgents` (default: `["opencode", "codex", "claude"]`)
