@@ -123,7 +123,6 @@ class TestStatusCommandSubprocess:
 class TestStatusWithInstall:
     """Tests for status command after install/uninstall operations."""
 
-
     def test_status_after_install_shows_installed(
         self,
         mock_openclaw_home: Path,

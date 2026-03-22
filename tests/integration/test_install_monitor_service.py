@@ -11,9 +11,6 @@ def _mock_launchctl_run() -> MagicMock:
     return MagicMock(returncode=0, stdout="", stderr="")
 
 
-
-
-
 def test_install_registers_monitor_launchagent_on_macos(
     mock_openclaw_home: Path,
     isolated_user_home: Path,

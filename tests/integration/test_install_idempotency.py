@@ -15,7 +15,6 @@ from openclaw_enhance.paths import managed_root
 class TestInstallIdempotency:
     """Tests that install is idempotent."""
 
-
     def test_double_install_succeeds(
         self,
         mock_openclaw_home: Path,
@@ -162,7 +161,6 @@ class TestInstallIdempotency:
 
 class TestUninstallIdempotency:
     """Tests that uninstall is idempotent."""
-
 
     def test_double_uninstall_succeeds(
         self,

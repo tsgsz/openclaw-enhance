@@ -15,6 +15,7 @@ MAIN_SKILL_IDS = [
 
 def _create_openclaw_home(tmp_path: Path, config: dict) -> Path:
     import os
+
     openclaw_home = tmp_path / ".openclaw"
     openclaw_home.mkdir(parents=True)
     (openclaw_home / "VERSION").write_text("2026.3.1\n")
