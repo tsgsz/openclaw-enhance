@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 from subprocess import CompletedProcess
+from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
@@ -66,9 +67,13 @@ def _add_agent_to_config(openclaw_home: Path, agent_id: str):
 
 @pytest.fixture(autouse=True)
 def _stub_openclaw_cli():
+    launchctl_result = MagicMock(returncode=0, stdout="", stderr="")
     with patch(
         "openclaw_enhance.install.installer._run_openclaw_cli",
         side_effect=_mock_run_openclaw_cli,
+    ), patch(
+        "openclaw_enhance.install.monitor_service._run_launchctl",
+        return_value=launchctl_result,
     ):
         yield
 

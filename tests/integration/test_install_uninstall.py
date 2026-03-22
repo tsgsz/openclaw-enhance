@@ -235,7 +235,7 @@ class TestInstallUninstallSymmetry:
         mock_openclaw_home: Path,
         isolated_user_home: Path,
     ) -> None:
-        config_path = mock_openclaw_home / "config.json"
+        config_path = mock_openclaw_home / "openclaw.json"
         install_result = install(mock_openclaw_home, user_home=isolated_user_home)
         assert install_result.success
 
@@ -253,7 +253,7 @@ class TestInstallUninstallSymmetry:
         mock_openclaw_home: Path,
         isolated_user_home: Path,
     ) -> None:
-        config_path = mock_openclaw_home / "config.json"
+        config_path = mock_openclaw_home / "openclaw.json"
         config_path.write_text(
             json.dumps({"hooks": {"internal": {"enabled": False}}}) + "\n",
             encoding="utf-8",
