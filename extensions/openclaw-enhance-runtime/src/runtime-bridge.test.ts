@@ -319,6 +319,18 @@ describe("oe-runtime tool gate (index.ts)", () => {
   };
 
   describe("runId-based session identification", () => {
+    it("should treat plain main sessionKey as main and block forbidden tools", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      api.simulateAgentEvent({ type: "run_start", runId: "main-run-plain", sessionKey: "main" });
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({ runId: "main-run-plain", toolName: "edit" }) as { block: boolean } | undefined;
+      assert.ok(result);
+      assert.strictEqual((result as { block: boolean }).block, true);
+    });
+
     it("should not block when runId is unknown (not registered as main)", async () => {
       const api = createMockApi();
       const plugin = await loadPlugin();
