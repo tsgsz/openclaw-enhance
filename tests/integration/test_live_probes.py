@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from openclaw_enhance.validation.live_probes import cli

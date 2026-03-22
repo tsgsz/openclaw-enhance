@@ -8,7 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from openclaw_enhance.cli import cli

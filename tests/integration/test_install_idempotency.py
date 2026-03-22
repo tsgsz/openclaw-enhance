@@ -4,18 +4,12 @@ Verifies that running install multiple times is safe and produces
 consistent results.
 """
 
-import json
-import sys
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from openclaw_enhance.install import install, uninstall
 from openclaw_enhance.install.main_skill_sync import MAIN_SKILL_IDS
 from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
-
 
 
 class TestInstallIdempotency:

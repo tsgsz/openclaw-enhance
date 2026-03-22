@@ -8,8 +8,6 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from openclaw_enhance.install import (
     get_install_status,
     install,

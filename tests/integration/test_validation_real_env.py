@@ -8,7 +8,6 @@ Tests the validate-feature CLI command with mocked subprocess calls to verify:
 - Failure classification (environment vs product)
 """
 
-import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

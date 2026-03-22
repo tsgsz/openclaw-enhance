@@ -1,13 +1,8 @@
 import json
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from openclaw_enhance.install import install
 from openclaw_enhance.paths import managed_root, resolve_openclaw_config_path
-
-
 
 
 def test_install_does_not_write_top_level_openclaw_enhance_key(
@@ -49,14 +44,10 @@ def test_runtime_registration_uses_supported_shape(
     # Use conftest.py mock which handles plugin registration
     result = install(mock_openclaw_home, user_home=isolated_user_home)
     assert result.success
-    
-    # Verify CLI was called correctly by checking config
-    mock_cli_calls = []
 
     config_path = resolve_openclaw_config_path(mock_openclaw_home)
     config = json.loads(config_path.read_text(encoding="utf-8"))
-    
-    expected_workspaces_root = managed_root(isolated_user_home) / "workspaces"
+
     # Verify agents were registered in config
     agents_obj = config.get("agents", {})
     agent_list = agents_obj.get("list", [])

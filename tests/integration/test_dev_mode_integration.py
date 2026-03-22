@@ -1,14 +1,10 @@
 """Integration tests for development mode install functionality."""
 
-import json
 from pathlib import Path
-
-import pytest
 
 from openclaw_enhance.install import install, uninstall
 from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
-
 
 
 class TestDevModeInstall:

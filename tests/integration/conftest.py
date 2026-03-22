@@ -4,15 +4,14 @@ import json
 import os
 from pathlib import Path
 from subprocess import CompletedProcess
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 
 def _mock_run_openclaw_cli(args, check=True):
     stdout = ""
-    
+
     if args[0] == "plugins" and args[1] == "list":
         stdout = "[]"
     elif args[0] == "plugins" and args[1] == "install":
@@ -26,7 +25,7 @@ def _mock_run_openclaw_cli(args, check=True):
             openclaw_home = _find_openclaw_home()
             if openclaw_home:
                 _add_agent_to_config(openclaw_home, agent_id)
-    
+
     return CompletedProcess(args=args, returncode=0, stdout=stdout, stderr="")
 
 
