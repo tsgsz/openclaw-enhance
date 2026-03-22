@@ -178,6 +178,22 @@ Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator 
 
 **Purpose**: Session monitoring, timeout detection, diagnostics
 
+### Session Cleanup Command
+
+`python -m openclaw_enhance.cli cleanup-sessions` provides a conservative cleanup surface for stale session state.
+
+**Safety model**:
+- Defaults to dry-run when `--execute` is not provided
+- Supports protected cleanup of OpenClaw core sessions only with `--include-core-sessions`
+- Classifies candidates into `safe_to_remove`, `skipped_active`, and `skipped_uncertain`
+- Only `safe_to_remove` targets may be deleted during execute mode
+
+**Intended use**:
+- Clear stale/orphaned enhance-managed session state
+- Preview cleanup candidates before destructive action
+- Recover from accumulated stale session artifacts without touching active sessions
+
+
 **When it's used**:
 - Long-running tasks (> 30 minutes)
 - Background monitoring

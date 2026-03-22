@@ -134,6 +134,7 @@ Orchestrator 汇总结果并返回给 Main
 | :--- | :--- |
 | python -m openclaw_enhance.cli status | 查看安装状态 |
 | python -m openclaw_enhance.cli doctor | 执行健康检查 |
+| python -m openclaw_enhance.cli cleanup-sessions [--dry-run\|--execute] [--include-core-sessions] | 清理陈旧/孤儿 session 状态（默认 dry-run） |
 | python -m openclaw_enhance.cli render-skill <name> | 查看指定 Skill 的合约内容 |
 | python -m openclaw_enhance.cli render-workspace <name> | 查看工作区的配置信息 |
 | python -m openclaw_enhance.cli validate-feature | 在真实环境中进行功能验证 |

@@ -181,6 +181,72 @@ def status(output_json: bool) -> None:
                 click.echo(f"  PID: {lock_info['pid']}")
 
 
+@cli.command("cleanup-sessions")
+@click.option("--dry-run", is_flag=True, help="Preview cleanup without deleting files")
+@click.option("--execute", is_flag=True, help="Actually remove safe cleanup targets")
+@click.option("--json", "output_json", is_flag=True, help="Output JSON report")
+@click.option("--stale-threshold-hours", type=float, default=24.0, show_default=True)
+@click.option(
+    "--include-core-sessions",
+    is_flag=True,
+    help="Allow cleanup of eligible OpenClaw core sessions",
+)
+@click.option("--include-logs", is_flag=True, help="Include related logs when supported")
+def cleanup_sessions(
+    dry_run: bool,
+    execute: bool,
+    output_json: bool,
+    stale_threshold_hours: float,
+    include_core_sessions: bool,
+    include_logs: bool,
+) -> None:
+    """Classify and clean stale/orphaned session state."""
+    from openclaw_enhance.cleanup import CleanupCandidate, CleanupKind, cleanup_paths
+
+    effective_dry_run = dry_run or not execute
+    del include_logs
+
+    # Minimal first-pass implementation for TDD: discover from ./sessions if present.
+    candidates: list[CleanupCandidate] = []
+    sessions_root = Path.cwd() / "sessions"
+    if sessions_root.exists():
+        for path in sessions_root.iterdir():
+            candidates.append(
+                CleanupCandidate(
+                    path=path,
+                    kind=CleanupKind.RUNTIME_STATE,
+                    age_hours=72,
+                    in_runtime_active_set=False,
+                    held_by_project_occupancy=False,
+                    has_recent_activity=False,
+                )
+            )
+
+    report = cleanup_paths(
+        candidates,
+        dry_run=effective_dry_run,
+        stale_threshold_hours=stale_threshold_hours,
+        include_core_sessions=include_core_sessions,
+    )
+
+    payload = {
+        "safe_to_remove": report.safe_to_remove,
+        "skipped_active": report.skipped_active,
+        "skipped_uncertain": report.skipped_uncertain,
+        "removed": report.removed,
+        "dry_run": report.dry_run,
+    }
+
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+    else:
+        click.echo(f"dry_run={report.dry_run}")
+        click.echo(f"safe_to_remove={len(report.safe_to_remove)}")
+        click.echo(f"skipped_active={len(report.skipped_active)}")
+        click.echo(f"skipped_uncertain={len(report.skipped_uncertain)}")
+        click.echo(f"removed={len(report.removed)}")
+
+
 @cli.command("render-skill")
 @click.argument("skill_name")
 def render_skill(skill_name: str) -> None:

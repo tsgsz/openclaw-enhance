@@ -154,6 +154,7 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             "python -m openclaw_enhance.cli status",
             "python -m openclaw_enhance.cli status --json",
             "python -m openclaw_enhance.cli doctor",
+            "python -m openclaw_enhance.cli cleanup-sessions --dry-run --json",
             "python -m openclaw_enhance.cli render-workspace oe-orchestrator",
             "python -m openclaw_enhance.cli render-skill oe-toolcall-router",
             "python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich",
