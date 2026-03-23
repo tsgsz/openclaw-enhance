@@ -64,6 +64,29 @@ def _pin_payload(payload: dict[str, Any], model: str) -> dict[str, Any]:
         if isinstance(value, dict):
             value["model"] = model
 
+    agent_list = agents.get("list")
+    if isinstance(agent_list, list):
+        for agent in agent_list:
+            if not isinstance(agent, dict):
+                continue
+            if agent.get("id") != "oe-orchestrator":
+                continue
+
+            if isinstance(agent.get("model"), dict):
+                agent["model"]["primary"] = model
+                agent["model"]["fallbacks"] = []
+            else:
+                agent["model"] = {"primary": model, "fallbacks": []}
+
+            nested_defaults = agent.get("defaults")
+            if isinstance(nested_defaults, dict):
+                nested_model = nested_defaults.get("model")
+                if isinstance(nested_model, dict):
+                    nested_model["primary"] = model
+                    nested_model["fallbacks"] = []
+                else:
+                    nested_defaults["model"] = {"primary": model, "fallbacks": []}
+
     return payload
 
 

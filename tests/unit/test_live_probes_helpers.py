@@ -82,13 +82,14 @@ class TestGetTranscriptPath:
 
 
 class TestProbeEnv:
-    def test_normalizes_openclaw_home_env_to_parent_when_home_is_dot_openclaw(self, tmp_path):
+    def test_sets_pinned_openclaw_paths_when_home_is_dot_openclaw(self, tmp_path):
         openclaw_home = tmp_path / ".openclaw"
         openclaw_home.mkdir(parents=True)
 
         env = _probe_env(openclaw_home)
 
-        assert env["OPENCLAW_HOME"] == str(tmp_path)
+        assert env["OPENCLAW_HOME"] == str(openclaw_home.parent)
+        assert env["OPENCLAW_CONFIG_PATH"] == str(openclaw_home / "config.json")
 
 
 class TestSearchTranscript:
@@ -156,6 +157,8 @@ class TestEnsureBootstrapReady:
         assert "agent" in call_args
         assert "--agent" in call_args
         assert "oe-orchestrator" in call_args
+        assert "--local" in call_args
+        assert "oe-orchestrator-bootstrap" in call_args
 
     @patch("openclaw_enhance.validation.live_probes.subprocess.run")
     def test_allows_stale_bootstrap_markers_when_runtime_is_runnable(
@@ -184,8 +187,8 @@ class TestEnsureBootstrapReady:
         }
 
         def _side_effect(cmd, **_kwargs):
-            if cmd[:4] == ["openclaw", "agent", "--agent", "oe-orchestrator"]:
-                message = cmd[5] if len(cmd) > 5 else ""
+            if cmd[:5] == ["openclaw", "agent", "--agent", "oe-orchestrator", "--local"]:
+                message = cmd[8] if len(cmd) > 8 else ""
                 if "Complete bootstrap" in message:
                     return MagicMock(returncode=0, stdout="", stderr="")
                 if "Runtime readiness check" in message:
@@ -769,6 +772,94 @@ class TestOrchestratorSessionAttribution:
 
 
 class TestTranscriptDeltaSearch:
+    def test_find_first_line_with_term_returns_first_fresh_match(self, tmp_path):
+        transcript = tmp_path / "probe-lines.jsonl"
+        request_id = "request-id-line-anchor"
+        transcript.write_text(
+            "\n".join(
+                [
+                    json.dumps({"message": {"role": "assistant", "content": "old unrelated line"}}),
+                    json.dumps(
+                        {"message": {"role": "assistant", "content": f"fresh {request_id}"}}
+                    ),
+                    json.dumps({"tool": "sessions_spawn", "agentId": "oe-searcher"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        find_first = getattr(live_probes, "_find_first_line_with_term")
+        assert find_first(transcript, 1, request_id) == 2
+        assert find_first(transcript, 3, request_id) is None
+
+    def test_extract_spawned_worker_and_child_key_from_nested_local_transcript(self, tmp_path):
+        transcript = tmp_path / "orchestrator-local.jsonl"
+        request_id = "request-id-local-nested"
+        worker_agent_id = "oe-orchestrator"
+        child_session_key = "agent:oe-orchestrator:subagent:nested-child-key"
+        transcript.write_text(
+            "\n".join(
+                [
+                    json.dumps(
+                        {
+                            "type": "message",
+                            "message": {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": (
+                                            f"[orchestrator-spawn probe request-id: {request_id}] "
+                                            "do work"
+                                        ),
+                                    }
+                                ],
+                            },
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "type": "message",
+                            "message": {
+                                "role": "assistant",
+                                "content": [
+                                    {
+                                        "type": "toolCall",
+                                        "name": "sessions_spawn",
+                                        "arguments": {
+                                            "task": f"[{request_id}] nested task",
+                                            "agentId": worker_agent_id,
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "type": "message",
+                            "message": {
+                                "role": "toolResult",
+                                "toolName": "sessions_spawn",
+                                "details": {
+                                    "childSessionKey": child_session_key,
+                                },
+                            },
+                        }
+                    ),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        extract_agent = getattr(live_probes, "_extract_spawned_worker_agent_id_from_segment")
+        extract_key = getattr(live_probes, "_extract_child_session_key_from_segment")
+
+        assert extract_agent(transcript, 1, request_id) == worker_agent_id
+        assert extract_key(transcript, 1) == child_session_key
+
     def test_search_transcript_segment_respects_start_line(self, tmp_path):
         transcript = tmp_path / "probe.jsonl"
         transcript.write_text(

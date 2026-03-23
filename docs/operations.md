@@ -14,12 +14,30 @@ You interact with OpenClaw normally—the enhancement layer handles complexity b
 
 **How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`. 
 
-The system distinguishes three separate routing proofs:
-1. **Direct Orchestrator Runtime Surface** (`backfill-routing-yield`): Direct interaction with `oe-orchestrator` for complex planning.
-2. **Recovery-Worker Runtime Surface** (`backfill-recovery-worker`): Specialized `oe-tool-recovery` worker for tool-failure diagnosis.
-3. **Main-Session Escalation Runtime Surface** (`backfill-main-escalation`): Automatic escalation from the main session to the orchestrator for heavy tasks.
+The system distinguishes four separate routing proofs:
+1. **Direct Orchestrator Runtime Surface** (`backfill-routing-yield`): Direct interaction with `oe-orchestrator` for complex planning. This is a runtime-surface-only proof.
+2. **Orchestrator Child-Dispatch Surface** (`backfill-orchestrator-spawn`): Strong proof that an already-running orchestrator actually spawned a child worker for a substantive task.
+3. **Recovery-Worker Runtime Surface** (`backfill-recovery-worker`): Specialized `oe-tool-recovery` worker for tool-failure diagnosis.
+4. **Main-Session Escalation Runtime Surface** (`backfill-main-escalation`): Automatic escalation from the main session to the orchestrator for heavy tasks.
 
 The orchestrator manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
+
+## Orchestrator Self-Execution Policy
+
+The orchestrator is a dispatcher and MUST NOT silently absorb substantive worker-eligible work.
+
+### Allowed Self-Execution Exceptions
+
+The orchestrator may self-execute only for narrow bookkeeping, synthesis, checkpointing, and worker-selection work:
+- **Worker Selection**: Identifying and ranking eligible workers from their `AGENTS.md` frontmatter.
+- **Dispatch Planning**: Breaking down complex tasks into subtasks for workers.
+- **Checkpoint Communication**: Reporting milestones or blockers to the main session.
+- **Result Synthesis**: Aggregating and summarizing worker results into a final report.
+- **Trivial Bookkeeping**: Managing the round-based loop state and deduplication keys.
+
+### Mandatory Worker Dispatch
+
+Substantive research, introspection, coding, monitoring, and other worker-eligible subwork MUST become child `sessions_spawn` dispatches. The orchestrator is prohibited from implicit self-execution fallback for any task that fits a worker's role.
 
 ## Using the Orchestrator
 
@@ -584,5 +602,5 @@ See [Troubleshooting](troubleshooting.md) for:
 
 ## Version
 
-Operations Guide Version: 1.2.0
-Last Updated: 2026-03-14
+Operations Guide Version: 1.3.0
+Last Updated: 2026-03-23

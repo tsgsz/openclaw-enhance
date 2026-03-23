@@ -24,7 +24,16 @@ def _write_config(path: Path, primary: str = "openai-codex/gpt-5.4") -> None:
                 },
                 "heartbeat": {"model": "MiniMax2.1"},
                 "subagents": {"model": "MiniMax2.1"},
-            }
+            },
+            "list": [
+                {
+                    "id": "oe-orchestrator",
+                    "model": {
+                        "primary": "sss-hk/claude-opus-4-6",
+                        "fallbacks": ["google/gemini-3-flash-preview"],
+                    },
+                }
+            ],
         }
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,6 +53,11 @@ class TestPinnedOpenClawRuntimeModel:
             assert defaults["model"]["fallbacks"] == []
             assert defaults["heartbeat"]["model"] == PINNED_OPENCLAW_MODEL
             assert defaults["subagents"]["model"] == PINNED_OPENCLAW_MODEL
+            orchestrator = next(
+                agent for agent in pinned["agents"]["list"] if agent.get("id") == "oe-orchestrator"
+            )
+            assert orchestrator["model"]["primary"] == PINNED_OPENCLAW_MODEL
+            assert orchestrator["model"]["fallbacks"] == []
             assert configured_model == PINNED_OPENCLAW_MODEL
 
         assert config_path.read_text(encoding="utf-8") == original_text

@@ -1,6 +1,6 @@
 ---
 name: oe-worker-dispatch
-version: 1.0.0
+version: 1.1.0
 description: Subagent task dispatch and result synthesis for the Orchestrator
 author: openclaw-enhance
 tags: [orchestrator, dispatch, subagent, workers, parallel]
@@ -18,6 +18,20 @@ The Orchestrator delegates work to specialized subagents via the native `announc
 - Result collection
 - Output synthesis
 - Error handling
+
+### Orchestrator Self-Execution Exception Policy
+
+The Orchestrator is a dispatcher and MUST NOT silently absorb substantive worker-eligible work.
+
+- **Allowed Self-Execution Exceptions**: Limited to worker selection, dispatch planning, checkpoint communication, result synthesis, and trivial orchestration bookkeeping.
+- **Mandatory Dispatch**: Substantive research, introspection, coding, monitoring, and other worker-eligible subwork MUST become child `sessions_spawn` dispatches.
+- **No Implicit Fallback**: If a task is eligible for a worker, the Orchestrator is prohibited from executing it directly.
+
+### Dispatch Proof Surfaces
+
+The system validates this policy through two distinct proof surfaces:
+- **Runtime Surface (`routing-yield`)**: Proves the Orchestrator is active and has the `sessions_yield` tool. This is a surface-level check only.
+- **Child-Dispatch Surface (`orchestrator-spawn`)**: Proves the Orchestrator actually called `sessions_spawn` for a worker-eligible task. This is the primary proof of the dispatch contract.
 
 ## When to Use
 

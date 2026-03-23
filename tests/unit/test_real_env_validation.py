@@ -95,12 +95,22 @@ def test_get_bundle_commands():
 
 
 def test_get_bundle_commands_workspace_routing_variants():
+    orchestrator_child_spawn_cmds = get_bundle_commands(
+        FeatureClass.WORKSPACE_ROUTING, "orchestrator-child-spawn"
+    )
     routing_cmds = get_bundle_commands(FeatureClass.WORKSPACE_ROUTING, "backfill-routing-yield")
     recovery_cmds = get_bundle_commands(FeatureClass.WORKSPACE_ROUTING, "backfill-recovery-worker")
     main_escalation_cmds = get_bundle_commands(
         FeatureClass.WORKSPACE_ROUTING, "backfill-main-escalation"
     )
 
+    assert orchestrator_child_spawn_cmds == [
+        (
+            "python -m openclaw_enhance.validation.live_probes orchestrator-spawn "
+            '--openclaw-home "$OPENCLAW_HOME" --message '
+            '"printf a single line with the current probe request-id and nothing else"'
+        )
+    ]
     assert routing_cmds == [
         (
             "python -m openclaw_enhance.validation.live_probes routing-yield "

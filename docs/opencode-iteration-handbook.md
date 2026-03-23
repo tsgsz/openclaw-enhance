@@ -27,8 +27,8 @@ The repository uses a **bounded, semi-visible orchestration loop** with native `
 - Duration: ≤ 15 min short, 15-30 min medium, > 30 min long
 - Parallelism: Required → orchestrator
 - **Three-Tier Proof Model**:
-  - `backfill-routing-yield`: Direct orchestrator runtime surface.
-  - `backfill-recovery-worker`: Recovery-worker runtime surface.
+  - `backfill-routing-yield`: Direct orchestrator runtime surface (Weak Proof).
+  - `orchestrator-spawn`: Orchestrator child-dispatch proof (Strong Proof).
   - `backfill-main-escalation`: Main-session escalation runtime surface (Provisional).
 
 **Execution Flow**:
@@ -76,6 +76,7 @@ Results → Announce back to orchestrator → Synthesis → Return to main
 
 **Verified Chains**:
 - ✅ Main → oe-orchestrator (native sessions_spawn) — Verified in isolated probes.
+- ✅ oe-orchestrator → worker (native sessions_spawn) — Verified in direct orchestrator probes (`orchestrator-spawn`).
 - ✅ oe-orchestrator → opencode (ACP runtime) — Verified in direct orchestrator probes (Task 8).
 - ❌ Full chain: Main → orch → opencode — **UNPROVEN/BROKEN** in live Feishu-like scenarios. The main session often defaults to "speech-only delegation" (claiming delegation in text without emitting a real `sessions_spawn` tool call).
 
@@ -275,6 +276,15 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Post-development checklist integration in `AGENTS.md`.
 - Success criteria: CLI command functional, all docs aligned on mandatory gate, reports generated.
 
+**orchestrator-child-spawn-proof** — COMPLETE
+- Date: 2026-03-23
+- Scope: Implemented and verified the strong child-dispatch proof for the orchestrator.
+- Deliverables:
+  - `orchestrator-spawn` live probe in `live_probes.py`.
+  - Dispatcher-only contract codified in `oe-orchestrator/AGENTS.md` and `oe-worker-dispatch/SKILL.md`.
+  - Three-tier proof model (Weak/Strong/Provisional) established in durable docs.
+- Success criteria: `orchestrator-spawn` probe emits PASS, docs distinguish runtime-surface from child-dispatch proof.
+
 **partial-routing-chain-progress** — COMPLETE
 - Date: 2026-03-22
 - Scope: Verified and hardened the routing chain components, identifying the "speech-only delegation" failure mode in the main session.
@@ -380,6 +390,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.3.1  
-**Last Updated**: 2026-03-15  
-**Milestone**: real-environment-testing-loop COMPLETE
+**Version**: 1.3.2  
+**Last Updated**: 2026-03-23  
+**Milestone**: orchestrator-child-spawn-proof COMPLETE

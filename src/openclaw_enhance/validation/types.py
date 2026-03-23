@@ -126,7 +126,14 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             return commands
 
     if feature_class == FeatureClass.WORKSPACE_ROUTING:
-        if "main-escalation" in slug:
+        if "orchestrator-child-spawn" in slug:
+            live_probe_cmd = (
+                "python -m openclaw_enhance.validation.live_probes orchestrator-spawn "
+                '--openclaw-home "$OPENCLAW_HOME" '
+                "--message "
+                '"printf a single line with the current probe request-id and nothing else"'
+            )
+        elif "main-escalation" in slug:
             live_probe_cmd = (
                 "python -m openclaw_enhance.validation.live_probes main-escalation "
                 '--openclaw-home "$OPENCLAW_HOME" '
