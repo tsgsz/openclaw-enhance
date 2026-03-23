@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
 
 from openclaw_enhance.validation.live_probes import (
-    cli,
     _build_orchestrator_spawn_probe_message,
+    cli,
 )
 
 

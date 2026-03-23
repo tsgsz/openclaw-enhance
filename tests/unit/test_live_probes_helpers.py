@@ -809,7 +809,10 @@ class TestTranscriptDeltaSearch:
                                 "content": [
                                     {
                                         "type": "text",
-                                        "text": f"[orchestrator-spawn probe request-id: {request_id}] do work",
+                                        "text": (
+                                            f"[orchestrator-spawn probe request-id: {request_id}] "
+                                            "do work"
+                                        ),
                                     }
                                 ],
                             },

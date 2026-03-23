@@ -130,7 +130,8 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
             live_probe_cmd = (
                 "python -m openclaw_enhance.validation.live_probes orchestrator-spawn "
                 '--openclaw-home "$OPENCLAW_HOME" '
-                '--message "请让 orchestrator 通过子 agent 完成一个复杂任务，并确认存在 child spawn 证据"'
+                "--message "
+                '"printf a single line with the current probe request-id and nothing else"'
             )
         elif "main-escalation" in slug:
             live_probe_cmd = (
