@@ -60,9 +60,14 @@ Target: Default `~/.openclaw`
 2. **Routing Surface Test**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
    - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
 
+#### Recovery Runtime Surface (`backfill-recovery-worker`)
+3. **Recovery Specialist Test**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
+   - *Pass*: `oe-tool-recovery` is registered, live recovery session returns a session id and transcript path, and the runtime recovery identity is initialized.
+
 #### Main-to-Orchestrator Escalation Proof (`backfill-main-escalation`)
-3. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
+4. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
    - *Pass*: Heavy main-session request triggers `oe-orchestrator` spawn, main session transcript contains `sessions_spawn` tool call for `oe-orchestrator`, probe emits `PROBE_MAIN_ESCALATION_OK` marker with both main and orchestrator session evidence.
+   - *Note*: This proof is currently **PROVISIONAL** and depends on Task 8 runtime repair for a full PASS.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
 1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | jq '.hooks.internal'`
@@ -127,6 +132,7 @@ This section tracks the canonical backfill slugs for features already shipped in
 | CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `cleanup-sessions --dry-run --json`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; cleanup dry-run reports buckets; rendered content matches; docs-check passes; validator self-surface ok |
 | Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
 | Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
+| Main-to-Orchestrator Escalation | `backfill-main-escalation` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes main-escalation` | **PROVISIONAL**: Main session transcript contains `sessions_spawn` for `oe-orchestrator`; both session IDs are captured. |
 | Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
 
 ### 6.1 Method Contracts & Expectations
@@ -168,6 +174,18 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Command**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
 - **Expectation**: Exit code 0. Live output returns a real session id for the recovery workspace.
 - **Proof**: `openclaw sessions --agent oe-tool-recovery --json` provides a `transcriptPath` for the live session and the runtime recovery workspace identity is initialized.
+
+#### `backfill-recovery-worker`
+- **Command**: `openclaw agents list`
+- **Expectation**: `oe-tool-recovery` is listed.
+- **Command**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
+- **Expectation**: Exit code 0. Live output returns a real session id for the recovery workspace.
+- **Proof**: `openclaw sessions --agent oe-tool-recovery --json` provides a `transcriptPath` for the live session and the runtime recovery workspace identity is initialized.
+
+#### `backfill-main-escalation`
+- **Command**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "..."`
+- **Expectation**: **PROVISIONAL**. Probe identifies main session ID and orchestrator session ID.
+- **Proof**: `PROBE_MAIN_ESCALATION_OK` marker in output. Note: Full transcript evidence depends on Task 8 repair.
 
 #### `backfill-watchdog-reminder`
 - **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`

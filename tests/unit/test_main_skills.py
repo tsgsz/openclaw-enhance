@@ -176,6 +176,15 @@ class TestSkillContracts:
         for field in required_fields:
             assert field in contract, f"Missing field: {field}"
 
+    def test_toolcall_router_contract_has_issue9_heavy_research_example(self):
+        contract = render_skill_contract("oe-toolcall-router")
+        assert "issue #9" in contract.lower()
+        assert "ppt" in contract.lower()
+        assert "traceable data" in contract.lower()
+        assert "sessions_spawn" in contract
+        assert '"agentId": "oe-orchestrator"' in contract
+        assert "no python wrappers" in contract.lower()
+
     def test_timeout_sync_contract_has_required_fields(self):
         """oe-timeout-state-sync contract should have all required fields."""
         contract = render_skill_contract("oe-timeout-state-sync")

@@ -36,6 +36,22 @@ class TestSkillContractRendering:
         assert "MANDATORY router" in contract
         assert "ROUTER ONLY" in contract
 
+    def test_toolcall_router_contract_includes_issue9_heavy_research_example(self):
+        contract = render_skill_contract("oe-toolcall-router")
+        assert "issue #9" in contract.lower()
+        assert "ppt" in contract.lower()
+        assert "traceable data" in contract.lower()
+        assert '"agentId": "oe-orchestrator"' in contract
+
+    def test_toolcall_router_contract_preserves_native_execution_invariants(self):
+        contract = render_skill_contract("oe-toolcall-router")
+        assert "sessions_spawn" in contract
+        assert "no python wrappers" in contract.lower()
+        assert (
+            "do not route main directly to workers" in contract.lower()
+            or "oe-orchestrator" in contract
+        )
+
     def test_render_timeout_state_sync_contract(self):
         """Should render oe-timeout-state-sync contract."""
         contract = render_skill_contract("oe-timeout-state-sync")

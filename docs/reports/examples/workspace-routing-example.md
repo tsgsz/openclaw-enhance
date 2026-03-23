@@ -37,15 +37,20 @@ Available agents:
 ### Command 2: ✓ PASS
 
 ```bash
-openclaw chat --message "帮我规划一个复杂任务"
+openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json
 ```
 
 - Exit Code: 0
 - Duration: 15.32s
 
 **stdout:**
-```
-[oe-orchestrator] I will help you plan this task...
+```json
+{
+  "ok": true,
+  "sessionId": "ses_orch_123",
+  "agentId": "oe-orchestrator",
+  "output": "I will help you plan this task..."
+}
 ```
 
 ## Findings

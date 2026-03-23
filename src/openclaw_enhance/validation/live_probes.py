@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
 import uuid
 from pathlib import Path
 
@@ -51,27 +52,32 @@ def _probe_env(openclaw_home: Path) -> dict[str, str]:
     """Build subprocess environment with explicit OpenClaw paths."""
     env = os.environ.copy()
     env["OPENCLAW_CONFIG_PATH"] = str(_resolve_config_path(openclaw_home))
-    env["OPENCLAW_HOME"] = str(openclaw_home)
+    effective_openclaw_home = openclaw_home
+    if openclaw_home.name == ".openclaw" and openclaw_home.parent != openclaw_home:
+        effective_openclaw_home = openclaw_home.parent
+    env["OPENCLAW_HOME"] = str(effective_openclaw_home)
     return env
 
 
 def _resolve_main_session_entrypoint(env: dict[str, str]) -> str | None:
-    """Discover supported main session CLI command from openclaw --help."""
-    result = subprocess.run(
-        ["openclaw", "--help"],
+    agent_help = subprocess.run(
+        ["openclaw", "agent", "--help"],
         capture_output=True,
         text=True,
         env=env,
     )
-    if result.returncode != 0:
-        return None
-
-    help_text = result.stdout.lower()
-    # Prefer 'agent' if available, fall back to 'chat' if present
-    if "agent" in help_text:
+    if agent_help.returncode == 0:
         return "agent"
-    if "chat" in help_text:
+
+    chat_help = subprocess.run(
+        ["openclaw", "chat", "--help"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if chat_help.returncode == 0:
         return "chat"
+
     return None
 
 
@@ -112,6 +118,18 @@ def _build_main_session_command(
         ]
 
 
+def _build_main_escalation_probe_message(message: str, probe_request_id: str) -> str:
+    return (
+        f"[main-escalation probe request-id: {probe_request_id}]\n"
+        "请立即执行一次新的 sessions_spawn，目标必须是 oe-orchestrator。"
+        "禁止仅回复“已在处理/已在重查/稍后给你”。"
+        "spawn 的 task 内容必须包含同样的 request-id，确保可归因。\n"
+        "--- 用户原始任务 ---\n"
+        f"{message}\n"
+        "--- 结束 ---"
+    )
+
+
 def _parse_agent_output(output: str) -> dict[str, object] | None:
     json_start = output.find("{")
     json_end = output.rfind("}") + 1
@@ -121,6 +139,32 @@ def _parse_agent_output(output: str) -> dict[str, object] | None:
 
     try:
         parsed = json.loads(output[json_start:json_end])
+    except json.JSONDecodeError:
+        return None
+
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _parse_first_json_object(output: str) -> dict[str, object] | None:
+    lines = output.split("\n")
+    json_lines = []
+    depth = 0
+    started = False
+
+    for line in lines:
+        if line.strip().startswith("{") and not started:
+            started = True
+        if started:
+            json_lines.append(line)
+            depth += line.count("{") - line.count("}")
+            if depth == 0:
+                break
+
+    if not json_lines:
+        return None
+
+    try:
+        parsed = json.loads("\n".join(json_lines))
     except json.JSONDecodeError:
         return None
 
@@ -189,28 +233,10 @@ def _get_transcript_path(
     if sessions_result.returncode != 0:
         return None
 
-    lines = sessions_result.stdout.split("\n")
-    json_lines = []
-    depth = 0
-    started = False
-
-    for line in lines:
-        if line.strip().startswith("{") and not started:
-            started = True
-        if started:
-            json_lines.append(line)
-            depth += line.count("{") - line.count("}")
-            if depth == 0:
-                break
-
-    try:
-        if json_lines:
-            sessions_obj = json.loads("\n".join(json_lines))
-            sessions_data = sessions_obj.get("sessions", [])
-        else:
-            return None
-    except json.JSONDecodeError:
+    sessions_obj = _parse_first_json_object(sessions_result.stdout)
+    if sessions_obj is None:
         return None
+    sessions_data = sessions_obj.get("sessions", [])
 
     for session in sessions_data if isinstance(sessions_data, list) else []:
         if session.get("sessionId") == session_id:
@@ -244,6 +270,225 @@ def _line_count(path: Path) -> int:
             return sum(1 for _ in handle)
     except OSError:
         return 0
+
+
+def _latest_orchestrator_session_id(env: dict[str, str]) -> str | None:
+    sessions_result = subprocess.run(
+        ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if sessions_result.returncode != 0:
+        return None
+    sessions_obj = _parse_first_json_object(sessions_result.stdout)
+    if sessions_obj is None:
+        return None
+    sessions = sessions_obj.get("sessions", [])
+    if not isinstance(sessions, list) or not sessions:
+        return None
+    latest = sessions[0]
+    if not isinstance(latest, dict):
+        return None
+    session_id = latest.get("sessionId")
+    return session_id if isinstance(session_id, str) and session_id else None
+
+
+def _resolve_orchestrator_session_id_with_retry(
+    env: dict[str, str],
+    attempts: int = 5,
+    delay_seconds: float = 1.0,
+) -> str | None:
+    for attempt in range(1, attempts + 1):
+        session_id = _latest_orchestrator_session_id(env)
+        if session_id:
+            return session_id
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    return None
+
+
+def _resolve_orchestrator_session_for_request(
+    openclaw_home: Path,
+    env: dict[str, str],
+    probe_request_id: str,
+    attempts: int = 30,
+    delay_seconds: float = 1.0,
+) -> tuple[str, Path] | None:
+    for attempt in range(1, attempts + 1):
+        sessions_result = subprocess.run(
+            ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if sessions_result.returncode == 0:
+            sessions_obj = _parse_first_json_object(sessions_result.stdout)
+            sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
+            if isinstance(sessions, list):
+                for session in sessions:
+                    if not isinstance(session, dict):
+                        continue
+                    raw_session_id = session.get("sessionId")
+                    if not isinstance(raw_session_id, str) or not raw_session_id:
+                        continue
+                    transcript = _get_transcript_path(
+                        "oe-orchestrator", raw_session_id, openclaw_home, env
+                    )
+                    if transcript is None:
+                        continue
+                    if _search_transcript(transcript, probe_request_id):
+                        return (raw_session_id, transcript)
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    return None
+
+
+def _extract_orchestrator_child_session_key_from_segment(
+    transcript_path: Path,
+    start_line: int,
+) -> str | None:
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                if "childSessionKey" not in line or "oe-orchestrator" not in line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict):
+                    continue
+                message = entry.get("message")
+                if not isinstance(message, dict) or message.get("role") != "toolResult":
+                    continue
+                details = message.get("details")
+                if not isinstance(details, dict):
+                    continue
+                raw_key = details.get("childSessionKey")
+                if isinstance(raw_key, str) and raw_key and "oe-orchestrator" in raw_key:
+                    return raw_key
+        return None
+    except OSError:
+        return None
+
+
+def _resolve_orchestrator_session_by_child_key(
+    openclaw_home: Path,
+    env: dict[str, str],
+    child_session_key: str,
+    attempts: int = 30,
+    delay_seconds: float = 1.0,
+) -> tuple[str, Path] | None:
+    for attempt in range(1, attempts + 1):
+        sessions_result = subprocess.run(
+            ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if sessions_result.returncode == 0:
+            sessions_obj = _parse_first_json_object(sessions_result.stdout)
+            sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
+            if isinstance(sessions, list):
+                for session in sessions:
+                    if not isinstance(session, dict):
+                        continue
+                    if session.get("key") != child_session_key:
+                        continue
+                    raw_session_id = session.get("sessionId")
+                    if not isinstance(raw_session_id, str) or not raw_session_id:
+                        continue
+                    transcript = _get_transcript_path(
+                        "oe-orchestrator", raw_session_id, openclaw_home, env
+                    )
+                    if transcript is None:
+                        continue
+                    return (raw_session_id, transcript)
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    return None
+
+
+def _snapshot_main_transcript_line_counts(openclaw_home: Path) -> dict[Path, int]:
+    sessions_dir = openclaw_home / "agents" / "main" / "sessions"
+    if not sessions_dir.exists():
+        return {}
+    counts: dict[Path, int] = {}
+    for transcript in sessions_dir.glob("*.jsonl"):
+        counts[transcript] = _line_count(transcript)
+    return counts
+
+
+def _session_path_candidates(session: dict[str, object], openclaw_home: Path) -> list[Path]:
+    candidates: list[Path] = []
+    transcript_path = session.get("transcriptPath")
+    if isinstance(transcript_path, str) and transcript_path:
+        candidates.append(Path(transcript_path).expanduser())
+
+    session_id = session.get("sessionId")
+    if isinstance(session_id, str) and session_id:
+        candidates.append(openclaw_home / "agents" / "main" / "sessions" / f"{session_id}.jsonl")
+
+    return candidates
+
+
+def _find_main_session_from_growth(
+    openclaw_home: Path,
+    env: dict[str, str],
+    baseline_line_counts: dict[Path, int],
+) -> tuple[str, Path] | None:
+    sessions_result = subprocess.run(
+        ["openclaw", "sessions", "--agent", "main", "--json"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if sessions_result.returncode != 0:
+        return None
+
+    sessions_obj = _parse_first_json_object(sessions_result.stdout)
+    if sessions_obj is None:
+        return None
+
+    sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
+    if not isinstance(sessions, list):
+        return None
+
+    growth_candidates: list[tuple[float, str, Path]] = []
+    for session in sessions:
+        if not isinstance(session, dict):
+            continue
+        session_id = session.get("sessionId")
+        if not isinstance(session_id, str) or not session_id:
+            continue
+
+        for transcript_path in _session_path_candidates(session, openclaw_home):
+            if not transcript_path.exists():
+                continue
+            before = baseline_line_counts.get(transcript_path, 0)
+            after = _line_count(transcript_path)
+            if after > before:
+                try:
+                    mtime = transcript_path.stat().st_mtime
+                except OSError:
+                    mtime = 0.0
+                growth_candidates.append((mtime, session_id, transcript_path))
+
+    if not growth_candidates:
+        return None
+
+    growth_candidates.sort(reverse=True)
+    _, resolved_session_id, resolved_path = growth_candidates[0]
+    return (resolved_session_id, resolved_path)
+
+
+def _line_count_delta(path: Path, baseline_line_counts: dict[Path, int]) -> int:
+    before = baseline_line_counts.get(path, 0)
+    after = _line_count(path)
+    return max(0, after - before)
 
 
 def _search_transcript_segment(
@@ -291,10 +536,7 @@ def _latest_main_transcript_path(openclaw_home: Path) -> Path | None:
 
 def _extract_main_session_id(parsed: dict[str, object]) -> str | None:
     result_obj = parsed.get("result")
-    if not isinstance(result_obj, dict):
-        return None
-
-    meta_obj = result_obj.get("meta")
+    meta_obj = result_obj.get("meta") if isinstance(result_obj, dict) else parsed.get("meta")
     if not isinstance(meta_obj, dict):
         return None
 
@@ -317,6 +559,29 @@ def _extract_main_session_id(parsed: dict[str, object]) -> str | None:
     return None
 
 
+def _is_valid_orchestrator_runtime_surface(agent_output: dict[str, object]) -> bool:
+    result_obj = agent_output.get("result")
+    meta_obj = result_obj.get("meta") if isinstance(result_obj, dict) else None
+    agent_meta = meta_obj.get("agentMeta") if isinstance(meta_obj, dict) else None
+    system_prompt_report = (
+        meta_obj.get("systemPromptReport") if isinstance(meta_obj, dict) else None
+    )
+
+    session_id = agent_meta.get("sessionId") if isinstance(agent_meta, dict) else None
+    workspace_dir = (
+        system_prompt_report.get("workspaceDir") if isinstance(system_prompt_report, dict) else None
+    )
+    tool_surface_names = _tool_surface_names(agent_output)
+
+    return (
+        isinstance(session_id, str)
+        and bool(session_id)
+        and isinstance(workspace_dir, str)
+        and "oe-orchestrator" in workspace_dir
+        and "sessions_yield" in tool_surface_names
+    )
+
+
 def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, str]) -> bool:
     """Ensure agent workspace is bootstrap-ready via CLI interaction."""
     workspace_path = _workspace_path(openclaw_home, agent_id)
@@ -336,11 +601,41 @@ def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, s
         timeout=30,
     )
 
-    return (
+    bootstrap_completed = (
         result.returncode == 0
         and not bootstrap_file.exists()
         and _runtime_identity_confirmed(openclaw_home, agent_id)
     )
+
+    if bootstrap_completed:
+        return True
+
+    if agent_id != "oe-orchestrator":
+        return False
+
+    runtime_probe = subprocess.run(
+        [
+            "openclaw",
+            "agent",
+            "--agent",
+            agent_id,
+            "-m",
+            "Runtime readiness check: respond briefly in JSON mode.",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    if runtime_probe.returncode != 0:
+        return False
+
+    agent_output = _parse_agent_output(runtime_probe.stdout + runtime_probe.stderr)
+    if not agent_output:
+        return False
+
+    return _is_valid_orchestrator_runtime_surface(agent_output)
 
 
 @click.group()
@@ -371,6 +666,7 @@ def dev_symlink(openclaw_home: Path, workspace: str) -> None:
             "workspace": workspace,
             "path": str(workspace_path),
             "target": str(target),
+            "evidence": f"Symlink: {workspace_path} -> Target: {target}",
         }
     )
 
@@ -451,7 +747,8 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
             _fail("routing-yield", "wrong_runtime_workspace", str(workspace_dir))
 
         runtime_identity_confirmed = _runtime_identity_confirmed(home, "oe-orchestrator")
-        if not runtime_identity_confirmed:
+        runtime_surface_valid = _is_valid_orchestrator_runtime_surface(agent_output)
+        if not runtime_identity_confirmed and not runtime_surface_valid:
             _fail(
                 "routing-yield",
                 "runtime_identity_unconfirmed",
@@ -468,6 +765,7 @@ def routing_yield(openclaw_home: Path, message: str) -> None:
                 "transcript_path": str(transcript_path),
                 "runtime_workspace": workspace_dir,
                 "runtime_identity_confirmed": runtime_identity_confirmed,
+                "runtime_surface_valid": runtime_surface_valid,
                 "tool_surface_has_sessions_yield": True,
                 "config_path": str(config_path),
                 "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
@@ -684,9 +982,12 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
 
     with pinned_openclaw_runtime_model(config_path) as configured_model:
         baseline = _latest_main_transcript_snapshot(home)
+        baseline_line_counts = _snapshot_main_transcript_line_counts(home)
         probe_session_id = str(uuid.uuid4())
+        probe_request_id = str(uuid.uuid4())
+        probe_message = _build_main_escalation_probe_message(message, probe_request_id)
         # Build the main session command (will fail if no supported entrypoint)
-        cmd = _build_main_session_command("main-escalation", message, env, probe_session_id)
+        cmd = _build_main_session_command("main-escalation", probe_message, env, probe_session_id)
 
         # Start main session
         result = subprocess.run(
@@ -716,6 +1017,16 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
         main_session_id: str = raw_session_id
 
         main_transcript = _get_transcript_path("main", main_session_id, home, env)
+        needs_growth_attribution = (
+            main_transcript is None or _line_count_delta(main_transcript, baseline_line_counts) == 0
+        )
+
+        if needs_growth_attribution:
+            growth_attribution = _find_main_session_from_growth(home, env, baseline_line_counts)
+            if growth_attribution is not None:
+                growth_session_id, growth_transcript = growth_attribution
+                main_session_id, main_transcript = growth_session_id, growth_transcript
+
         if main_transcript is None:
             fallback_transcript = _latest_main_transcript_path(home)
             if fallback_transcript is None:
@@ -745,34 +1056,33 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
             "oe-orchestrator",
         )
 
-        if not orchestrator_spawned:
-            _fail("main-escalation", "orchestrator_handoff_missing", str(main_session_id))
-
-        # Get orchestrator session evidence
-        orch_transcript = None
-        orchestrator_session_id = None
-        sessions_result = subprocess.run(
-            ["openclaw", "sessions", "--agent", "oe-orchestrator", "--json"],
-            capture_output=True,
-            text=True,
-            env=env,
+        probe_request_attributed = _search_transcript_segment(
+            main_transcript,
+            start_line,
+            probe_request_id,
         )
 
-        if sessions_result.returncode == 0:
-            try:
-                sessions_data = json.loads(sessions_result.stdout)
-                sessions = sessions_data.get("sessions", [])
-                if sessions:
-                    # Get most recent orchestrator session
-                    orchestrator_session_id = sessions[0].get("sessionId")
-                    orch_transcript_path = sessions[0].get("transcriptPath")
-                    if orch_transcript_path:
-                        orch_transcript = Path(orch_transcript_path).expanduser()
-            except (json.JSONDecodeError, IndexError):
-                pass
+        if not orchestrator_spawned or not probe_request_attributed:
+            _fail("main-escalation", "orchestrator_handoff_missing", str(main_session_id))
 
-        if not orchestrator_session_id:
-            _fail("main-escalation", "missing_orchestrator_session")
+        child_session_key = _extract_orchestrator_child_session_key_from_segment(
+            main_transcript, start_line
+        )
+        orchestrator_resolution = None
+        if child_session_key:
+            orchestrator_resolution = _resolve_orchestrator_session_by_child_key(
+                home, env, child_session_key
+            )
+        if orchestrator_resolution is None:
+            orchestrator_resolution = _resolve_orchestrator_session_for_request(
+                home, env, probe_request_id
+            )
+        if orchestrator_resolution is None:
+            _fail(
+                "main-escalation", "missing_transcript_evidence", "missing orchestrator session id"
+            )
+            assert False, "unreachable"
+        orchestrator_session_id, orch_transcript = orchestrator_resolution
 
         _emit(
             {
@@ -782,8 +1092,18 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
                 "main_session_id": main_session_id,
                 "orchestrator_session_id": orchestrator_session_id,
                 "main_transcript_path": str(main_transcript),
-                "orchestrator_transcript_path": str(orch_transcript) if orch_transcript else None,
+                "orchestrator_transcript_path": str(orch_transcript),
+                "main_session_evidence": {
+                    "session_id": main_session_id,
+                    "transcript_path": str(main_transcript),
+                    "handoff_confirmed": True,
+                },
+                "orchestrator_session_evidence": {
+                    "session_id": orchestrator_session_id,
+                    "transcript_path": str(orch_transcript),
+                },
                 "proof": "orchestrator_handoff_confirmed",
+                "proof_request_id": probe_request_id,
                 "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
             }
         )

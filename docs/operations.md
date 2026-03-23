@@ -12,7 +12,14 @@ Once installed, `openclaw-enhance` operates transparently:
 
 You interact with OpenClaw normally—the enhancement layer handles complexity behind the scenes.
 
-**How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`. The orchestrator then manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
+**How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`. 
+
+The system distinguishes three separate routing proofs:
+1. **Direct Orchestrator Runtime Surface** (`backfill-routing-yield`): Direct interaction with `oe-orchestrator` for complex planning.
+2. **Recovery-Worker Runtime Surface** (`backfill-recovery-worker`): Specialized `oe-tool-recovery` worker for tool-failure diagnosis.
+3. **Main-Session Escalation Runtime Surface** (`backfill-main-escalation`): Automatic escalation from the main session to the orchestrator for heavy tasks.
+
+The orchestrator manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
 
 ## Using the Orchestrator
 

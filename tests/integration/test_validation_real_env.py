@@ -234,6 +234,39 @@ class TestValidateFeatureCommandOrdering:
         assert "--message" in calls[0]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
+    def test_workspace_routing_uses_main_escalation_probe(
+        self,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+        reports_dir: Path,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        runner = CliRunner()
+        runner.invoke(
+            cli,
+            [
+                "validate-feature",
+                "--feature-class",
+                "workspace-routing",
+                "--report-slug",
+                "backfill-main-escalation",
+                "--openclaw-home",
+                str(mock_openclaw_home),
+                "--reports-dir",
+                str(reports_dir),
+            ],
+        )
+
+        calls = [call[0][0] for call in mock_run.call_args_list]
+        assert len(calls) == 1
+        assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
+        assert "main-escalation" in calls[0]
+        assert "routing-yield" not in calls[0]
+        assert "recovery-worker" not in calls[0]
+        assert "--message" in calls[0]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_runtime_watchdog_uses_watchdog_probe(
         self,
         mock_run: MagicMock,
