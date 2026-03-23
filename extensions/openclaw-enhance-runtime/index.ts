@@ -16,7 +16,8 @@ const MAIN_FORBIDDEN_TOOLS = new Set([
 const mainRunIds = new Set<string>();
 
 const isMainSession = (sessionKey: unknown): boolean =>
-  typeof sessionKey === "string" && sessionKey.startsWith("agent:main:");
+  typeof sessionKey === "string" &&
+  (sessionKey === "main" || sessionKey.startsWith("agent:main:"));
 
 export default {
   id: "oe-runtime",
