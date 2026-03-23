@@ -10,11 +10,12 @@ This document describes the architecture of `openclaw-enhance`, a non-invasive c
 
 ## Design Principles
 
-1. **Non-invasive**: No edits to OpenClaw source code or bundled runtime files
+1. **Non-invasive**: No edits to OpenClaw source code or bundled runtime files (install-time workspace configuration is allowed)
 2. **Symmetric lifecycle**: One-click install and uninstall with rollback support
 3. **Namespace isolation**: All assets prefixed with `oe-` and stored in dedicated managed namespace
 4. **Native protocols**: Uses OpenClaw's native subagent announce chain for all communication
 5. **CLI-first**: Prefers OpenClaw CLI commands over direct config file manipulation
+6. **Extension-based intrusion**: Tool Gate, hooks, and skills modify behavior via OpenClaw's native extension mechanisms
 
 ## System Architecture
 

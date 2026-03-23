@@ -92,16 +92,27 @@ Results → Announce back to orchestrator → Synthesis → Return to main
 **Worker Discovery and Routing** (AGENTS.md frontmatter):
 
 Worker routing is now **catalog-driven** from YAML frontmatter in each worker's `AGENTS.md`:
+
+**General Workers**:
 - `oe-searcher`: Research capabilities — cheap model, read-only, web search tools
 - `oe-syshelper`: Introspection capabilities — cheap model, strictly read-only (no recovery)
 - `oe-tool-recovery`: Recovery capabilities — reasoning model, leaf-node, read-only
 - `oe-script_coder`: Code generation capabilities — standard model, repo write, requires tests
 - `oe-watchdog`: Monitoring capabilities — narrow authority, runtime state only
 
+**Domain Specialists** (Milestone: domain-specialist-migration):
+- `oe-specialist-ops`: Operations diagnostics — tunnels/backup/launchd/service checks
+- `oe-specialist-finance`: Financial analysis — investment decisions, reports
+- `oe-specialist-km`: Knowledge management — documentation, content organization
+- `oe-specialist-creative`: Creative content — copywriting, design concepts
+- `oe-specialist-game-design`: Game design — mechanics, rules, design docs
+
 **Source of Truth**:
 - **Routing metadata**: Worker `AGENTS.md` frontmatter (capabilities, constraints, cost model)
 - **Exact tool definitions**: Worker `TOOLS.md` (parameter schemas, examples)
-- **Dispatch policy**: `oe-worker-dispatch` skill (least-privilege ranking, hard filters)
+- **Dispatch policy**: 
+  - General workers: `oe-worker-dispatch` skill (least-privilege ranking, hard filters)
+  - Domain specialists: `oe-domain-router` skill (domain mapping, protocol enforcement)
 
 The Orchestrator discovers workers by parsing frontmatter at runtime, not from hardcoded lists.
 

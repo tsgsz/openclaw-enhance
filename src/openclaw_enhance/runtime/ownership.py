@@ -11,6 +11,11 @@ OWNED_AGENT_SPECS: tuple[tuple[str, str], ...] = (
     ("oe-script_coder", "oe-script_coder"),
     ("oe-watchdog", "oe-watchdog"),
     ("oe-tool-recovery", "oe-tool-recovery"),
+    ("oe-specialist-ops", "oe-specialist-ops"),
+    ("oe-specialist-finance", "oe-specialist-finance"),
+    ("oe-specialist-km", "oe-specialist-km"),
+    ("oe-specialist-creative", "oe-specialist-creative"),
+    ("oe-specialist-game-design", "oe-specialist-game-design"),
 )
 
 OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = (

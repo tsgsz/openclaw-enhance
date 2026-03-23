@@ -341,6 +341,33 @@ def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
             break
 
 
+def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
+    """Ensure oe-orchestrator can spawn all oe-* agents."""
+    list_obj = agents_obj.get("list")
+    if isinstance(list_obj, list):
+        all_oe_agents = [
+            entry.get("id")
+            for entry in list_obj
+            if isinstance(entry, dict)
+            and isinstance(entry.get("id"), str)
+            and entry.get("id", "").startswith("oe-")
+        ]
+
+        for entry in list_obj:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("id") != "oe-orchestrator":
+                continue
+            subagents_obj = entry.get("subagents")
+            if not isinstance(subagents_obj, dict):
+                subagents_obj = {}
+                entry["subagents"] = subagents_obj
+            for agent_id in all_oe_agents:
+                if agent_id != "oe-orchestrator":
+                    _ensure_allow_agent_id(subagents_obj, agent_id)
+            break
+
+
 def _register_agents_via_cli(
     target_root: Path,
 ) -> list[ComponentInstall]:
@@ -477,6 +504,7 @@ def _register_runtime_surfaces(
         config["agents"] = agents_obj
 
     _ensure_main_orchestrator_allowlist(agents_obj)
+    _ensure_orchestrator_worker_allowlist(agents_obj)
 
     hooks_obj = config.get("hooks")
     if not isinstance(hooks_obj, dict):

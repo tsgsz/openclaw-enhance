@@ -7,9 +7,9 @@
 ## Non-Invasive Boundaries (Hard Rules)
 
 1. **No OpenClaw source code edits** — all capabilities via plugins, hooks, skills, agents
-2. **No runtime file modifications** — never modify main's `AGENTS.md`, `TOOLS.md`, or config at runtime
+2. **No runtime file modifications** — never modify main's `AGENTS.md`, `TOOLS.md`, or config at runtime (install-time modifications are allowed and documented)
 3. **CLI-first operations** — prefer OpenClaw CLI over direct config edits
-4. **Minimal workflow intrusion** — provide tools without changing OpenClaw's core logic
+4. **Minimal workflow intrusion** — provide tools without changing OpenClaw's core logic (hooks and skills extend behavior via native extension points)
 
 ## Required Reading Order
 
