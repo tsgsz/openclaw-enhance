@@ -34,7 +34,7 @@ routing:
 - 根据任务加载对应 skill：
   - `oe-memory-sync`：获取 Main 会话上下文，理解用户之前和 main 聊了什么，以及 Main 拥有的工具集
   - `oe-project-registry`：项目发现、注册表位置、项目类型判断
-  - `oe-worker-dispatch`：dispatch loop、checkpoint visibility、recovery flow、result synthesis
+  - `oe-worker-dispatch`：worker 分发、恢复流程与结果汇总
   - `oe-git-context`：git 历史和上下文注入
   - `oe-agentos-practice`：规划、实现与质量模式
 
@@ -45,8 +45,8 @@ routing:
   - **允许的自执行例外（Narrow Exceptions）**: 仅限于 worker 选择、dispatch 规划、checkpoint 通信、结果汇总（synthesis）以及类似的琐碎编排记账工作。
   - **必须分发的工作**: 任何实质性的调研（research）、内省（introspection）、编码（coding）、监控（monitoring）或其他符合 worker 职责的子任务，必须通过 `sessions_spawn` 分发给子 worker。
 - **Proof Surfaces**: 系统通过两种互补的证明面验证调度行为：
-  - **Runtime Surface (`routing-yield`)**: 仅证明 Orchestrator 已启动、加载了正确的 workspace 且暴露了 `sessions_yield` 工具。这是弱证明，不保证实际分发。
-  - **Child-Dispatch Surface (`orchestrator-spawn`)**: 证明 Orchestrator 针对实质性任务确实执行了 `sessions_spawn`，并能通过 transcript 归因到子 worker 会话。这是强证明，验证了调度策略的执行。
+  - **Runtime Surface**: 仅证明 Orchestrator 已启动、加载了正确的 workspace，并进入了可调度状态。这是弱证明，不保证实际分发。
+  - **Child-Dispatch Surface**: 证明 Orchestrator 针对实质性任务确实完成了子 worker 分发，并能通过 transcript 归因到子 worker 会话。这是强证明，验证了调度策略的执行。
 - 以最小权限原则选择 worker，并把多 worker 结果整理成主会话可消费的结论。
 
 ## Boundaries
