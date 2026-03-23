@@ -54,18 +54,23 @@ Target: Default `~/.openclaw`
 
 ### 2.3 Routing & Agent Bundle (`workspace-routing`)
 
-#### Direct Orchestrator Proof (`backfill-routing-yield`)
+#### Direct Orchestrator Runtime Surface (`backfill-routing-yield`)
 1. **Agent List**: `openclaw agents list`
    - *Pass*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
 2. **Routing Surface Test**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
    - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
 
+#### Orchestrator Child-Dispatch Proof (`orchestrator-spawn`)
+3. **Child-Dispatch Test**: `python -m openclaw_enhance.validation.live_probes orchestrator-spawn --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年东南亚 iGaming 行业现状"`
+   - *Pass*: `oe-orchestrator` is active, parent transcript contains `sessions_spawn` for a worker agent, probe resolves the child worker session, and emits `PROBE_ORCHESTRATOR_SPAWN_OK` marker with full parent/child transcript evidence.
+   - *Note*: This is the **strong proof** for the orchestrator's dispatcher-only contract.
+
 #### Recovery Runtime Surface (`backfill-recovery-worker`)
-3. **Recovery Specialist Test**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
+4. **Recovery Specialist Test**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
    - *Pass*: `oe-tool-recovery` is registered, live recovery session returns a session id and transcript path, and the runtime recovery identity is initialized.
 
 #### Main-to-Orchestrator Escalation Proof (`backfill-main-escalation`)
-4. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
+5. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
    - *Pass*: Heavy main-session request triggers `oe-orchestrator` spawn, main session transcript contains `sessions_spawn` tool call for `oe-orchestrator`, probe emits `PROBE_MAIN_ESCALATION_OK` marker with both main and orchestrator session evidence.
    - *Note*: This proof is currently **PROVISIONAL** and depends on Task 8 runtime repair for a full PASS.
 
@@ -130,7 +135,8 @@ This section tracks the canonical backfill slugs for features already shipped in
 | Monitor Auto-Start (macOS) | `backfill-monitor-auto-start` | `install-lifecycle` | `python -m openclaw_enhance.cli install` + `launchctl print gui/$UID/ai.openclaw.enhance.monitor` | LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` |
 | Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
 | CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `cleanup-sessions --dry-run --json`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; cleanup dry-run reports buckets; rendered content matches; docs-check passes; validator self-surface ok |
-| Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
+| Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | **Weak Proof**: Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
+| Orchestrator Child-Dispatch | `orchestrator-spawn` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes orchestrator-spawn` | **Strong Proof**: Parent transcript contains `sessions_spawn` for worker; child session resolved; full parent/child transcript evidence captured |
 | Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
 | Main-to-Orchestrator Escalation | `backfill-main-escalation` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes main-escalation` | **PROVISIONAL**: Main session transcript contains `sessions_spawn` for `oe-orchestrator`; both session IDs are captured. |
 | Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
@@ -167,6 +173,13 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Command**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
 - **Expectation**: Exit code 0. Live output returns a real session id and the orchestrator tool surface includes `sessions_yield`.
 - **Proof**: `openclaw sessions --agent oe-orchestrator --json` provides a `transcriptPath` for the live session and the runtime workspace identity is initialized.
+- **Note**: This is a **weak proof** (runtime surface only).
+
+#### `orchestrator-spawn`
+- **Command**: `python -m openclaw_enhance.validation.live_probes orchestrator-spawn --openclaw-home "$OPENCLAW_HOME" --message "..."`
+- **Expectation**: Exit code 0. Probe identifies parent orchestrator session ID and child worker session ID.
+- **Proof**: `PROBE_ORCHESTRATOR_SPAWN_OK` marker in output. Confirms actual child dispatch via transcript evidence.
+- **Note**: This is the **strong proof** for the dispatcher-only contract.
 
 #### `backfill-recovery-worker`
 - **Command**: `openclaw agents list`

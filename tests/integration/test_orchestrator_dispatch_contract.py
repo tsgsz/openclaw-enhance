@@ -273,6 +273,88 @@ class TestErrorHandlingIntegration:
         assert "Recovery" in content or "retry" in content.lower() or "fallback" in content.lower()
 
 
+class TestOrchestratorSelfExecutionPolicyIntegration:
+    @pytest.fixture
+    def agents_content(self):
+        return Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
+
+    @pytest.fixture
+    def dispatch_skill_content(self):
+        return Path("workspaces/oe-orchestrator/skills/oe-worker-dispatch/SKILL.md").read_text()
+
+    @pytest.fixture
+    def operations_content(self):
+        return Path("docs/operations.md").read_text()
+
+    def test_substantive_work_requires_child_dispatch(
+        self, agents_content, dispatch_skill_content, operations_content
+    ):
+        required_markers = [
+            "Orchestrator Self-Execution Policy",
+            "Orchestrator Self-Execution Exception Policy",
+            "Mandatory Worker Dispatch",
+            "必须分发的工作",
+            "sessions_spawn",
+        ]
+
+        for marker in required_markers:
+            assert (
+                marker in agents_content
+                or marker in dispatch_skill_content
+                or marker in operations_content
+            ), f"Expected orchestrator dispatch contract marker: {marker}"
+
+        for content in (agents_content, dispatch_skill_content, operations_content):
+            assert "sessions_spawn" in content, (
+                "Orchestrator dispatch contract must require child sessions_spawn dispatches"
+            )
+
+        assert "substantive research" in dispatch_skill_content.lower()
+        assert "introspection" in dispatch_skill_content.lower()
+        assert "coding" in dispatch_skill_content.lower()
+        assert "monitoring" in dispatch_skill_content.lower()
+
+    def test_exception_list_stays_narrow(
+        self, agents_content, dispatch_skill_content, operations_content
+    ):
+        expected_exceptions = [
+            "worker selection",
+            "dispatch planning",
+            "checkpoint communication",
+            "result synthesis",
+            "trivial orchestration bookkeeping",
+        ]
+
+        for exception in expected_exceptions:
+            assert (
+                exception in dispatch_skill_content.lower()
+                or exception in operations_content.lower()
+            ), f"Missing narrow self-execution exception: {exception}"
+
+        assert "Allowed Self-Execution Exceptions" in operations_content
+        assert "Allowed Self-Execution Exceptions" in dispatch_skill_content
+        assert "允许的自执行例外" in agents_content
+
+    def test_no_implicit_self_execution_fallback_remains_explicitly_banned(
+        self, agents_content, dispatch_skill_content, operations_content
+    ):
+        banned_phrases = [
+            "prohibited from implicit self-execution fallback",
+            "No Implicit Fallback",
+            "严禁静默吸收",
+        ]
+
+        for phrase in banned_phrases:
+            assert (
+                phrase in agents_content
+                or phrase in dispatch_skill_content
+                or phrase in operations_content
+            ), f"Missing explicit no-fallback wording: {phrase}"
+
+        assert "must become child `sessions_spawn` dispatches" in operations_content.lower()
+        assert "MUST NOT silently absorb substantive worker-eligible work" in dispatch_skill_content
+
+
 class TestOrchestratorEndToEndWorkflow:
     """End-to-end tests simulating orchestrator workflows."""
 

@@ -118,6 +118,21 @@ def _build_main_session_command(
         ]
 
 
+def _build_local_agent_command(agent_id: str, message: str, session_id: str) -> list[str]:
+    return [
+        "openclaw",
+        "agent",
+        "--agent",
+        agent_id,
+        "--local",
+        "--session-id",
+        session_id,
+        "-m",
+        message,
+        "--json",
+    ]
+
+
 def _build_main_escalation_probe_message(message: str, probe_request_id: str) -> str:
     return (
         f"[main-escalation probe request-id: {probe_request_id}]\n"
@@ -125,6 +140,22 @@ def _build_main_escalation_probe_message(message: str, probe_request_id: str) ->
         "禁止仅回复“已在处理/已在重查/稍后给你”。"
         "spawn 的 task 内容必须包含同样的 request-id，确保可归因。\n"
         "--- 用户原始任务 ---\n"
+        f"{message}\n"
+        "--- 结束 ---"
+    )
+
+
+def _build_orchestrator_spawn_probe_message(message: str, probe_request_id: str) -> str:
+    return (
+        f"[orchestrator-spawn probe request-id: {probe_request_id}]\n"
+        "请先通过一个新的 sessions_spawn 创建 fresh child session，再把下面这条唯一任务交给 worker。"
+        "这个任务必须很小、一次性、不可复用历史研究结论，而且必须由 worker 现场执行并回传结果。"
+        "禁止由 orchestrator 直接完成实质性工作，也禁止只回复计划、复述、或沿用旧的 completed child 结果。"
+        "spawn 的 task 内容必须包含同样的 request-id，确保可归因。\n"
+        "--- 本次唯一任务 ---\n"
+        f"请让 worker 只执行一次最小的 echo/printf 风格任务：直接输出且仅输出一行 `orchestrator-spawn:{probe_request_id}`，"
+        "不要读取任何文件，不要做额外推理，不要附加解释。\n"
+        "--- 背景信息（不要把它当作主任务） ---\n"
         f"{message}\n"
         "--- 结束 ---"
     )
@@ -326,6 +357,7 @@ def _resolve_orchestrator_session_for_request(
             sessions_obj = _parse_first_json_object(sessions_result.stdout)
             sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
             if isinstance(sessions, list):
+                request_matches: list[tuple[str, Path]] = []
                 for session in sessions:
                     if not isinstance(session, dict):
                         continue
@@ -338,9 +370,54 @@ def _resolve_orchestrator_session_for_request(
                     if transcript is None:
                         continue
                     if _search_transcript(transcript, probe_request_id):
-                        return (raw_session_id, transcript)
+                        attributable_start_line = (
+                            _find_first_line_with_term(transcript, 1, probe_request_id) or 1
+                        )
+                        if (
+                            _extract_spawned_worker_agent_id_from_segment(
+                                transcript,
+                                attributable_start_line,
+                            )
+                            is not None
+                        ):
+                            return (raw_session_id, transcript)
+                        request_matches.append((raw_session_id, transcript))
+                fallback_match = _resolve_orchestrator_session_for_request_from_files(
+                    openclaw_home,
+                    probe_request_id,
+                )
+                if fallback_match is not None:
+                    return fallback_match
+                if request_matches:
+                    return request_matches[0]
         if attempt < attempts:
             time.sleep(delay_seconds)
+    return None
+
+
+def _resolve_orchestrator_session_for_request_from_files(
+    openclaw_home: Path,
+    probe_request_id: str,
+) -> tuple[str, Path] | None:
+    sessions_dir = openclaw_home / "agents" / "oe-orchestrator" / "sessions"
+    if not sessions_dir.exists():
+        return None
+
+    candidates: list[Path] = sorted(
+        sessions_dir.glob("*.jsonl"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for transcript in candidates:
+        if not _search_transcript(transcript, probe_request_id):
+            continue
+        attributable_start_line = _find_first_line_with_term(transcript, 1, probe_request_id) or 1
+        if (
+            _extract_spawned_worker_agent_id_from_segment(transcript, attributable_start_line)
+            is None
+        ):
+            continue
+        return (transcript.stem, transcript)
     return None
 
 
@@ -412,12 +489,201 @@ def _resolve_orchestrator_session_by_child_key(
     return None
 
 
+def _extract_spawned_worker_agent_id_from_segment(
+    transcript_path: Path,
+    start_line: int,
+    probe_request_id: str | None = None,
+) -> str | None:
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                lowered_line = line.lower()
+                if "sessions_spawn" not in lowered_line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict):
+                    continue
+
+                for key in ("agentId", "agent_id", "agent"):
+                    raw_agent_id = entry.get(key)
+                    if isinstance(raw_agent_id, str) and raw_agent_id:
+                        return raw_agent_id
+
+                message = entry.get("message")
+                if not isinstance(message, dict):
+                    continue
+
+                content = message.get("content")
+                if not isinstance(content, list):
+                    continue
+
+                for item in content:
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("type") != "toolCall":
+                        continue
+                    if item.get("name") != "sessions_spawn":
+                        continue
+                    arguments = item.get("arguments")
+                    if not isinstance(arguments, dict):
+                        continue
+                    for key in ("agentId", "agent_id", "agent"):
+                        raw_agent_id = arguments.get(key)
+                        if isinstance(raw_agent_id, str) and raw_agent_id:
+                            return raw_agent_id
+        return None
+    except OSError:
+        return None
+
+
+def _find_first_line_with_term(transcript_path: Path, start_line: int, term: str) -> int | None:
+    lowered_term = term.lower()
+    if not lowered_term:
+        return None
+
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                if lowered_term in line.lower():
+                    return idx
+        return None
+    except OSError:
+        return None
+
+
+def _extract_child_session_key_from_segment(
+    transcript_path: Path,
+    start_line: int,
+) -> str | None:
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+                if "childSessionKey" not in line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict):
+                    continue
+
+                details = entry.get("details")
+                if isinstance(details, dict):
+                    raw_key = details.get("childSessionKey")
+                    if isinstance(raw_key, str) and raw_key:
+                        return raw_key
+
+                message = entry.get("message")
+                if not isinstance(message, dict) or message.get("role") != "toolResult":
+                    continue
+                details = message.get("details")
+                if not isinstance(details, dict):
+                    continue
+                raw_key = details.get("childSessionKey")
+                if isinstance(raw_key, str) and raw_key:
+                    return raw_key
+        return None
+    except OSError:
+        return None
+
+
+def _resolve_agent_session_by_child_key(
+    agent_id: str,
+    openclaw_home: Path,
+    env: dict[str, str],
+    child_session_key: str,
+    attempts: int = 30,
+    delay_seconds: float = 1.0,
+) -> tuple[str, Path] | None:
+    for attempt in range(1, attempts + 1):
+        sessions_result = subprocess.run(
+            ["openclaw", "sessions", "--agent", agent_id, "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if sessions_result.returncode == 0:
+            sessions_obj = _parse_first_json_object(sessions_result.stdout)
+            sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
+            if isinstance(sessions, list):
+                for session in sessions:
+                    if not isinstance(session, dict):
+                        continue
+                    if session.get("key") != child_session_key:
+                        continue
+                    raw_session_id = session.get("sessionId")
+                    if not isinstance(raw_session_id, str) or not raw_session_id:
+                        continue
+                    transcript = _get_transcript_path(agent_id, raw_session_id, openclaw_home, env)
+                    if transcript is None:
+                        continue
+                    return (raw_session_id, transcript)
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    return None
+
+
+def _resolve_agent_session_for_request(
+    agent_id: str,
+    openclaw_home: Path,
+    env: dict[str, str],
+    probe_request_id: str,
+    attempts: int = 30,
+    delay_seconds: float = 1.0,
+) -> tuple[str, Path] | None:
+    for attempt in range(1, attempts + 1):
+        sessions_result = subprocess.run(
+            ["openclaw", "sessions", "--agent", agent_id, "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if sessions_result.returncode == 0:
+            sessions_obj = _parse_first_json_object(sessions_result.stdout)
+            sessions = sessions_obj.get("sessions", []) if isinstance(sessions_obj, dict) else []
+            if isinstance(sessions, list):
+                for session in sessions:
+                    if not isinstance(session, dict):
+                        continue
+                    raw_session_id = session.get("sessionId")
+                    if not isinstance(raw_session_id, str) or not raw_session_id:
+                        continue
+                    transcript = _get_transcript_path(agent_id, raw_session_id, openclaw_home, env)
+                    if transcript is None:
+                        continue
+                    if _search_transcript(transcript, probe_request_id):
+                        return (raw_session_id, transcript)
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+    return None
+
+
 def _snapshot_main_transcript_line_counts(openclaw_home: Path) -> dict[Path, int]:
     sessions_dir = openclaw_home / "agents" / "main" / "sessions"
     if not sessions_dir.exists():
         return {}
     counts: dict[Path, int] = {}
     for transcript in sessions_dir.glob("*.jsonl"):
+        counts[transcript] = _line_count(transcript)
+    return counts
+
+
+def _snapshot_agent_transcript_line_counts(openclaw_home: Path) -> dict[Path, int]:
+    agents_dir = openclaw_home / "agents"
+    if not agents_dir.exists():
+        return {}
+
+    counts: dict[Path, int] = {}
+    for transcript in agents_dir.glob("*/sessions/*.jsonl"):
         counts[transcript] = _line_count(transcript)
     return counts
 
@@ -512,6 +778,87 @@ def _search_transcript_segment(
         return False
 
 
+def _extract_upstream_runtime_failure_detail_from_segment(
+    transcript_path: Path,
+    start_line: int,
+    probe_request_id: str,
+) -> str | None:
+    failure_markers = (
+        'stopreason":"error',
+        'stopreason": "error',
+        "errormessage",
+        "error message",
+        "request ended without sending any chunks",
+        "without sending any chunks",
+        "stream ended without sending any chunks",
+        "stream closed",
+        "upstream runtime failure",
+        "provider failed",
+        "model failed",
+        "request failed",
+    )
+
+    try:
+        with transcript_path.open("r", encoding="utf-8", errors="ignore") as handle:
+            saw_probe_request = False
+            for idx, line in enumerate(handle, start=1):
+                if idx < max(1, start_line):
+                    continue
+
+                lowered_line = line.lower()
+                if probe_request_id.lower() in lowered_line:
+                    saw_probe_request = True
+
+                if not saw_probe_request:
+                    continue
+
+                if not any(marker in lowered_line for marker in failure_markers):
+                    continue
+
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    return line.strip()[:500]
+
+                if not isinstance(entry, dict):
+                    return line.strip()[:500]
+
+                message = entry.get("message")
+                if isinstance(message, dict):
+                    role = message.get("role")
+                    if role == "assistant" or role is None:
+                        for key in (
+                            "errorMessage",
+                            "error_message",
+                            "stopReason",
+                            "stop_reason",
+                            "content",
+                            "text",
+                            "message",
+                        ):
+                            raw_detail = message.get(key)
+                            if isinstance(raw_detail, str) and raw_detail:
+                                return raw_detail.strip()[:500]
+                        details = message.get("details")
+                        if isinstance(details, dict):
+                            for key in (
+                                "errorMessage",
+                                "error_message",
+                                "stopReason",
+                                "stop_reason",
+                            ):
+                                raw_detail = details.get(key)
+                                if isinstance(raw_detail, str) and raw_detail:
+                                    return raw_detail.strip()[:500]
+                        return line.strip()[:500]
+
+                return line.strip()[:500]
+
+        return None
+    except OSError:
+        return None
+
+
 def _latest_main_transcript_snapshot(openclaw_home: Path) -> tuple[Path, int] | None:
     sessions_dir = openclaw_home / "agents" / "main" / "sessions"
     if not sessions_dir.exists():
@@ -586,19 +933,22 @@ def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, s
     """Ensure agent workspace is bootstrap-ready via CLI interaction."""
     workspace_path = _workspace_path(openclaw_home, agent_id)
     bootstrap_file = workspace_path / "BOOTSTRAP.md"
+    bootstrap_timeout = 300
 
     if not bootstrap_file.exists():
         return True
 
     bootstrap_msg = (
-        "Complete bootstrap: set identity to 'oe-bootstrap-probe', user to 'validation-harness'"
+        "Complete bootstrap: set identity to 'oe-bootstrap-probe', user to 'validation-harness'. "
+        "Fill in IDENTITY.md and USER.md, then delete BOOTSTRAP.md when done."
     )
+    bootstrap_session_id = f"{agent_id}-bootstrap"
     result = subprocess.run(
-        ["openclaw", "agent", "--agent", agent_id, "-m", bootstrap_msg, "--json"],
+        _build_local_agent_command(agent_id, bootstrap_msg, bootstrap_session_id),
         capture_output=True,
         text=True,
         env=env,
-        timeout=30,
+        timeout=bootstrap_timeout,
     )
 
     bootstrap_completed = (
@@ -614,19 +964,15 @@ def _ensure_bootstrap_ready(agent_id: str, openclaw_home: Path, env: dict[str, s
         return False
 
     runtime_probe = subprocess.run(
-        [
-            "openclaw",
-            "agent",
-            "--agent",
+        _build_local_agent_command(
             agent_id,
-            "-m",
             "Runtime readiness check: respond briefly in JSON mode.",
-            "--json",
-        ],
+            f"{agent_id}-bootstrap-readiness",
+        ),
         capture_output=True,
         text=True,
         env=env,
-        timeout=30,
+        timeout=bootstrap_timeout,
     )
     if runtime_probe.returncode != 0:
         return False
@@ -1103,6 +1449,191 @@ def main_escalation(openclaw_home: Path, message: str) -> None:
                     "transcript_path": str(orch_transcript),
                 },
                 "proof": "orchestrator_handoff_confirmed",
+                "proof_request_id": probe_request_id,
+                "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
+            }
+        )
+
+
+@cli.command("orchestrator-spawn")
+@click.option("--openclaw-home", type=click.Path(path_type=Path), required=True)
+@click.option(
+    "--message", required=True, help="Worker-eligible task message to send to orchestrator"
+)
+def orchestrator_spawn(openclaw_home: Path, message: str) -> None:
+    home = _require_openclaw_home("orchestrator-spawn", openclaw_home)
+    env = _probe_env(home)
+    config_path = _resolve_config_path(home)
+
+    with pinned_openclaw_runtime_model(config_path) as configured_model:
+        baseline_transcript_line_counts = _snapshot_agent_transcript_line_counts(home)
+        if not _ensure_bootstrap_ready("oe-orchestrator", home, env):
+            _fail(
+                "orchestrator-spawn",
+                "bootstrap_prep_failed",
+                "Could not prepare orchestrator workspace",
+            )
+
+        parent_session_id = str(uuid.uuid4())
+        probe_request_id = str(uuid.uuid4())
+        probe_message = _build_orchestrator_spawn_probe_message(message, probe_request_id)
+        cmd = _build_local_agent_command("oe-orchestrator", probe_message, parent_session_id)
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=300,
+        )
+
+        if result.returncode != 0:
+            _fail(
+                "orchestrator-spawn",
+                "orchestrator_session_failed",
+                result.stderr[:500] if result.stderr else None,
+            )
+
+        parsed = _parse_agent_output(result.stdout)
+        if parsed is None:
+            _fail("orchestrator-spawn", "no_json_output", result.stdout[:500])
+            assert False, "unreachable"
+
+        result_obj = parsed.get("result")
+        meta_obj = result_obj.get("meta") if isinstance(result_obj, dict) else None
+        agent_meta = meta_obj.get("agentMeta") if isinstance(meta_obj, dict) else None
+        raw_parent_session_id = (
+            agent_meta.get("sessionId") if isinstance(agent_meta, dict) else parent_session_id
+        )
+        if not isinstance(raw_parent_session_id, str) or not raw_parent_session_id:
+            _fail("orchestrator-spawn", "missing_parent_session_id")
+            assert False, "unreachable"
+
+        parent_resolution = _resolve_orchestrator_session_for_request(
+            home,
+            env,
+            probe_request_id,
+        )
+        if parent_resolution is None:
+            parent_session_id = raw_parent_session_id
+            parent_transcript = _get_transcript_path(
+                "oe-orchestrator", parent_session_id, home, env
+            )
+        else:
+            parent_session_id, parent_transcript = parent_resolution
+
+        if parent_transcript is None:
+            _fail(
+                "orchestrator-spawn",
+                "missing_transcript_evidence",
+                f"missing orchestrator transcript for {raw_parent_session_id}",
+            )
+            assert False, "unreachable"
+
+        attributable_start_line = (
+            _find_first_line_with_term(parent_transcript, 1, probe_request_id) or 1
+        )
+        worker_agent_id = _extract_spawned_worker_agent_id_from_segment(
+            parent_transcript,
+            attributable_start_line,
+        )
+        child_session_key = _extract_child_session_key_from_segment(
+            parent_transcript,
+            attributable_start_line,
+        )
+
+        if worker_agent_id is None:
+            upstream_failure_detail = _extract_upstream_runtime_failure_detail_from_segment(
+                parent_transcript,
+                1,
+                probe_request_id,
+            )
+            if upstream_failure_detail is not None:
+                _fail(
+                    "orchestrator-spawn",
+                    "upstream_runtime_failure",
+                    upstream_failure_detail,
+                )
+                assert False, "unreachable"
+            _fail(
+                "orchestrator-spawn",
+                "no_child_spawn",
+                "missing worker sessions_spawn evidence for attributable request",
+            )
+            assert False, "unreachable"
+
+        child_resolution = None
+        if child_session_key:
+            child_resolution = _resolve_agent_session_by_child_key(
+                worker_agent_id,
+                home,
+                env,
+                child_session_key,
+            )
+        if child_resolution is None:
+            child_resolution = _resolve_agent_session_for_request(
+                worker_agent_id,
+                home,
+                env,
+                probe_request_id,
+            )
+        if child_resolution is None:
+            _fail(
+                "orchestrator-spawn",
+                "unresolved_child_session",
+                worker_agent_id,
+            )
+            assert False, "unreachable"
+
+        child_session_id, child_transcript = child_resolution
+
+        if not _search_transcript(parent_transcript, probe_request_id):
+            _fail(
+                "orchestrator-spawn",
+                "missing_transcript_evidence",
+                "missing attributable request id in orchestrator transcript",
+            )
+            assert False, "unreachable"
+
+        if not _search_transcript(child_transcript, probe_request_id):
+            _fail(
+                "orchestrator-spawn",
+                "missing_transcript_evidence",
+                "missing attributable request id in child transcript",
+            )
+            assert False, "unreachable"
+
+        child_transcript_line_count = _line_count(child_transcript)
+        child_transcript_baseline_line_count = baseline_transcript_line_counts.get(
+            child_transcript, 0
+        )
+        if (
+            child_transcript_line_count <= child_transcript_baseline_line_count
+            or not _search_transcript_segment(
+                child_transcript,
+                child_transcript_baseline_line_count + 1,
+                probe_request_id,
+            )
+        ):
+            _fail(
+                "orchestrator-spawn",
+                "stale_child_reuse",
+                "child transcript did not gain fresh request-id evidence for this run",
+            )
+            assert False, "unreachable"
+
+        _emit(
+            {
+                "ok": True,
+                "probe": "orchestrator-spawn",
+                "marker": "PROBE_ORCHESTRATOR_SPAWN_OK",
+                "proof": "worker_spawn_confirmed",
+                "orchestrator_session_id": parent_session_id,
+                "child_session_key": child_session_key,
+                "child_session_id": child_session_id,
+                "worker_agent_id": worker_agent_id,
+                "transcript_path": str(child_transcript),
+                "orchestrator_transcript_path": str(parent_transcript),
                 "proof_request_id": probe_request_id,
                 "configured_model": configured_model or PINNED_OPENCLAW_MODEL,
             }
