@@ -46,6 +46,21 @@ from openclaw_enhance.runtime.ownership import (
     OWNED_NAMESPACE,
 )
 
+LEGACY_ENHANCE_WORKSPACE_DIRS: tuple[str, ...] = (
+    "workspace-oe-orchestrator",
+    "workspace-oe-searcher",
+    "workspace-oe-syshelper",
+    "workspace-oe-script_coder",
+    "workspace-oe-watchdog",
+    "workspace-oe-tool-recovery",
+    "workspace-openclaw-enhance-orchestrator",
+    "workspace-openclaw-enhance-searcher",
+    "workspace-openclaw-enhance-syshelper",
+    "workspace-openclaw-enhance-script_coder",
+    "workspace-openclaw-enhance-watchdog",
+    "workspace-openclaw-enhance-tool-recovery",
+)
+
 
 class UninstallError(RuntimeError):
     """Raised when uninstallation fails."""
@@ -309,6 +324,24 @@ def _remove_workspaces(target_root: Path) -> list[str]:
     return removed
 
 
+def _remove_legacy_enhance_workspaces(openclaw_home: Path) -> list[str]:
+    removed: list[str] = []
+    for dirname in LEGACY_ENHANCE_WORKSPACE_DIRS:
+        legacy_dir = openclaw_home / dirname
+        if not legacy_dir.exists() and not legacy_dir.is_symlink():
+            continue
+        try:
+            if legacy_dir.is_symlink():
+                legacy_dir.unlink()
+            else:
+                shutil.rmtree(legacy_dir)
+            removed.append(f"legacy_workspace:{dirname}")
+        except OSError as exc:
+            raise UninstallError(f"Failed to remove legacy workspace {dirname}: {exc}") from exc
+
+    return removed
+
+
 def _remove_main_skills(manifest: InstallManifest | None) -> list[str]:
     removed: list[str] = []
     if manifest is None:
@@ -502,6 +535,14 @@ def uninstall(
             removed.extend(workspaces_removed)
         except UninstallError as exc:
             failed.append(f"workspaces: {exc}")
+            if not force:
+                raise
+
+        try:
+            legacy_workspaces_removed = _remove_legacy_enhance_workspaces(openclaw_home)
+            removed.extend(legacy_workspaces_removed)
+        except UninstallError as exc:
+            failed.append(f"legacy-workspaces: {exc}")
             if not force:
                 raise
 

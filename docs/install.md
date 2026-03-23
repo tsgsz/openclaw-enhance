@@ -313,7 +313,8 @@ python -m openclaw_enhance.cli uninstall --openclaw-home "$HOME/.openclaw"
 - All `oe-*` prefixed skills in main workspace
 - Hook configurations
 - Managed namespace (`~/.openclaw/openclaw-enhance/`)
-- Worker workspaces (`~/.openclaw/workspace-openclaw-enhance-*`)
+- Managed worker workspaces under `~/.openclaw/openclaw-enhance/workspaces/`
+- Known legacy enhancement-owned top-level workspace leftovers such as `~/.openclaw/workspace-oe-*` and `~/.openclaw/workspace-openclaw-enhance-*`
 
 **What is preserved:**
 - Your OpenClaw configuration (except owned keys)

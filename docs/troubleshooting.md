@@ -177,13 +177,13 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
 Check worker workspace exists:
 
 ```bash
-ls -la ~/.openclaw/workspace-openclaw-enhance-searcher/
+ls -la ~/.openclaw/openclaw-enhance/workspaces/oe-searcher/
 ```
 
 **Solution**:
 1. Verify workspace structure:
    ```bash
-   ls ~/.openclaw/workspace-openclaw-enhance-searcher/
+   ls ~/.openclaw/openclaw-enhance/workspaces/oe-searcher/
    # Should show: AGENTS.md, TOOLS.md, skills/
    ```
 

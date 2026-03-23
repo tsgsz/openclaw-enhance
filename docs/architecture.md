@@ -294,11 +294,11 @@ All enhancement-owned assets live under:
 
 **Agent Workspaces:**
 ```
-~/.openclaw/workspace-openclaw-enhance-orchestrator/
-~/.openclaw/workspace-openclaw-enhance-searcher/
-~/.openclaw/workspace-openclaw-enhance-syshelper/
-~/.openclaw/workspace-openclaw-enhance-script_coder/
-~/.openclaw/workspace-openclaw-enhance-watchdog/
+~/.openclaw/openclaw-enhance/workspaces/oe-orchestrator/
+~/.openclaw/openclaw-enhance/workspaces/oe-searcher/
+~/.openclaw/openclaw-enhance/workspaces/oe-syshelper/
+~/.openclaw/openclaw-enhance/workspaces/oe-script_coder/
+~/.openclaw/openclaw-enhance/workspaces/oe-watchdog/
 ```
 
 ## Communication Protocol

@@ -41,7 +41,7 @@ All enhancement-owned assets use the `oe-` prefix:
 - **Agents**: `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`
 - **Skills**: `oe-eta-estimator`, `oe-toolcall-router`, `oe-timeout-state-sync`
 - **Hooks**: `oe-subagent-spawn-enrich`
-- **Workspaces**: `~/.openclaw/workspace-openclaw-enhance-<role>/`
+- **Workspaces**: `~/.openclaw/openclaw-enhance/workspaces/<role>/`
 
 ### Ownership Model
 
@@ -122,7 +122,7 @@ Runtime-facing registration in `openclaw.json` must use only supported OpenClaw 
 
 ### Negative
 
-- **Longer paths**: Workspace paths are verbose (`workspace-openclaw-enhance-orchestrator`)
+- **Longer paths**: Managed workspace paths are more verbose than a single top-level directory (for example `openclaw-enhance/workspaces/oe-orchestrator`)
 - **Extra directory**: One more directory under `~/.openclaw/`
 - **Config overhead**: Must track owned keys explicitly
 
