@@ -36,6 +36,7 @@ For ANY user request that requires file modification, command execution, researc
 1. Immediately use `sessions_spawn` with `agentId: "oe-orchestrator"`
 2. Do NOT attempt to do the work yourself
 3. Do NOT use `edit`/`exec`/`write` even for "simple" tasks
+4. Keep routing contract in this file as source of truth; no Python wrappers around routing execution
 
 ## Escalation Command
 
@@ -57,6 +58,20 @@ For ANY user request that requires file modification, command execution, researc
 - User: "搜索东南亚 iGaming 行业现状"
 - Action: `sessions_spawn` to `oe-orchestrator`
 - NOT: Use `web_search` yourself
+
+### Heavy research + PPT + traceable data (issue #9 class)
+- User: "基于公开来源做深度调研并输出 PPT，所有关键结论要有可追溯数据来源（issue #9）"
+- Action: `sessions_spawn` to `oe-orchestrator` with the full heavy-task scope
+- Required escalation payload:
+
+```json
+{
+  "task": "基于公开来源做深度调研并输出 PPT，所有关键结论要有可追溯数据来源（issue #9）",
+  "agentId": "oe-orchestrator"
+}
+```
+
+- NOT: Stay in main to do web research, draft PPT, or gather citations directly
 
 ### Code task
 - User: "写一个 hello world"

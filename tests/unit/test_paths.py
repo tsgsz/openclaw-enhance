@@ -47,11 +47,58 @@ def test_resolve_main_workspace_prefers_agent_workspace() -> None:
     assert resolved == Path.home() / "custom-agent-workspace"
 
 
+def test_resolve_main_workspace_resolves_relative_agent_workspace_under_openclaw_home() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {"agent": {"workspace": "workspace-main-custom"}}
+
+    resolved = paths.resolve_main_workspace(openclaw_home, config=config, env={})
+
+    assert resolved == openclaw_home / "workspace-main-custom"
+
+
+def test_resolve_main_workspace_prefers_agent_workspace_over_other_inputs() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {
+        "agent": {"workspace": "~/agent-workspace"},
+        "agents": {"defaults": {"workspace": "~/agents-default-workspace"}},
+    }
+
+    resolved = paths.resolve_main_workspace(
+        openclaw_home,
+        config=config,
+        env={"OPENCLAW_PROFILE": "qa"},
+    )
+
+    assert resolved == Path.home() / "agent-workspace"
+
+
 def test_resolve_main_workspace_uses_agents_defaults_workspace() -> None:
     openclaw_home = Path("/tmp/openclaw-home")
     config = {"agents": {"defaults": {"workspace": "~/agents-default-workspace"}}}
 
     resolved = paths.resolve_main_workspace(openclaw_home, config=config, env={})
+
+    assert resolved == Path.home() / "agents-default-workspace"
+
+
+def test_resolve_main_workspace_relative_agents_defaults_workspace_under_openclaw_home() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {"agents": {"defaults": {"workspace": "workspace-from-defaults"}}}
+
+    resolved = paths.resolve_main_workspace(openclaw_home, config=config, env={})
+
+    assert resolved == openclaw_home / "workspace-from-defaults"
+
+
+def test_resolve_main_workspace_prefers_agents_defaults_workspace_over_profile() -> None:
+    openclaw_home = Path("/tmp/openclaw-home")
+    config = {"agents": {"defaults": {"workspace": "~/agents-default-workspace"}}}
+
+    resolved = paths.resolve_main_workspace(
+        openclaw_home,
+        config=config,
+        env={"OPENCLAW_PROFILE": "staging"},
+    )
 
     assert resolved == Path.home() / "agents-default-workspace"
 

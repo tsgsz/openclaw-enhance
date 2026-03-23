@@ -112,6 +112,7 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
    ```bash
    python3 -c "
    import json
+   import os
    from pathlib import Path
    home = Path.home() / '.openclaw'
    config_path = home / 'openclaw.json'
@@ -119,14 +120,17 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
        config_path = home / 'config.json'
    config = json.loads(config_path.read_text()) if config_path.exists() else {}
    
-   # Resolution: agent.workspace > agents.defaults.workspace > profile fallback
+   # Resolution: agent.workspace > agents.defaults.workspace > profile fallback > openclaw.json
    ws = config.get('agent', {}).get('workspace') or config.get('agents', {}).get('defaults', {}).get('workspace')
    if ws:
-       print(Path(ws).expanduser())
+       # Normalize relative paths under openclaw_home
+       ws_path = Path(ws).expanduser()
+       if not ws_path.is_absolute():
+           ws_path = home / ws
+       print(ws_path.resolve())
    else:
-       import os
        profile = os.environ.get('OPENCLAW_PROFILE', 'default')
-       print(home / f'workspace-{profile}' if profile != 'default' else home / 'workspace')
+       print((home / f'workspace-{profile}' if profile != 'default' else home / 'workspace').resolve())
    "
    ```
 2. Check that `oe-toolcall-router` skill is installed in that workspace:

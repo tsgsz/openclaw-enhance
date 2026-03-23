@@ -26,6 +26,10 @@ The repository uses a **bounded, semi-visible orchestration loop** with native `
 - Toolcalls: ≤ 2 stays in main, > 2 escalates to orchestrator
 - Duration: ≤ 15 min short, 15-30 min medium, > 30 min long
 - Parallelism: Required → orchestrator
+- **Three-Tier Proof Model**:
+  - `backfill-routing-yield`: Direct orchestrator runtime surface.
+  - `backfill-recovery-worker`: Recovery-worker runtime surface.
+  - `backfill-main-escalation`: Main-session escalation runtime surface (Provisional).
 
 **Execution Flow**:
 ```

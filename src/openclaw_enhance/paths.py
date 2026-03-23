@@ -26,12 +26,19 @@ def ensure_managed_directories(user_home: Path | None = None) -> Path:
     return root
 
 
-def _workspace_from_config(config: Mapping[str, Any]) -> Path | None:
+def _normalize_workspace_path(workspace: str, openclaw_home: Path) -> Path:
+    expanded = Path(workspace).expanduser()
+    if expanded.is_absolute():
+        return expanded
+    return openclaw_home / expanded
+
+
+def _workspace_from_config(config: Mapping[str, Any], openclaw_home: Path) -> Path | None:
     agent = config.get("agent")
     if isinstance(agent, Mapping):
         workspace = agent.get("workspace")
         if isinstance(workspace, str) and workspace:
-            return Path(workspace).expanduser()
+            return _normalize_workspace_path(workspace, openclaw_home)
 
     agents = config.get("agents")
     if isinstance(agents, Mapping):
@@ -39,7 +46,7 @@ def _workspace_from_config(config: Mapping[str, Any]) -> Path | None:
         if isinstance(defaults, Mapping):
             workspace = defaults.get("workspace")
             if isinstance(workspace, str) and workspace:
-                return Path(workspace).expanduser()
+                return _normalize_workspace_path(workspace, openclaw_home)
 
     return None
 
@@ -49,7 +56,7 @@ def resolve_main_workspace(
     config: Mapping[str, Any] | None,
     env: Mapping[str, str] | None,
 ) -> Path:
-    resolved_from_config = _workspace_from_config(config or {})
+    resolved_from_config = _workspace_from_config(config or {}, openclaw_home)
     if resolved_from_config is not None:
         return resolved_from_config
 
