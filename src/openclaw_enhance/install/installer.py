@@ -581,12 +581,12 @@ def _register_runtime_surfaces(
 
 
 AGENT_MODEL_OVERRIDES: dict[str, str] = {
-    "oe-orchestrator": "sss-hk/claude-opus-4-6",
-    "oe-script_coder": "openai-codex/gpt-5.3-codex",
-    "oe-tool-recovery": "sss-hk/claude-opus-4-6",
+    "oe-orchestrator": "litellm-local/gpt-5.4",
+    "oe-script_coder": "litellm-local/gpt-5.3-codex",
+    "oe-tool-recovery": "litellm-local/gpt-5.4",
     "oe-syshelper": "minimax/MiniMax-M2.7",
-    "oe-searcher": "minimax/MiniMax-M2.1",
-    "oe-watchdog": "minimax/MiniMax-M2.7",
+    "oe-searcher": "minimax/MiniMax-M2.5",
+    "oe-watchdog": "minimax/MiniMax-M2.1",
 }
 
 
