@@ -192,6 +192,12 @@ def status(output_json: bool) -> None:
     help="Allow cleanup of eligible OpenClaw core sessions",
 )
 @click.option("--include-logs", is_flag=True, help="Include related logs when supported")
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=None,
+    help="Optional OpenClaw home root to scan instead of ./sessions",
+)
 def cleanup_sessions(
     dry_run: bool,
     execute: bool,
@@ -199,43 +205,27 @@ def cleanup_sessions(
     stale_threshold_hours: float,
     include_core_sessions: bool,
     include_logs: bool,
+    openclaw_home: Path | None,
 ) -> None:
     """Classify and clean stale/orphaned session state."""
-    from openclaw_enhance.cleanup import CleanupCandidate, CleanupKind, cleanup_paths
+    from . import cleanup as cleanup_module
 
     effective_dry_run = dry_run or not execute
     del include_logs
 
-    # Minimal first-pass implementation for TDD: discover from ./sessions if present.
-    candidates: list[CleanupCandidate] = []
-    sessions_root = Path.cwd() / "sessions"
-    if sessions_root.exists():
-        for path in sessions_root.iterdir():
-            candidates.append(
-                CleanupCandidate(
-                    path=path,
-                    kind=CleanupKind.RUNTIME_STATE,
-                    age_hours=72,
-                    in_runtime_active_set=False,
-                    held_by_project_occupancy=False,
-                    has_recent_activity=False,
-                )
-            )
+    candidates = cleanup_module.discover_cleanup_candidates(
+        openclaw_home=openclaw_home,
+        working_directory=Path.cwd(),
+    )
 
-    report = cleanup_paths(
+    report = cleanup_module.cleanup_paths(
         candidates,
         dry_run=effective_dry_run,
         stale_threshold_hours=stale_threshold_hours,
         include_core_sessions=include_core_sessions,
     )
 
-    payload = {
-        "safe_to_remove": report.safe_to_remove,
-        "skipped_active": report.skipped_active,
-        "skipped_uncertain": report.skipped_uncertain,
-        "removed": report.removed,
-        "dry_run": report.dry_run,
-    }
+    payload = cleanup_module.build_cleanup_report_payload(report)
 
     if output_json:
         click.echo(json.dumps(payload, indent=2))
@@ -413,6 +403,229 @@ def render_hook(hook_name: str) -> None:
     except ValueError as e:
         available = ", ".join(HOOK_CONTRACTS.keys())
         raise click.ClickException(f"{e}. Available hooks: {available}") from e
+
+
+@cli.group(help="Manage migrated governance operations under openclaw-enhance.")
+def governance() -> None:
+    pass
+
+
+@governance.command(
+    "archive-sessions", help="Archive stale session files into an OE-managed archive root."
+)
+@click.option("--dry-run", is_flag=True, help="Preview archival without moving files")
+@click.option("--execute", is_flag=True, help="Actually archive eligible session files")
+@click.option("--json", "output_json", is_flag=True, help="Output JSON report")
+@click.option("--stale-threshold-hours", type=float, default=24.0, show_default=True)
+@click.option("--include-core-sessions", is_flag=True, help="Allow archive of core session files")
+@click.option(
+    "--archive-root",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=None,
+    help="Override the OE-managed archive destination",
+)
+def governance_archive_sessions(
+    dry_run: bool,
+    execute: bool,
+    output_json: bool,
+    stale_threshold_hours: float,
+    include_core_sessions: bool,
+    archive_root: Path | None,
+) -> None:
+    from .governance.archive import archive_paths, discover_session_candidates
+    from .governance.paths import managed_archive_root
+
+    effective_dry_run = dry_run or not execute
+    target_archive_root = archive_root or managed_archive_root()
+    report = archive_paths(
+        discover_session_candidates(Path.cwd() / "sessions"),
+        archive_root=target_archive_root,
+        dry_run=effective_dry_run,
+        stale_threshold_hours=stale_threshold_hours,
+        include_core_sessions=include_core_sessions,
+    )
+    payload = {
+        "safe_to_archive": report.safe_to_archive,
+        "skipped_active": report.skipped_active,
+        "skipped_uncertain": report.skipped_uncertain,
+        "archived": report.archived,
+        "archive_root": report.archive_root,
+        "dry_run": report.dry_run,
+    }
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(f"dry_run={report.dry_run}")
+    click.echo(f"safe_to_archive={len(report.safe_to_archive)}")
+    click.echo(f"archived={len(report.archived)}")
+
+
+@governance.group(help="Manage legacy subagent bookkeeping files under OE control.")
+def subagents() -> None:
+    pass
+
+
+@subagents.command("mark-done", help="Mark a child session done in the legacy subagent file.")
+@click.option("--child", required=True)
+@click.option("--suggestion", default="")
+@click.option(
+    "--subagents-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+)
+def governance_subagents_mark_done(
+    child: str, suggestion: str, subagents_file: Path | None
+) -> None:
+    from .governance.paths import legacy_subagents_file
+    from .governance.subagents import set_subagent_status
+
+    target = subagents_file or legacy_subagents_file()
+    set_subagent_status(target, child, "done", suggestion=suggestion)
+    click.echo(f"updated {child} -> done")
+
+
+@subagents.command("mark-dead", help="Mark a child session dead in the legacy subagent file.")
+@click.option("--child", required=True)
+@click.option("--suggestion", required=True)
+@click.option(
+    "--subagents-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+)
+def governance_subagents_mark_dead(
+    child: str, suggestion: str, subagents_file: Path | None
+) -> None:
+    from .governance.paths import legacy_subagents_file
+    from .governance.subagents import set_subagent_status
+
+    target = subagents_file or legacy_subagents_file()
+    set_subagent_status(target, child, "dead", suggestion=suggestion)
+    click.echo(f"updated {child} -> dead")
+
+
+@subagents.command(
+    "set-status", help="Set arbitrary allowed child status in the legacy subagent file."
+)
+@click.option("--child", required=True)
+@click.option("--status", required=True)
+@click.option("--suggestion", default="")
+@click.option(
+    "--subagents-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+)
+def governance_subagents_set_status(
+    child: str,
+    status: str,
+    suggestion: str,
+    subagents_file: Path | None,
+) -> None:
+    from .governance.paths import legacy_subagents_file
+    from .governance.subagents import set_subagent_status
+
+    target = subagents_file or legacy_subagents_file()
+    set_subagent_status(target, child, status, suggestion=suggestion)
+    click.echo(f"updated {child} -> {status}")
+
+
+@subagents.command("set-eta", help="Set ETA for a child session in the legacy subagent file.")
+@click.option("--child", required=True)
+@click.option("--eta", required=True)
+@click.option(
+    "--subagents-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+)
+def governance_subagents_set_eta(child: str, eta: str, subagents_file: Path | None) -> None:
+    from .governance.paths import legacy_subagents_file
+    from .governance.subagents import set_subagent_eta
+
+    target = subagents_file or legacy_subagents_file()
+    set_subagent_eta(target, child, eta)
+    click.echo(f"updated {child} eta")
+
+
+@subagents.command("merge-state", help="Merge state into the legacy subagent state file.")
+@click.option("--child", required=True)
+@click.option("--patch-json", required=True)
+@click.option(
+    "--subagents-state-file",
+    type=click.Path(path_type=Path, dir_okay=False),
+    default=None,
+)
+def governance_subagents_merge_state(
+    child: str,
+    patch_json: str,
+    subagents_state_file: Path | None,
+) -> None:
+    from .governance.paths import legacy_subagents_state_file
+    from .governance.subagents import merge_subagent_state
+
+    target = subagents_state_file or legacy_subagents_state_file()
+    merge_subagent_state(target, child, json.loads(patch_json))
+    click.echo(f"merged state for {child}")
+
+
+@governance.command(
+    "diagnose", help="Run structured governance diagnostics using explicit OpenClaw probes."
+)
+@click.option("--json", "output_json", is_flag=True)
+def governance_diagnose(output_json: bool) -> None:
+    from .governance.health import diagnose
+
+    payload = diagnose()
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(payload["summary"])
+
+
+@governance.command(
+    "healthcheck", help="Report managed governance health paths and basic environment state."
+)
+@click.option(
+    "--openclaw-home",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    default=Path.home() / ".openclaw",
+)
+@click.option("--json", "output_json", is_flag=True)
+def governance_healthcheck(openclaw_home: Path, output_json: bool) -> None:
+    from .governance.health import healthcheck
+
+    payload = healthcheck(openclaw_home)
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(f"openclaw_home={payload['openclaw_home']}")
+    click.echo(f"managed_root={payload['managed_root']}")
+
+
+@governance.command(
+    "safe-restart", help="Evaluate restart safety and optionally restart the gateway."
+)
+@click.option("--dry-run", is_flag=True)
+@click.option("--json", "output_json", is_flag=True)
+def governance_safe_restart(dry_run: bool, output_json: bool) -> None:
+    from .governance.restart import safe_restart
+
+    payload = safe_restart(dry_run=dry_run)
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(f"eligible={payload['eligible']}")
+    click.echo(f"executed={payload['executed']}")
+
+
+@governance.command("restart-resume", help="Restart immediately and emit a resume-required result.")
+@click.option("--json", "output_json", is_flag=True)
+def governance_restart_resume(output_json: bool) -> None:
+    from .governance.restart import immediate_restart_resume
+
+    payload = immediate_restart_resume()
+    if output_json:
+        click.echo(json.dumps(payload, indent=2))
+        return
+    click.echo(payload["followup"])
 
 
 @cli.command("docs-check")
