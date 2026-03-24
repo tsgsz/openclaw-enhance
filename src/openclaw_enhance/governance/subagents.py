@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-
 ALLOWED_SUBAGENT_STATUS = {"spawning", "running", "done", "dead", "suspicious"}
 
 
@@ -77,9 +76,10 @@ def merge_subagent_state(path: Path, child_session_id: str, patch: dict[str, Any
 
 def _read_json(path: Path, default: dict[str, Any]) -> dict[str, Any]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return default
+    return payload if isinstance(payload, dict) else default
 
 
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:

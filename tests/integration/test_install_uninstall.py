@@ -96,6 +96,60 @@ class TestInstallUninstallSymmetry:
         assert manifest is not None
         assert "playbook" in [c.name for c in manifest.components]
 
+    def test_install_fails_when_acpx_plugin_enablement_fails(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        with patch(
+            "openclaw_enhance.install.installer._ensure_acpx_plugin_enabled",
+            side_effect=RuntimeError("plugin enablement unavailable; restart gateway"),
+        ):
+            result = install(mock_openclaw_home, user_home=isolated_user_home)
+
+        assert result.success is False
+        assert result.message == "Installation failed"
+        assert any("ACPX" in error and "plugin enable" in error for error in result.errors)
+        assert any("restart gateway" in error for error in result.errors)
+
+    def test_install_normalizes_acp_backend_to_acpx_and_preserves_unrelated_config(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        config_path = mock_openclaw_home / "openclaw.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "theme": "dark",
+                    "telemetry": {"enabled": True},
+                    "plugins": {"allow": [], "entries": {}},
+                    "acp": {
+                        "enabled": True,
+                        "backend": "openai",
+                        "defaultAgent": "legacy-agent",
+                        "allowedAgents": ["legacy-agent", "codex"],
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        result = install(mock_openclaw_home, user_home=isolated_user_home)
+
+        assert result.success
+
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        assert config["theme"] == "dark"
+        assert config["telemetry"] == {"enabled": True}
+        assert config["acp"] == {
+            "enabled": True,
+            "backend": "acpx",
+            "defaultAgent": "opencode",
+            "allowedAgents": ["legacy-agent", "codex", "opencode", "claude"],
+        }
+
     def test_status_reports_installed(
         self,
         mock_openclaw_home: Path,

@@ -31,7 +31,6 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     manifest_path,
 )
-from . import monitor_service
 from openclaw_enhance.paths import (
     managed_root,
     resolve_openclaw_config_path,
@@ -42,6 +41,8 @@ from openclaw_enhance.runtime.ownership import (
     OWNED_HOOK_ENTRY_IDS,
     OWNED_NAMESPACE,
 )
+
+from . import monitor_service
 
 LEGACY_ENHANCE_WORKSPACE_DIRS: tuple[str, ...] = (
     "workspace-oe-orchestrator",

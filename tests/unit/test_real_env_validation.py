@@ -80,9 +80,10 @@ def test_get_bundle_commands():
     """Test get_bundle_commands for various feature classes."""
     with patch("openclaw_enhance.validation.types.sys.platform", "darwin"):
         install_cmds = get_bundle_commands(FeatureClass.INSTALL_LIFECYCLE)
-    assert len(install_cmds) == 6
+    assert len(install_cmds) == 7
     assert "install" in install_cmds[1]
     assert install_cmds[2] == "launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor"
+    assert install_cmds[3] == "launchctl print gui/$(id -u)/ai.openclaw.session-cleanup"
 
     docs_cmds = get_bundle_commands(FeatureClass.DOCS_TEST_ONLY)
     assert len(docs_cmds) == 1

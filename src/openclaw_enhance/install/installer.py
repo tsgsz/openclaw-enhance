@@ -32,7 +32,6 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     save_manifest,
 )
-from . import monitor_service
 from openclaw_enhance.paths import (
     ensure_managed_directories,
     managed_root,
@@ -47,6 +46,8 @@ from openclaw_enhance.runtime.ownership import (
 )
 from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
 from openclaw_enhance.workspaces import WORKSPACES_DIR, list_workspaces
+
+from . import monitor_service
 
 
 class InstallError(RuntimeError):
@@ -345,13 +346,13 @@ def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
     """Ensure oe-orchestrator can spawn all oe-* agents."""
     list_obj = agents_obj.get("list")
     if isinstance(list_obj, list):
-        all_oe_agents = [
-            entry.get("id")
-            for entry in list_obj
-            if isinstance(entry, dict)
-            and isinstance(entry.get("id"), str)
-            and entry.get("id", "").startswith("oe-")
-        ]
+        all_oe_agents: list[str] = []
+        for entry in list_obj:
+            if not isinstance(entry, dict):
+                continue
+            entry_id = entry.get("id")
+            if isinstance(entry_id, str) and entry_id.startswith("oe-"):
+                all_oe_agents.append(entry_id)
 
         for entry in list_obj:
             if not isinstance(entry, dict):
@@ -366,6 +367,28 @@ def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
                 if isinstance(agent_id, str) and agent_id != "oe-orchestrator":
                     _ensure_allow_agent_id(subagents_obj, agent_id)
             break
+
+
+def _normalize_acp_config(config: dict[str, Any]) -> None:
+    acp_obj = config.get("acp")
+    if not isinstance(acp_obj, dict):
+        acp_obj = {}
+        config["acp"] = acp_obj
+
+    acp_obj["enabled"] = True
+    acp_obj["backend"] = "acpx"
+    acp_obj["defaultAgent"] = "opencode"
+
+    allowed_agents_obj = acp_obj.get("allowedAgents")
+    allowed_agents: list[str] = []
+    if isinstance(allowed_agents_obj, list):
+        allowed_agents = [value for value in allowed_agents_obj if isinstance(value, str)]
+
+    for agent_id in ["opencode", "codex", "claude"]:
+        if agent_id not in allowed_agents:
+            allowed_agents.append(agent_id)
+
+    acp_obj["allowedAgents"] = allowed_agents
 
 
 def _register_agents_via_cli(
@@ -619,6 +642,8 @@ def _configure_agent_models(
         if model_id:
             agent_entry["model"] = model_id
 
+    _normalize_acp_config(config)
+
     try:
         backup_path = _write_openclaw_config(config_path, config)
     except OSError as exc:
@@ -637,6 +662,42 @@ def _configure_agent_models(
             target_path=str(config_path.absolute()),
         ),
     ]
+
+
+def _ensure_acpx_plugin_enabled() -> ComponentInstall | None:
+    """Enable the stock acpx plugin required for ACP runtime (sessions_spawn runtime=acp).
+
+    acpx is a stock plugin shipped with OpenClaw that must be explicitly enabled.
+    Without it, spawning ACP sessions (opencode/codex/claude) fails with:
+    "ACP runtime backend is not configured. Install and enable the acpx runtime plugin."
+
+    This is a CLI-only operation (no direct config write) so it is safe to run
+    after all _write_openclaw_config calls.
+    """
+    # Check current state via plugins list --json
+    check = _run_openclaw_cli(["plugins", "list", "--json"], check=False)
+    if check.returncode == 0:
+        try:
+            data = json.loads(check.stdout)
+            for plugin in data:
+                if isinstance(plugin, dict) and plugin.get("id") == "acpx":
+                    if plugin.get("status") in ("loaded", "enabled"):
+                        return None  # Already enabled, nothing to do
+                    break
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    result = _run_openclaw_cli(["plugins", "enable", "acpx"], check=False)
+    if result.returncode != 0:
+        raise InstallError(f"Failed to enable acpx plugin: {result.stderr or result.stdout}")
+
+    return ComponentInstall(
+        name="plugin:acpx",
+        version=VERSION,
+        install_time=datetime.utcnow(),
+        # source_path intentionally None: acpx is a stock plugin, no filesystem path
+        target_path="stock:acpx",
+    )
 
 
 def _install_runtime_state(
@@ -809,6 +870,18 @@ def install(
         except Exception as exc:
             errors.append(f"Extension install failed: {exc}")
             raise InstallError(f"Extension install failed: {exc}") from exc
+
+        # Enable acpx plugin AFTER all config writes (same reason as extension install).
+        # acpx is a stock plugin required for ACP runtime (sessions_spawn runtime=acp).
+        # Without it, spawning opencode/codex/claude via ACP fails with
+        # "ACP runtime backend is not configured".
+        try:
+            acpx_component = _ensure_acpx_plugin_enabled()
+            if acpx_component is not None:
+                all_components.append(acpx_component)
+        except Exception as exc:
+            errors.append(f"ACPX plugin enablement failed: {exc}")
+            raise InstallError(f"ACPX plugin enablement failed: {exc}") from exc
 
         # Step 7: Initialize runtime state
         try:
