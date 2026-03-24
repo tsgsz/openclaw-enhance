@@ -32,7 +32,6 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     save_manifest,
 )
-from . import monitor_service
 from openclaw_enhance.paths import (
     ensure_managed_directories,
     managed_root,
@@ -47,6 +46,8 @@ from openclaw_enhance.runtime.ownership import (
 )
 from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
 from openclaw_enhance.workspaces import WORKSPACES_DIR, list_workspaces
+
+from . import monitor_service
 
 
 class InstallError(RuntimeError):

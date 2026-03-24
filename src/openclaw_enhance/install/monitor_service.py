@@ -4,8 +4,8 @@ import os
 import plistlib
 import subprocess
 import sys
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 from openclaw_enhance.constants import VERSION
