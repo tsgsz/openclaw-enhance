@@ -7,6 +7,10 @@ from openclaw_enhance.paths import resolve_main_workspace
 
 TOOL_GATE_MARKER = "<!-- oe-main-tool-gate -->"
 _STALE_OE_MAIN_AGENTS_REF = "openclaw-enhanced/system/workspace/AGENTS.md"
+_STALE_OE_LEGACY_LINE_SNIPPETS: tuple[str, ...] = (
+    "**每次收到消息** 都必须阅读 `../openclaw-enhanced/system/workspace/AGENTS.md` 里的约定并且遵循。",
+    "**每次收到消息** 都必须阅读 `../` 里的约定并且遵循。",
+)
 
 TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 ## 🚫 Main 主会话工具限制（由 openclaw-enhance 自动注入）
@@ -39,11 +43,49 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 
 
 def _repair_known_stale_main_agents_refs(content: str) -> tuple[str, bool]:
-    if _STALE_OE_MAIN_AGENTS_REF not in content:
+    repaired_lines: list[str] = []
+    changed = False
+
+    for line in content.splitlines(keepends=True):
+        should_drop_line = False
+
+        if (
+            _STALE_OE_MAIN_AGENTS_REF in line
+            and "每次收到消息" in line
+            and "里的约定并且遵循" in line
+        ):
+            should_drop_line = True
+        else:
+            for stale_line in _STALE_OE_LEGACY_LINE_SNIPPETS:
+                if stale_line in line:
+                    should_drop_line = True
+                    break
+
+        if should_drop_line:
+            changed = True
+            continue
+
+        repaired_lines.append(line)
+
+    if not changed:
         return content, False
 
-    repaired = content.replace(_STALE_OE_MAIN_AGENTS_REF, "")
-    return repaired, repaired != content
+    return "".join(repaired_lines), True
+
+
+def _replace_existing_tool_gate_block_with_canonical(content: str) -> tuple[str, bool]:
+    marker_count = content.count(TOOL_GATE_MARKER)
+    if marker_count < 2:
+        return content, False
+
+    start = content.index(TOOL_GATE_MARKER)
+    end = content.index(TOOL_GATE_MARKER, start + len(TOOL_GATE_MARKER)) + len(TOOL_GATE_MARKER)
+    existing_block = content[start:end]
+    if existing_block == TOOL_GATE_BLOCK:
+        return content, False
+
+    updated = content[:start] + TOOL_GATE_BLOCK + content[end:]
+    return updated, True
 
 
 def inject_main_tool_gate(
@@ -60,8 +102,10 @@ def inject_main_tool_gate(
     content = agents_md.read_text(encoding="utf-8")
     content, repaired = _repair_known_stale_main_agents_refs(content)
 
+    content, refreshed = _replace_existing_tool_gate_block_with_canonical(content)
+
     if TOOL_GATE_MARKER in content:
-        if repaired:
+        if repaired or refreshed:
             agents_md.write_text(content, encoding="utf-8")
             return True
         return False
