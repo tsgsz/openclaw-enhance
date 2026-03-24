@@ -215,8 +215,14 @@ Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator 
 
 **Intended use**:
 - Clear stale/orphaned enhance-managed session state
+- Clear stale/orphaned agent session files under `--openclaw-home` when used by the managed cleanup LaunchAgent
 - Preview cleanup candidates before destructive action
 - Recover from accumulated stale session artifacts without touching active sessions
+
+**Managed automation**:
+- On macOS install, `ai.openclaw.session-cleanup` runs this cleanup surface hourly via `python -m openclaw_enhance.cleanup --execute --openclaw-home <...> --json`
+- The automatic LaunchAgent path is intentionally conservative: it cleans clearly stale non-core artifacts by default, while `--include-core-sessions` remains a manual operator choice.
+- This replaces the previous external launchd dependency on `~/.openclaw/workspace/scripts/maintenance/openclaw-session-cleanup.sh`
 
 
 **When it's used**:
@@ -235,6 +241,24 @@ Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator 
 - ❌ Edit user repositories
 - ❌ Modify non-owned config
 - ❌ Access user credentials
+
+## Governance CLI Surface
+
+`openclaw-enhance` owns the supported replacement for the legacy governance scripts that previously lived under `~/.openclaw/workspace/scripts/governance/`.
+
+| Legacy script | OE-managed replacement |
+|---|---|
+| `anti_stuckctl.sh` | `python -m openclaw_enhance.cli governance ...` |
+| `diagnose_stuck.sh` | `python -m openclaw_enhance.cli governance diagnose --json` |
+| `healthcheck_openclaw.sh` | `python -m openclaw_enhance.cli governance healthcheck --json` |
+| `safe_gateway_restart.py` | `python -m openclaw_enhance.cli governance safe-restart --dry-run --json` |
+| `immediate_restart_resume.py` | `python -m openclaw_enhance.cli governance restart-resume --json` |
+| `session_archiver.py` | `python -m openclaw_enhance.cli governance archive-sessions --dry-run --json` |
+| `sub_agentsctl.py` | `python -m openclaw_enhance.cli governance subagents ...` |
+| `sub_agents_statectl.py` | `python -m openclaw_enhance.cli governance subagents merge-state ...` |
+| `watch_stuck.py` | `python -m openclaw_enhance.monitor_runtime ...` |
+
+Governance/admin operations stay outside `oe-watchdog` on purpose. The watchdog confirms timeout suspicions and sends reminders; the CLI surface owns archive, restart, and legacy subagent state operations.
 
 ### oe-tool-recovery
 

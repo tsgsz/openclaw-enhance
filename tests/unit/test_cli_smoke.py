@@ -1,5 +1,6 @@
 """CLI smoke tests for openclaw_enhance."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -8,25 +9,29 @@ from unittest.mock import patch
 import pytest
 
 
+def run_cli_subprocess(*args: str) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    existing_pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = f"src{os.pathsep}{existing_pythonpath}" if existing_pythonpath else "src"
+    return subprocess.run(
+        [sys.executable, "-m", "openclaw_enhance.cli", *args],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+
 class TestCLIHelp:
     """Tests for CLI --help command."""
 
     def test_help_exits_zero(self):
         """CLI --help should exit with code 0."""
-        result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", "--help"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_cli_subprocess("--help")
         assert result.returncode == 0
 
     def test_help_shows_commands(self):
         """CLI --help should show available commands."""
-        result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", "--help"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_cli_subprocess("--help")
         assert "install" in result.stdout
         assert "uninstall" in result.stdout
         assert "doctor" in result.stdout
@@ -43,6 +48,7 @@ class TestCLICommandsExist:
             "uninstall",
             "doctor",
             "status",
+            "governance",
             "validate-feature",
             "render-skill",
             "render-workspace",
@@ -52,11 +58,7 @@ class TestCLICommandsExist:
     )
     def test_command_help_exits_zero(self, command):
         """Each command's --help should exit with code 0."""
-        result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", command, "--help"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_cli_subprocess(command, "--help")
         assert result.returncode == 0, f"Command '{command} --help' failed: {result.stderr}"
 
     @pytest.mark.parametrize(
@@ -66,6 +68,7 @@ class TestCLICommandsExist:
             "uninstall",
             "doctor",
             "status",
+            "governance",
             "validate-feature",
             "render-skill",
             "render-workspace",
@@ -75,12 +78,25 @@ class TestCLICommandsExist:
     )
     def test_command_exists_in_help(self, command):
         """Each command should be listed in main help."""
+        result = run_cli_subprocess("--help")
+        assert command in result.stdout, f"Command '{command}' not found in help output"
+
+
+class TestCleanupModuleEntryPoint:
+    def test_cleanup_module_help_exits_zero(self):
+        env = os.environ.copy()
+        existing_pythonpath = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = (
+            f"src{os.pathsep}{existing_pythonpath}" if existing_pythonpath else "src"
+        )
         result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", "--help"],
+            [sys.executable, "-m", "openclaw_enhance.cleanup", "--help"],
             capture_output=True,
             text=True,
+            env=env,
         )
-        assert command in result.stdout, f"Command '{command}' not found in help output"
+        assert result.returncode == 0
+        assert "cleanup-sessions" in result.stdout or "--execute" in result.stdout
 
 
 class TestCLIDoctorPythonValidation:
@@ -135,11 +151,7 @@ class TestCLIDoctorPythonValidation:
 
 class TestCLIValidateFeature:
     def test_validate_feature_help_shows_options(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "openclaw_enhance.cli", "validate-feature", "--help"],
-            capture_output=True,
-            text=True,
-        )
+        result = run_cli_subprocess("validate-feature", "--help")
         assert result.returncode == 0
         assert "--feature-class" in result.stdout
         assert "--report-slug" in result.stdout

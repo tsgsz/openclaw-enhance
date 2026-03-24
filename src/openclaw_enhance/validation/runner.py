@@ -63,7 +63,10 @@ def execute_command(cmd: str, openclaw_home: Path) -> CommandResult:
     env["OPENCLAW_HOME"] = str(openclaw_home)
     env["OPENCLAW_CONFIG_PATH"] = str(config_path)
 
-    manages_model_pin = "python -m openclaw_enhance.validation.live_probes" in cmd
+    manages_model_pin = (
+        "python -m openclaw_enhance.validation.live_probes" in cmd
+        or "python -m openclaw_enhance.cli validate-feature" in cmd
+    )
     if manages_model_pin:
         result = subprocess.run(
             cmd,

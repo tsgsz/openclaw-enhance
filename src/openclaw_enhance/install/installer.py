@@ -32,7 +32,7 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     save_manifest,
 )
-from openclaw_enhance.install.monitor_service import install_monitor_launchagent
+from . import monitor_service
 from openclaw_enhance.paths import (
     ensure_managed_directories,
     managed_root,
@@ -363,7 +363,7 @@ def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
                 subagents_obj = {}
                 entry["subagents"] = subagents_obj
             for agent_id in all_oe_agents:
-                if agent_id != "oe-orchestrator":
+                if isinstance(agent_id, str) and agent_id != "oe-orchestrator":
                     _ensure_allow_agent_id(subagents_obj, agent_id)
             break
 
@@ -705,7 +705,7 @@ def install(
     all_components: list[ComponentInstall] = []
     backup_paths: dict[str, str] = {}
     errors: list[str] = []
-    monitor_service_component: ComponentInstall | None = None
+    launchagent_components: list[ComponentInstall] = []
 
     try:
         # Step 3: Create namespace
@@ -825,14 +825,13 @@ def install(
             errors.append(f"Playbook sync failed: {exc}")
 
         try:
-            monitor_service_component = install_monitor_launchagent(
+            launchagent_components = monitor_service.install_managed_launchagents(
                 manifest=manifest,
                 openclaw_home=openclaw_home,
                 target_root=target_root,
                 user_home=user_home,
             )
-            if monitor_service_component is not None:
-                all_components.append(monitor_service_component)
+            all_components.extend(launchagent_components)
         except Exception as exc:
             errors.append(f"Monitor service installation failed: {exc}")
             raise InstallError(f"Monitor service installation failed: {exc}") from exc
@@ -849,13 +848,9 @@ def install(
         try:
             save_manifest(manifest, target_root)
         except Exception:
-            if monitor_service_component is not None:
+            if launchagent_components:
                 try:
-                    from openclaw_enhance.install.monitor_service import (
-                        uninstall_monitor_launchagent,
-                    )
-
-                    uninstall_monitor_launchagent(
+                    monitor_service.uninstall_managed_launchagents(
                         manifest=None,
                         target_root=target_root,
                         user_home=user_home,
