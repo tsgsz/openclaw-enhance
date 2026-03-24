@@ -225,6 +225,9 @@ python -m openclaw_enhance.cli install --openclaw-home "$HOME/.openclaw" --force
 
 The `--force` flag allows reinstalling even if already installed.
 
+**Install/Upgrade Reconciliation**:
+The installer automatically reconciles the main workspace `AGENTS.md` during every install or upgrade. It ensures the OE marker-delimited guardrail block is present and corrects or removes any stale legacy references (e.g., nonexistent `openclaw-enhanced` paths). This ensures the live environment always converges to the correct architectural state.
+
 ## Development Mode
 
 For active development of openclaw-enhance itself, use **development mode** (`--dev`). This creates symbolic links instead of copying files, allowing changes to source code to take effect immediately without reinstalling.

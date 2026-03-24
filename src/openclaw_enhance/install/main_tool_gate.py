@@ -6,6 +6,7 @@ from typing import Any, Mapping
 from openclaw_enhance.paths import resolve_main_workspace
 
 TOOL_GATE_MARKER = "<!-- oe-main-tool-gate -->"
+_STALE_OE_MAIN_AGENTS_REF = "openclaw-enhanced/system/workspace/AGENTS.md"
 
 TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 ## 🚫 Main 主会话工具限制（由 openclaw-enhance 自动注入）
@@ -31,7 +32,18 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 **重要：Session 上下文优先级规则：**  # ruff: noqa: E501
 4. **Session 内上下文的优先级高于 memory_search**。当你需要理解用户当前的问题或请求时，优先读取当前 session 中的上下文（对话历史、用户正在回复的消息、正在讨论的文件内容等），而不是先去 memory_search 查历史记忆。不要在还没吃干净当前 session 上下文之前就跳去 `memory_search`。  # ruff: noqa: E501
 
+**严禁直接调用 ACP：**  # ruff: noqa: E501
+5. **禁止直接使用 `sessions_spawn(runtime="acp"...)`**。所有 ACP 相关任务（如调用 codex、opencode 等外部 coding harness）必须通过 `sessions_spawn(runtime="subagent", agentId="oe-orchestrator")` 分发给 oe-orchestrator，由 orchestrator 决定如何调用 ACP。绝对不要自己直接调用 `runtime="acp"`。  # ruff: noqa: E501
+
 {TOOL_GATE_MARKER}"""  # noqa: E501
+
+
+def _repair_known_stale_main_agents_refs(content: str) -> tuple[str, bool]:
+    if _STALE_OE_MAIN_AGENTS_REF not in content:
+        return content, False
+
+    repaired = content.replace(_STALE_OE_MAIN_AGENTS_REF, "")
+    return repaired, repaired != content
 
 
 def inject_main_tool_gate(
@@ -46,8 +58,12 @@ def inject_main_tool_gate(
         return False
 
     content = agents_md.read_text(encoding="utf-8")
+    content, repaired = _repair_known_stale_main_agents_refs(content)
 
     if TOOL_GATE_MARKER in content:
+        if repaired:
+            agents_md.write_text(content, encoding="utf-8")
+            return True
         return False
 
     updated = content.rstrip() + "\n\n" + TOOL_GATE_BLOCK + "\n"

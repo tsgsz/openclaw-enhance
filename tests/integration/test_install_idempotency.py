@@ -158,6 +158,37 @@ class TestInstallIdempotency:
         result2 = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
         assert result2.success
 
+    def test_force_install_repairs_stale_main_agents_reference_idempotently(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        agents_path = mock_openclaw_home / "workspace" / "AGENTS.md"
+        agents_path.parent.mkdir(parents=True, exist_ok=True)
+        agents_path.write_text(
+            (
+                "# User Header\n\n"
+                "User section should stay.\n"
+                "Reference: ../openclaw-enhanced/system/workspace/AGENTS.md\n"
+            ),
+            encoding="utf-8",
+        )
+
+        first_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert first_result.success
+
+        first_content = agents_path.read_text(encoding="utf-8")
+        assert "User section should stay." in first_content
+        assert "../openclaw-enhanced/system/workspace/AGENTS.md" not in first_content
+        assert "openclaw-enhance/system/workspace/AGENTS.md" not in first_content
+        assert first_content.count("<!-- oe-main-tool-gate -->") == 2
+
+        second_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert second_result.success
+
+        second_content = agents_path.read_text(encoding="utf-8")
+        assert second_content == first_content
+
 
 class TestUninstallIdempotency:
     """Tests that uninstall is idempotent."""

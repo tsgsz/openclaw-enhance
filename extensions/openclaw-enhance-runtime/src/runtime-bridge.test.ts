@@ -570,6 +570,49 @@ describe("oe-runtime tool gate (index.ts)", () => {
       assert.strictEqual(result, undefined);
     });
   });
+
+  describe("sessions_spawn ACP routing gate", () => {
+    it("should block direct ACP spawn from main session with reroute guidance", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({
+        runId: "main-run-1",
+        toolName: "sessions_spawn",
+        params: {
+          runtime: "acp",
+          agentId: "opencode",
+        },
+      }) as { block: boolean; blockReason?: string } | undefined;
+
+      assert.ok(result);
+      assert.strictEqual(result?.block, true);
+      assert.ok(result?.blockReason?.includes("route through oe-orchestrator first"));
+    });
+
+    it("should allow ACP spawn from non-main session", async () => {
+      const api = createMockApi();
+      const plugin = await loadPlugin();
+      plugin.register(api);
+      registerMainRun(api, "main-run-1");
+      api.simulateAgentEvent({ type: "run_start", runId: "orchestrator-run-1", sessionKey: "agent:oe-orchestrator:abc" });
+      const handler = api.handlers.get("before_tool_call")!;
+
+      const result = await handler({
+        runId: "orchestrator-run-1",
+        toolName: "sessions_spawn",
+        params: {
+          runtime: "acp",
+          agentId: "opencode",
+        },
+      });
+
+      assert.strictEqual(result, undefined);
+    });
+  });
 });
 
 describe("Integration: Hook and Bridge", () => {

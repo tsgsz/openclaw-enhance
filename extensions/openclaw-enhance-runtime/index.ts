@@ -79,6 +79,18 @@ export default {
             blockReason: `CRITICAL RULE VIOLATION: The 'main' session is strictly FORBIDDEN from using the '${toolName}' tool to mutate files or execute commands directly.\n\nYou are a ROUTER. For any task that requires writing code, editing files, or running commands, you MUST use sessions_spawn({ agentId: "oe-orchestrator", task: "<description>" }) to delegate the work. Do not attempt to retry this tool.`
           };
         }
+
+        if (toolName === "sessions_spawn") {
+          const params = context?.params;
+          const runtime = typeof params === "object" && params !== null ? (params as { runtime?: unknown }).runtime : undefined;
+          if (runtime === "acp") {
+            api.logger.warn(`oe-runtime: BLOCKED direct ACP sessions_spawn in main session (runId=${runId})`);
+            return {
+              block: true,
+              blockReason: "CRITICAL RULE VIOLATION: Direct ACP spawn from main is not allowed. route through oe-orchestrator first: sessions_spawn({ agentId: \"oe-orchestrator\", runtime: \"subagent\", task: \"<description>\" })."
+            };
+          }
+        }
         return undefined;
       } catch (err) {
         if (!isMainForFailClosed) {

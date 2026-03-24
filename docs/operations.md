@@ -20,6 +20,13 @@ The system distinguishes four separate routing proofs:
 3. **Recovery-Worker Runtime Surface** (`backfill-recovery-worker`): Specialized `oe-tool-recovery` worker for tool-failure diagnosis.
 4. **Main-Session Escalation Runtime Surface** (`backfill-main-escalation`): Automatic escalation from the main session to the orchestrator for heavy tasks.
 
+**Canonical ACP Routing Contract**:
+Main session must not directly spawn ACP harness sessions.
+Required chain: `main -> sessions_spawn(agentId="oe-orchestrator", runtime="subagent")`
+Then orchestrator may dispatch `sessions_spawn(runtime="acp", agentId="...")`.
+
+Stock OpenClaw ACP guidance may teach direct ACP spawn, but `openclaw-enhance` runtime and installer guardrails intentionally override this for the main session.
+
 The orchestrator manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
 
 ## Orchestrator Self-Execution Policy
