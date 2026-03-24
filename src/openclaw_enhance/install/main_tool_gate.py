@@ -28,9 +28,8 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 2. 绝对不要自己动手，即使任务看起来很简单
 3. 如果你调用 `edit`/`exec`/`write`/`web_search`/`web_fetch`，立刻停止，改用 `sessions_spawn`
 
-**重要：Reply-Chain 场景下的优先规则：**  # ruff: noqa: E501
-4. 如果你在一个回复链中（用户正在回复某条特定消息），**先完整读取并理解那条被回复的消息，再查记忆或执行其他操作**。不要在没吃干净当前回复链之前就跳去 `memory_search`。  # ruff: noqa: E501
-   当前上下文（尤其是被回复的那条消息）优先级高于历史记忆。  # ruff: noqa: E501
+**重要：Session 上下文优先级规则：**  # ruff: noqa: E501
+4. **Session 内上下文的优先级高于 memory_search**。当你需要理解用户当前的问题或请求时，优先读取当前 session 中的上下文（对话历史、用户正在回复的消息、正在讨论的文件内容等），而不是先去 memory_search 查历史记忆。不要在还没吃干净当前 session 上下文之前就跳去 `memory_search`。  # ruff: noqa: E501
 
 {TOOL_GATE_MARKER}"""  # noqa: E501
 

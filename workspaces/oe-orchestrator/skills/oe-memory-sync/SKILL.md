@@ -243,11 +243,11 @@ def summarize_conversation(history):
             if is_significant(msg):
                 key_points.append(f"Main response: {truncate(msg.content, 200)}")
     
-    # Ensure the last reply-chain message (the most recent parent message before
-    # orchestrator startup) is NOT truncated by summarization compression.
-    # Reply context is critical for understanding user's intent in reply-chain scenarios.
+    # Ensure the most recent session context is NOT truncated by summarization
+    # compression. Recent conversation context (especially the last user message
+    # and any in-progress discussion) is critical for understanding user's intent.
+    # Session context priority: current conversation > historical memories.
     recent_points = key_points[-10:]
-    # If the most recent point is a user reply, preserve it from summarization compression
     return "\n".join(recent_points)
 ```
 
