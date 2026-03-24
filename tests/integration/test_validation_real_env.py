@@ -216,7 +216,10 @@ class TestValidateFeatureCommandOrdering:
         from openclaw_enhance.validation.runner import execute_command
 
         execute_command(
-            "python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke",
+            (
+                "python -m openclaw_enhance.cli validate-feature "
+                "--feature-class docs-test-only --report-slug self-surface-smoke"
+            ),
             mock_openclaw_home,
         )
 

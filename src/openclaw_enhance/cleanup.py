@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-import sys
 import shutil
+import sys
 from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
@@ -166,6 +166,8 @@ def classify_candidate(
         return replace(candidate, status=CleanupStatus.SKIPPED_ACTIVE)
     if candidate.age_hours < stale_threshold_hours:
         return replace(candidate, status=CleanupStatus.SKIPPED_ACTIVE)
+    if candidate.kind is CleanupKind.CORE_SESSION:
+        return replace(candidate, status=CleanupStatus.SKIPPED_UNCERTAIN)
     return replace(candidate, status=CleanupStatus.SAFE_TO_REMOVE)
 
 
@@ -186,6 +188,12 @@ def cleanup_paths(
         if classified.kind is CleanupKind.CORE_SESSION and not include_core_sessions:
             skipped_uncertain.append(str(classified.path))
             continue
+        if (
+            classified.kind is CleanupKind.CORE_SESSION
+            and include_core_sessions
+            and classified.status is CleanupStatus.SKIPPED_UNCERTAIN
+        ):
+            classified = replace(classified, status=CleanupStatus.SAFE_TO_REMOVE)
         if classified.status is CleanupStatus.SAFE_TO_REMOVE:
             safe_to_remove.append(str(classified.path))
             if not dry_run:
