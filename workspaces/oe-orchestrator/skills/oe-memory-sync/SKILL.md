@@ -243,7 +243,12 @@ def summarize_conversation(history):
             if is_significant(msg):
                 key_points.append(f"Main response: {truncate(msg.content, 200)}")
     
-    return "\n".join(key_points[-10:])  # Last 10 significant points
+    # Ensure the last reply-chain message (the most recent parent message before
+    # orchestrator startup) is NOT truncated by summarization compression.
+    # Reply context is critical for understanding user's intent in reply-chain scenarios.
+    recent_points = key_points[-10:]
+    # If the most recent point is a user reply, preserve it from summarization compression
+    return "\n".join(recent_points)
 ```
 
 ### Memory Prioritization

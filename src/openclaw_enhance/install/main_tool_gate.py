@@ -27,7 +27,12 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 1. 必须使用 `sessions_spawn` 派发给 `oe-orchestrator`
 2. 绝对不要自己动手，即使任务看起来很简单
 3. 如果你调用 `edit`/`exec`/`write`/`web_search`/`web_fetch`，立刻停止，改用 `sessions_spawn`
-{TOOL_GATE_MARKER}"""
+
+**重要：Reply-Chain 场景下的优先规则：**  # ruff: noqa: E501
+4. 如果你在一个回复链中（用户正在回复某条特定消息），**先完整读取并理解那条被回复的消息，再查记忆或执行其他操作**。不要在没吃干净当前回复链之前就跳去 `memory_search`。  # ruff: noqa: E501
+   当前上下文（尤其是被回复的那条消息）优先级高于历史记忆。  # ruff: noqa: E501
+
+{TOOL_GATE_MARKER}"""  # noqa: E501
 
 
 def inject_main_tool_gate(
