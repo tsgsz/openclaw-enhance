@@ -31,10 +31,7 @@ from openclaw_enhance.install.manifest import (
     load_manifest,
     manifest_path,
 )
-from openclaw_enhance.install.monitor_service import (
-    monitor_launch_agent_path,
-    uninstall_monitor_launchagent,
-)
+from . import monitor_service
 from openclaw_enhance.paths import (
     managed_root,
     resolve_openclaw_config_path,
@@ -429,8 +426,9 @@ def uninstall(
 
     # Check if installed
     manifest = load_manifest(target_root)
-    has_partial_monitor_install = (
-        sys.platform == "darwin" and monitor_launch_agent_path(user_home).exists()
+    has_partial_monitor_install = sys.platform == "darwin" and (
+        monitor_service.monitor_launch_agent_path(user_home).exists()
+        or monitor_service.session_cleanup_launch_agent_path(user_home).exists()
     )
     if not manifest and not force and not has_partial_monitor_install:
         return UninstallResult(
@@ -465,7 +463,7 @@ def uninstall(
 
     try:
         try:
-            monitor_service_removed = uninstall_monitor_launchagent(
+            monitor_service_removed = monitor_service.uninstall_managed_launchagents(
                 manifest=manifest,
                 target_root=target_root,
                 user_home=user_home,

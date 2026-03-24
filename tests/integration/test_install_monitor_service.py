@@ -166,3 +166,91 @@ def test_install_launchagent_runs_module_entrypoint_not_wrapper_script(
     command_line = " ".join(payload["ProgramArguments"])
     assert "-m openclaw_enhance.monitor_runtime" in command_line
     assert "scripts/monitor_runtime.py" not in command_line
+
+
+def test_install_registers_session_cleanup_launchagent_on_macos(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    with patch.object(sys, "platform", "darwin"):
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
+            mock_run.return_value = _mock_launchctl_run()
+
+            result = install(mock_openclaw_home, user_home=isolated_user_home)
+
+    assert result.success
+    assert "session-cleanup:launchagent" in result.components_installed
+
+    plist_path = (
+        isolated_user_home / "Library" / "LaunchAgents" / "ai.openclaw.session-cleanup.plist"
+    )
+    assert plist_path.exists()
+
+    payload = plistlib.loads(plist_path.read_bytes())
+    assert payload["Label"] == "ai.openclaw.session-cleanup"
+    assert payload["RunAtLoad"] is True
+    assert payload["StartInterval"] == 3600
+    assert payload["ProgramArguments"][:4] == [
+        sys.executable,
+        "-m",
+        "openclaw_enhance.cleanup",
+        "--execute",
+    ]
+    assert "--include-core-sessions" not in payload["ProgramArguments"]
+    assert "~/.openclaw/workspace/scripts/maintenance/openclaw-session-cleanup.sh" not in " ".join(
+        payload["ProgramArguments"]
+    )
+
+    commands = [call.args[0] for call in mock_run.call_args_list]
+    assert ["bootstrap", f"gui/{os.getuid()}", str(plist_path)] in commands
+    assert [
+        "kickstart",
+        "-k",
+        f"gui/{os.getuid()}/ai.openclaw.session-cleanup",
+    ] in commands
+
+
+def test_uninstall_removes_session_cleanup_launchagent_on_macos(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    with patch.object(sys, "platform", "darwin"):
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
+            mock_run.return_value = _mock_launchctl_run()
+            install_result = install(mock_openclaw_home, user_home=isolated_user_home)
+            assert install_result.success
+
+            uninstall_result = uninstall(
+                openclaw_home=mock_openclaw_home,
+                user_home=isolated_user_home,
+            )
+
+    assert uninstall_result.success
+    assert "session-cleanup:launchagent" in uninstall_result.components_removed
+
+    plist_path = (
+        isolated_user_home / "Library" / "LaunchAgents" / "ai.openclaw.session-cleanup.plist"
+    )
+    assert not plist_path.exists()
+
+    commands = [call.args[0] for call in mock_run.call_args_list]
+    assert ["bootout", f"gui/{os.getuid()}/ai.openclaw.session-cleanup"] in commands
+
+
+def test_install_session_cleanup_launchagent_runs_module_entrypoint_not_wrapper_script(
+    mock_openclaw_home: Path,
+    isolated_user_home: Path,
+) -> None:
+    with patch.object(sys, "platform", "darwin"):
+        with patch("openclaw_enhance.install.monitor_service._run_launchctl") as mock_run:
+            mock_run.return_value = _mock_launchctl_run()
+            result = install(mock_openclaw_home, user_home=isolated_user_home)
+
+    assert result.success
+    plist_path = (
+        isolated_user_home / "Library" / "LaunchAgents" / "ai.openclaw.session-cleanup.plist"
+    )
+    payload = plistlib.loads(plist_path.read_bytes())
+    command_line = " ".join(payload["ProgramArguments"])
+    assert "-m openclaw_enhance.cleanup" in command_line
+    assert "openclaw-session-cleanup.sh" not in command_line
