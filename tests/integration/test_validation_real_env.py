@@ -125,14 +125,15 @@ class TestValidateFeatureCommandOrdering:
 
         calls = [call[0][0] for call in mock_run.call_args_list]
 
-        assert len(calls) >= 6
+        assert len(calls) >= 7
         assert "uninstall" in calls[0]
         assert "install" in calls[1]
         assert "--dev" not in calls[1]
         assert calls[2] == "launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor"
-        assert "status" in calls[3]
-        assert "doctor" in calls[4]
-        assert "uninstall" in calls[5]
+        assert calls[3] == "launchctl print gui/$(id -u)/ai.openclaw.session-cleanup"
+        assert "status" in calls[4]
+        assert "doctor" in calls[5]
+        assert "uninstall" in calls[6]
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_install_lifecycle_dev_mode_slug(
@@ -201,6 +202,25 @@ class TestValidateFeatureCommandOrdering:
         assert "python -m openclaw_enhance.validation.live_probes" in calls[0]
         assert "routing-yield" in calls[0]
         assert "--message" in calls[0]
+
+    @patch("openclaw_enhance.validation.runner.subprocess.run")
+    @patch("openclaw_enhance.validation.runner.pinned_openclaw_runtime_model")
+    def test_nested_validate_feature_skips_model_pin(
+        self,
+        mock_pin: MagicMock,
+        mock_run: MagicMock,
+        mock_openclaw_home: Path,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        from openclaw_enhance.validation.runner import execute_command
+
+        execute_command(
+            "python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke",
+            mock_openclaw_home,
+        )
+
+        mock_pin.assert_not_called()
 
     @patch("openclaw_enhance.validation.runner.subprocess.run")
     def test_workspace_routing_uses_recovery_probe(
