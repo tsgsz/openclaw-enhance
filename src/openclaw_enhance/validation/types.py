@@ -115,7 +115,12 @@ def get_bundle_commands(feature_class: FeatureClass, slug: str = "") -> list[str
                 "python -m openclaw_enhance.cli install",
             ]
             if sys.platform == "darwin":
-                commands.append("launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor")
+                commands.extend(
+                    [
+                        "launchctl print gui/$(id -u)/ai.openclaw.enhance.monitor",
+                        "launchctl print gui/$(id -u)/ai.openclaw.session-cleanup",
+                    ]
+                )
             commands.extend(
                 [
                     "python -m openclaw_enhance.cli status",

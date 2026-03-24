@@ -23,8 +23,10 @@ Target: Default `~/.openclaw`
     - *Pass*: `~/.openclaw/openclaw-enhance` is removed or empty.
 2. **Install**: `python -m openclaw_enhance.cli install`
     - *Pass*: Exit code 0, "Installation successful" in output.
-3. **Monitor Service (macOS)**: `launchctl print gui/$UID/ai.openclaw.enhance.monitor`
-    - *Pass*: LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` with `RunAtLoad` and a 60-second interval.
+3. **Monitor Services (macOS)**:
+   - `launchctl print gui/$UID/ai.openclaw.enhance.monitor`
+   - `launchctl print gui/$UID/ai.openclaw.session-cleanup`
+- *Pass*: The monitor LaunchAgent points at `python -m openclaw_enhance.monitor_runtime` with `RunAtLoad` and a 60-second interval, and the session-cleanup LaunchAgent points at `python -m openclaw_enhance.cleanup` with OE-managed arguments and no external workspace script dependency.
 4. **Verify Status**: `python -m openclaw_enhance.cli status`
     - *Pass*: `installed: true` in output.
 5. **Doctor Check**: `python -m openclaw_enhance.cli doctor`

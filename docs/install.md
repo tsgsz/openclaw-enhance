@@ -167,14 +167,27 @@ Components (13 on Linux/manual setups, 14 on macOS with managed monitor):
 
 ### Runtime Monitor
 
-On macOS, `install` now provisions and starts a per-user LaunchAgent for the runtime monitor automatically.
-The managed service label is `ai.openclaw.enhance.monitor`, and logs are written under `~/.openclaw/openclaw-enhance/logs/`.
+On macOS, `install` now provisions and starts two per-user managed LaunchAgents automatically:
+
+- `ai.openclaw.enhance.monitor` — runtime timeout/watchdog monitor (every 60 seconds)
+- `ai.openclaw.session-cleanup` — OE-managed stale session cleanup (hourly, replacing the old external cleanup label)
+
+Both services write logs under `~/.openclaw/openclaw-enhance/logs/`.
 
 For manual or non-macOS setups, you can still configure the monitor script explicitly:
 
 ```bash
 # Add to crontab (runs every minute)
 (crontab -l 2>/dev/null; echo "* * * * * cd /path/to/openclaw-enhance && python -m openclaw_enhance.monitor_runtime --once --openclaw-home \$HOME/.openclaw --state-root \$HOME/.openclaw/openclaw-enhance >/dev/null 2>&1") | crontab -
+```
+
+After installation, governance/admin operations should go through the OE-managed CLI instead of loose scripts in `~/.openclaw/workspace/scripts/governance/`:
+
+```bash
+python -m openclaw_enhance.cli governance --help
+python -m openclaw_enhance.cli governance diagnose --json
+python -m openclaw_enhance.cli governance archive-sessions --dry-run --json
+python -m openclaw_enhance.cli governance safe-restart --dry-run --json
 ```
 
 Or use systemd timer (Linux):
@@ -189,11 +202,13 @@ sudo systemctl enable openclaw-enhance-monitor.timer
 sudo systemctl start openclaw-enhance-monitor.timer
 ```
 
-On macOS, verify the managed monitor service with:
+On macOS, verify the managed services with:
 
 ```bash
 launchctl print gui/$UID/ai.openclaw.enhance.monitor
+launchctl print gui/$UID/ai.openclaw.session-cleanup
 tail -f ~/.openclaw/openclaw-enhance/logs/monitor.log
+tail -f ~/.openclaw/openclaw-enhance/logs/session-cleanup.log
 ```
 
 ## Upgrade
@@ -309,6 +324,7 @@ python -m openclaw_enhance.cli uninstall --openclaw-home "$HOME/.openclaw"
 
 **What gets removed:**
 - Managed monitor LaunchAgent plist (`~/Library/LaunchAgents/ai.openclaw.enhance.monitor.plist`) on macOS
+- Managed session-cleanup LaunchAgent plist (`~/Library/LaunchAgents/ai.openclaw.session-cleanup.plist`) on macOS
 - All `oe-*` prefixed agents
 - All `oe-*` prefixed skills in main workspace
 - Hook configurations

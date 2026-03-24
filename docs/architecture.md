@@ -195,6 +195,31 @@ User Request
 └─────────────────┘
 ```
 
+### 3. Governance Admin Surface
+
+The legacy scripts under `~/.openclaw/workspace/scripts/governance/` are not intended to remain the primary operator surface. `openclaw-enhance` now owns the supported governance/admin commands directly.
+
+```
+Legacy governance scripts
+        │
+        ├── diagnose / healthcheck / restart / subagent bookkeeping
+        ▼
+python -m openclaw_enhance.cli governance ...
+        │
+        ├── diagnose
+        ├── healthcheck
+        ├── archive-sessions
+        ├── safe-restart
+        ├── restart-resume
+        └── subagents mark-done|mark-dead|set-status|set-eta|merge-state
+
+Continuous watch/stuck monitoring remains project-managed through:
+
+python -m openclaw_enhance.monitor_runtime ...
+```
+
+This preserves ADR 0003: `oe-watchdog` keeps narrow runtime-only authority, while destructive or administrative operations remain explicit CLI/admin commands.
+
 ## Components
 
 ### Main Session Skills
