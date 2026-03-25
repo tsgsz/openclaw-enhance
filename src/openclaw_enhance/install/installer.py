@@ -320,12 +320,38 @@ def _ensure_allow_agent_id(
     subagents_obj["allowAgents"] = allow_agents
 
 
+def _reconcile_subagent_max_spawn_depth(subagents_obj: dict[str, Any]) -> None:
+    depth_obj = subagents_obj.get("maxSpawnDepth")
+    if isinstance(depth_obj, int) and not isinstance(depth_obj, bool):
+        if depth_obj < 2:
+            subagents_obj["maxSpawnDepth"] = 2
+        elif depth_obj > 5:
+            subagents_obj["maxSpawnDepth"] = 5
+        return
+
+    subagents_obj["maxSpawnDepth"] = 2
+
+
+def _reconcile_subagent_model(subagents_obj: dict[str, Any], model: str) -> None:
+    model_obj = subagents_obj.get("model")
+    if isinstance(model_obj, str) and model_obj == model:
+        return
+    subagents_obj["model"] = model
+
+
 def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
     defaults_obj = agents_obj.get("defaults")
-    if isinstance(defaults_obj, dict):
-        defaults_subagents = defaults_obj.get("subagents")
-        if isinstance(defaults_subagents, dict):
-            defaults_subagents.pop("allowAgents", None)
+    if not isinstance(defaults_obj, dict):
+        defaults_obj = {}
+        agents_obj["defaults"] = defaults_obj
+
+    defaults_subagents = defaults_obj.get("subagents")
+    if not isinstance(defaults_subagents, dict):
+        defaults_subagents = {}
+        defaults_obj["subagents"] = defaults_subagents
+
+    defaults_subagents.pop("allowAgents", None)
+    _reconcile_subagent_max_spawn_depth(defaults_subagents)
 
     list_obj = agents_obj.get("list")
     if isinstance(list_obj, list):
@@ -339,6 +365,7 @@ def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
                 subagents_obj = {}
                 entry["subagents"] = subagents_obj
             _ensure_allow_agent_id(subagents_obj, "oe-orchestrator")
+            subagents_obj.pop("maxSpawnDepth", None)
             break
 
 
@@ -363,10 +390,38 @@ def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
             if not isinstance(subagents_obj, dict):
                 subagents_obj = {}
                 entry["subagents"] = subagents_obj
+            _reconcile_subagent_model(subagents_obj, "litellm-local/gpt-5.4")
             for agent_id in all_oe_agents:
                 if isinstance(agent_id, str) and agent_id != "oe-orchestrator":
                     _ensure_allow_agent_id(subagents_obj, agent_id)
             break
+
+
+def _ensure_subagent_tool_allowlist(config: dict[str, Any]) -> None:
+    tools_obj = config.get("tools")
+    if not isinstance(tools_obj, dict):
+        tools_obj = {}
+        config["tools"] = tools_obj
+
+    subagents_obj = tools_obj.get("subagents")
+    if not isinstance(subagents_obj, dict):
+        subagents_obj = {}
+        tools_obj["subagents"] = subagents_obj
+
+    tool_policy_obj = subagents_obj.get("tools")
+    if not isinstance(tool_policy_obj, dict):
+        tool_policy_obj = {}
+        subagents_obj["tools"] = tool_policy_obj
+
+    allow_obj = tool_policy_obj.get("allow")
+    allow_tools: list[str] = []
+    if isinstance(allow_obj, list):
+        allow_tools = [value for value in allow_obj if isinstance(value, str)]
+
+    if "sessions_spawn" not in allow_tools:
+        allow_tools.append("sessions_spawn")
+
+    tool_policy_obj["allow"] = allow_tools
 
 
 def _normalize_acp_config(config: dict[str, Any]) -> None:
@@ -528,6 +583,7 @@ def _register_runtime_surfaces(
 
     _ensure_main_orchestrator_allowlist(agents_obj)
     _ensure_orchestrator_worker_allowlist(agents_obj)
+    _ensure_subagent_tool_allowlist(config)
 
     hooks_obj = config.get("hooks")
     if not isinstance(hooks_obj, dict):
@@ -657,6 +713,43 @@ def _configure_agent_models(
     return [
         ComponentInstall(
             name="agents:model-config",
+            version=VERSION,
+            install_time=datetime.utcnow(),
+            target_path=str(config_path.absolute()),
+        ),
+    ]
+
+
+def _reconcile_orchestrator_subagent_model_post_cli(
+    manifest: InstallManifest,
+    openclaw_home: Path,
+) -> list[ComponentInstall]:
+    config_path = resolve_openclaw_config_path(openclaw_home)
+    config = _load_openclaw_config(config_path)
+
+    agents_obj = config.get("agents")
+    if not isinstance(agents_obj, dict):
+        agents_obj = {}
+        config["agents"] = agents_obj
+
+    _ensure_main_orchestrator_allowlist(agents_obj)
+    _ensure_orchestrator_worker_allowlist(agents_obj)
+
+    try:
+        backup_path = _write_openclaw_config(config_path, config)
+    except OSError as exc:
+        raise InstallError(
+            f"Failed to reconcile orchestrator subagent model config: {exc}"
+        ) from exc
+
+    manifest.add_rollback_point(
+        description="Orchestrator subagent model reconciliation",
+        backup_paths={"config": backup_path},
+    )
+
+    return [
+        ComponentInstall(
+            name="agents:orchestrator-subagent-model-reconcile",
             version=VERSION,
             install_time=datetime.utcnow(),
             target_path=str(config_path.absolute()),
@@ -882,6 +975,16 @@ def install(
         except Exception as exc:
             errors.append(f"ACPX plugin enablement failed: {exc}")
             raise InstallError(f"ACPX plugin enablement failed: {exc}") from exc
+
+        try:
+            post_cli_reconcile_components = _reconcile_orchestrator_subagent_model_post_cli(
+                manifest,
+                openclaw_home,
+            )
+            all_components.extend(post_cli_reconcile_components)
+        except Exception as exc:
+            errors.append(f"Orchestrator subagent model reconciliation failed: {exc}")
+            raise InstallError(f"Orchestrator subagent model reconciliation failed: {exc}") from exc
 
         # Step 7: Initialize runtime state
         try:
