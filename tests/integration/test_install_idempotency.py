@@ -7,6 +7,7 @@ consistent results.
 from pathlib import Path
 
 from openclaw_enhance.install import install, uninstall
+from openclaw_enhance.install.main_tool_gate import TOOL_GATE_MARKER
 from openclaw_enhance.install.main_skill_sync import MAIN_SKILL_IDS
 from openclaw_enhance.install.manifest import load_manifest
 from openclaw_enhance.paths import managed_root
@@ -157,6 +158,111 @@ class TestInstallIdempotency:
 
         result2 = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
         assert result2.success
+
+    def test_force_install_repairs_stale_main_agents_reference_idempotently(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        legacy_line = (
+            "**每次收到消息** 都必须阅读 "
+            "`../openclaw-enhanced/system/workspace/AGENTS.md` 里的约定并且遵循。"
+        )
+        agents_path = mock_openclaw_home / "workspace" / "AGENTS.md"
+        agents_path.parent.mkdir(parents=True, exist_ok=True)
+        agents_path.write_text(
+            (f"# User Header\n\nUser section should stay.\n{legacy_line}\n"),
+            encoding="utf-8",
+        )
+
+        first_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert first_result.success
+
+        first_content = agents_path.read_text(encoding="utf-8")
+        assert "User section should stay." in first_content
+        assert legacy_line not in first_content
+        assert "**每次收到消息**" not in first_content
+        assert "里的约定并且遵循" not in first_content
+        assert "../openclaw-enhanced/system/workspace/AGENTS.md" not in first_content
+        assert first_content.count("<!-- oe-main-tool-gate -->") == 2
+
+        second_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert second_result.success
+
+        second_content = agents_path.read_text(encoding="utf-8")
+        assert second_content == first_content
+
+    def test_force_install_removes_stale_legacy_instruction_line_without_remnants(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        legacy_line = (
+            "**每次收到消息** 都必须阅读 "
+            "`../openclaw-enhanced/system/workspace/AGENTS.md` 里的约定并且遵循。"
+        )
+        agents_path = mock_openclaw_home / "workspace" / "AGENTS.md"
+        agents_path.parent.mkdir(parents=True, exist_ok=True)
+        agents_path.write_text(
+            (f"# User Header\n\nKeep this user line.\n{legacy_line}\nKeep this ending line.\n"),
+            encoding="utf-8",
+        )
+
+        first_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert first_result.success
+
+        first_content = agents_path.read_text(encoding="utf-8")
+        assert "Keep this user line." in first_content
+        assert "Keep this ending line." in first_content
+        assert legacy_line not in first_content
+        assert "**每次收到消息**" not in first_content
+        assert "里的约定并且遵循" not in first_content
+        assert "../openclaw-enhanced/system/workspace/AGENTS.md" not in first_content
+
+        second_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert second_result.success
+
+        second_content = agents_path.read_text(encoding="utf-8")
+        assert second_content == first_content
+
+    def test_force_install_upgrades_existing_main_tool_gate_block_content(
+        self,
+        mock_openclaw_home: Path,
+        isolated_user_home: Path,
+    ) -> None:
+        old_block_without_acp_rule = f"""{TOOL_GATE_MARKER}
+## 🚫 Main 主会话工具限制（由 openclaw-enhance 自动注入）
+
+旧版本 block，缺少 ACP 规则。
+{TOOL_GATE_MARKER}"""
+
+        agents_path = mock_openclaw_home / "workspace" / "AGENTS.md"
+        agents_path.parent.mkdir(parents=True, exist_ok=True)
+        agents_path.write_text(
+            (
+                "# User Header\n\n"
+                "Keep user intro.\n\n"
+                f"{old_block_without_acp_rule}\n\n"
+                "Keep user footer.\n"
+            ),
+            encoding="utf-8",
+        )
+
+        first_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert first_result.success
+
+        first_content = agents_path.read_text(encoding="utf-8")
+        assert "旧版本 block，缺少 ACP 规则" not in first_content
+        assert '禁止直接使用 `sessions_spawn(runtime="acp"...)`' in first_content
+        assert first_content.count(TOOL_GATE_MARKER) == 2
+        assert "Keep user intro." in first_content
+        assert "Keep user footer." in first_content
+
+        second_result = install(mock_openclaw_home, user_home=isolated_user_home, force=True)
+        assert second_result.success
+
+        second_content = agents_path.read_text(encoding="utf-8")
+        assert second_content == first_content
 
 
 class TestUninstallIdempotency:

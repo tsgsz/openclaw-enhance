@@ -1,10 +1,10 @@
 {
-  "project_id": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-349/test_build_project_context_reg0/my-project",
+  "project_id": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-628/test_build_project_context_reg1/my-project",
   "project_name": "my-project",
   "project_type": "python",
   "project_subtype": "setuptools",
   "project_kind": "permanent",
-  "working_dir": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-349/test_build_project_context_reg0/my-project",
+  "working_dir": "/private/var/folders/bc/pj_fw1k92xdf_p28cdfmhfd40000gn/T/pytest-of-tsgsz/pytest-628/test_build_project_context_reg1/my-project",
   "git_context": null,
   "metadata": {}
 }

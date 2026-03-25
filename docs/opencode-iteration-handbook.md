@@ -51,7 +51,15 @@ Results → Orchestrator synthesis → Return to main
 
 **External ACP Harness Dispatch** (Milestone: partial-routing-chain-progress):
 
-The system supports routing to external ACP harnesses (opencode, codex, claude) through the orchestrator with a verified fail-closed runtime gate:
+The system supports routing to external ACP harnesses (opencode, codex, claude) through the orchestrator with a verified fail-closed runtime gate.
+
+**Canonical ACP Routing Contract**:
+Main session must not directly spawn ACP harness sessions.
+Required chain: `main -> sessions_spawn(agentId="oe-orchestrator", runtime="subagent")`
+Then orchestrator may dispatch `sessions_spawn(runtime="acp", agentId="...")`.
+
+**Stock Guidance Conflict**:
+Stock OpenClaw ACP surfaces (e.g., `acp-router/SKILL.md`, `acp-standard-flow.md`) may teach direct ACP spawning. `openclaw-enhance` install/upgrade and runtime guardrails intentionally override this for the main session to ensure architectural integrity.
 
 **Trigger Conditions** (Explicit Opt-in):
 - User explicitly requests: "用 opencode 做..." / "让 opencode 开发..."

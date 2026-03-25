@@ -119,6 +119,12 @@ ACP Harness (opencode) 执行具体开发工作
 Orchestrator 汇总结果并返回给 Main
 ```
 
+**ACP 路由合约**：
+主会话（main）禁止直接启动 ACP harness 会话。
+必须遵循：`main -> oe-orchestrator -> acp`。
+
+原生 OpenClaw 的 ACP 指引可能教导直接启动 ACP，但 `openclaw-enhance` 的安装/升级和运行时门禁会强制覆盖这一行为，确保架构一致性。
+
 **配置要求**：
 - `openclaw.json` 中 `acp.enabled: true`
 - ACPX 插件已安装且 Gateway 已重启
