@@ -158,7 +158,11 @@ def classify_candidate(
     candidate: CleanupCandidate,
     stale_threshold_hours: float,
 ) -> CleanupCandidate:
-    if (
+    # RUNTIME_STATE files (.deleted., .reset.) are already terminated sessions.
+    # Skip in_runtime_active_set check for these - the .deleted/.reset suffix
+    # means the session was intentionally ended, so we trust the suffix over sessions.json.
+    is_terminated = candidate.kind is CleanupKind.RUNTIME_STATE
+    if not is_terminated and (
         candidate.in_runtime_active_set
         or candidate.held_by_project_occupancy
         or candidate.has_recent_activity
