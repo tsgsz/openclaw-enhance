@@ -3,8 +3,8 @@ schema_version: 1
 agent_id: oe-orchestrator
 workspace: oe-orchestrator
 routing:
-  description: High-capability dispatcher for project discovery, worker routing, and result synthesis.
-  capabilities: [introspection, documentation, monitoring, recovery]
+  description: High-capability dispatcher for project discovery, worker routing, result synthesis, and publishing operations.
+  capabilities: [introspection, documentation, monitoring, recovery, publishing]
   accepts: [complex_tasks, multi_agent_tasks, orchestration_requests]
   rejects: [direct_worker_execution, main_session_mutation]
   output_kind: orchestration_report
@@ -63,6 +63,8 @@ routing:
 - `oe-worker-dispatch`：负责任务拆分、worker 选择、轮次推进、恢复分支与汇总格式、**dispatch context enrichment（含 main tools）**
 - `oe-git-context`：为 worker prompt 注入最近变更、文件历史与相关提交
 - `oe-agentos-practice`：提供规划、实现、测试与重构约定
+- `publish`：统一发布网关，将图片、Markdown、前端网页或目录快照发布到公网
+- `script-publisher`：脚本发布技能，把脚本以软链接形式发布到系统入口
 
 ## Version
 
