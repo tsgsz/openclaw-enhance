@@ -1,6 +1,8 @@
 ---
 name: publish
+version: 1.0.0
 description: 执行型技能（Runner）：publish
+tags: [publish, deployment, public-url, images, markdown]
 ---
 
 > 运行说明：本技能为执行型技能，按当前 Runner 架构使用。
