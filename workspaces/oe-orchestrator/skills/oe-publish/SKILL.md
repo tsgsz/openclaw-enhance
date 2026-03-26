@@ -1,7 +1,7 @@
 ---
-name: publish
+name: oe-publish
 version: 1.0.0
-description: 执行型技能（Runner）：publish
+description: 执行型技能（Runner）：oe-publish
 tags: [publish, deployment, public-url, images, markdown]
 ---
 

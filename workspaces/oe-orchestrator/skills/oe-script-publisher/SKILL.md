@@ -1,5 +1,5 @@
 ---
-name: script-publisher
+name: oe-script-publisher
 version: 1.0.0
 description: "把脚本以软链接发布到 ~/.openclaw/workspace/scripts/<group>/ 并维护 README（不复制/不搬运脚本实现）"
 ---
