@@ -46,3 +46,20 @@ If you proceed in main, monitor tool usage and escalate if needed.
 - Non-main sessions are untouched
 - Agent retains decision authority
 - No forced escalation
+
+## ETA Pre-Announcement Requirement
+
+When this hook detects a request that will involve `sessions_spawn` or is estimated to take more than 2 minutes, it prepends the following instruction to the agent prompt:
+
+```
+[ETA PRE-ANNOUNCE]
+For this task, before starting work:
+1. Estimate duration using oe-eta-estimator
+2. Announce to the user: "我来处理，预计 X-Y 分钟。如果到时还没做完，我会回来说明现在卡在哪、还需要多久。"
+3. Register the task with the ETA registry:
+   python -m openclaw_enhance.cli eta register --task-id <uuid> --child <child_session_id> --parent <parent_session_id> --minutes <estimated_minutes>
+
+DO NOT start work without making this announcement.
+```
+
+This ensures the main session behaves like a responsible collaborator — setting expectations upfront rather than leaving users in the dark.

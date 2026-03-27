@@ -628,6 +628,124 @@ def governance_restart_resume(output_json: bool) -> None:
     click.echo(payload["followup"])
 
 
+@cli.group("eta")
+def eta_group() -> None:
+    """ETA registry management for human-intuitive expectation protocol."""
+    pass
+
+
+@eta_group.command("register")
+@click.option("--task-id", required=True, help="Unique task identifier")
+@click.option("--child", "child_session_id", required=True, help="Child session ID")
+@click.option("--parent", "parent_session_id", required=True, help="Parent session ID")
+@click.option("--minutes", type=int, required=True, help="Estimated minutes to completion")
+@click.option(
+    "--first-update",
+    "first_update_minutes",
+    type=int,
+    default=None,
+    help="Minutes until first update (default: min(3, minutes//3))",
+)
+def eta_register(
+    task_id: str,
+    child_session_id: str,
+    parent_session_id: str,
+    minutes: int,
+    first_update_minutes: int | None,
+) -> None:
+    """Register a new task with its ETA metadata."""
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
+    import sys
+
+    registry = TaskETARegistry()
+    try:
+        first_update = first_update_minutes or max(1, minutes // 3)
+        record = registry.register(
+            task_id=task_id,
+            child_session_id=child_session_id,
+            parent_session=parent_session_id,
+            estimated_minutes=minutes,
+            first_update_minutes=first_update,
+        )
+        click.echo(
+            f"Registered task {task_id}: {minutes}min ETA, first update in {first_update}min"
+        )
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@eta_group.command("update")
+@click.option("--task-id", required=True, help="Task identifier")
+@click.option(
+    "--state",
+    required=True,
+    type=click.Choice(["delayed", "blocked", "stalled", "completed_on_time", "completed_late"]),
+    help="New state",
+)
+@click.option("--reason", default="", help="Human-readable reason for state change")
+@click.option(
+    "--remaining", type=int, default=None, help="New remaining minutes (for delayed/blocked)"
+)
+def eta_update(task_id: str, state: str, reason: str, remaining: int | None) -> None:
+    """Update task state in the ETA registry."""
+    from openclaw_enhance.runtime.states import TaskState
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
+    import sys
+
+    state_map = {
+        "delayed": TaskState.DELAYED,
+        "blocked": TaskState.BLOCKED,
+        "stalled": TaskState.STALLED,
+        "completed_on_time": TaskState.COMPLETED_ON_TIME,
+        "completed_late": TaskState.COMPLETED_LATE,
+    }
+
+    registry = TaskETARegistry()
+    try:
+        record = registry.update_state(
+            task_id,
+            new_state=state_map[state],
+            reason=reason,
+            new_remaining_minutes=remaining,
+        )
+        if record:
+            click.echo(f"Updated {task_id} to {state}: {reason}")
+        else:
+            click.echo(f"Task {task_id} not found", err=True)
+            sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@eta_group.command("status")
+@click.option("--task-id", required=True, help="Task identifier")
+def eta_status(task_id: str) -> None:
+    """Show current ETA/status of a task."""
+    from openclaw_enhance.runtime.states import STATE_DESCRIPTIONS, TaskState
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
+    import sys
+
+    registry = TaskETARegistry()
+    record = registry.get(task_id)
+    if not record:
+        click.echo(f"Task {task_id} not found", err=True)
+        sys.exit(1)
+
+    state_label = STATE_DESCRIPTIONS.get(TaskState(record.current_state), record.current_state)
+    click.echo(f"Task: {record.task_id}")
+    click.echo(f"State: {state_label}")
+    if record.new_remaining_minutes is not None:
+        click.echo(
+            f"ETA: {record.estimated_minutes}min original, {record.new_remaining_minutes}min refreshed"
+        )
+    else:
+        click.echo(f"ETA: {record.estimated_minutes}min")
+    if record.state_reason:
+        click.echo(f"Reason: {record.state_reason}")
+
+
 @cli.command("docs-check")
 def docs_check() -> None:
     """Validate documentation aligns with skill-first model."""
