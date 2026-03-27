@@ -654,13 +654,14 @@ def eta_register(
     first_update_minutes: int | None,
 ) -> None:
     """Register a new task with its ETA metadata."""
-    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
     import sys
+
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
 
     registry = TaskETARegistry()
     try:
         first_update = first_update_minutes or max(1, minutes // 3)
-        record = registry.register(
+        registry.register(
             task_id=task_id,
             child_session_id=child_session_id,
             parent_session=parent_session_id,
@@ -689,9 +690,10 @@ def eta_register(
 )
 def eta_update(task_id: str, state: str, reason: str, remaining: int | None) -> None:
     """Update task state in the ETA registry."""
-    from openclaw_enhance.runtime.states import TaskState
-    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
     import sys
+
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
+    from openclaw_enhance.runtime.states import TaskState
 
     state_map = {
         "delayed": TaskState.DELAYED,
@@ -723,9 +725,10 @@ def eta_update(task_id: str, state: str, reason: str, remaining: int | None) -> 
 @click.option("--task-id", required=True, help="Task identifier")
 def eta_status(task_id: str) -> None:
     """Show current ETA/status of a task."""
-    from openclaw_enhance.runtime.states import STATE_DESCRIPTIONS, TaskState
-    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
     import sys
+
+    from openclaw_enhance.runtime.eta_registry import TaskETARegistry
+    from openclaw_enhance.runtime.states import STATE_DESCRIPTIONS, TaskState
 
     registry = TaskETARegistry()
     record = registry.get(task_id)
@@ -738,7 +741,8 @@ def eta_status(task_id: str) -> None:
     click.echo(f"State: {state_label}")
     if record.new_remaining_minutes is not None:
         click.echo(
-            f"ETA: {record.estimated_minutes}min original, {record.new_remaining_minutes}min refreshed"
+            f"ETA: {record.estimated_minutes}min original, "
+            f"{record.new_remaining_minutes}min refreshed"
         )
     else:
         click.echo(f"ETA: {record.estimated_minutes}min")
