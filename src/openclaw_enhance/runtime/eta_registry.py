@@ -12,7 +12,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openclaw_enhance.runtime.states import TaskState, is_terminal
 
@@ -63,7 +63,7 @@ class TaskETARegistry:
 
     def _read(self) -> dict[str, Any]:
         try:
-            return json.loads(self._path.read_text(encoding="utf-8"))
+            return cast(dict[str, Any], json.loads(self._path.read_text(encoding="utf-8")))
         except Exception:
             return {"version": 1, "tasks": {}}
 
