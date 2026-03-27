@@ -21,12 +21,12 @@ class TestSkillContractRendering:
     """Tests for skill contract rendering from files."""
 
     def test_render_eta_estimator_contract(self):
-        """Should render oe-eta-estimator contract."""
+        """Should render oe-eta-estimator contract (v2)."""
         contract = render_skill_contract("oe-eta-estimator")
 
         assert "ETA Estimator" in contract
         assert "oe-eta-estimator" in contract
-        assert "Estimates task duration" in contract
+        assert "Human-Intuitive Expectation Protocol" in contract
 
     def test_render_toolcall_router_contract(self):
         """Should render oe-toolcall-router contract."""
