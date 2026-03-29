@@ -626,8 +626,8 @@ def _register_runtime_surfaces(
     ]
 
 
-AGENT_MODEL_OVERRIDES: dict[str, str] = {
-    "oe-orchestrator": "litellm-local/gpt-5.4",
+AGENT_MODEL_OVERRIDES: dict[str, str | None] = {
+    "oe-orchestrator": None,
     "oe-script_coder": "litellm-local/gpt-5.3-codex",
     "oe-tool-recovery": "litellm-local/gpt-5.4",
     "oe-syshelper": "minimax/MiniMax-M2.7",
@@ -661,9 +661,12 @@ def _configure_agent_models(
         if not agent_id or agent_id == "main":
             continue
 
-        model_id = AGENT_MODEL_OVERRIDES.get(agent_id)
-        if model_id:
-            agent_entry["model"] = model_id
+        if agent_id in AGENT_MODEL_OVERRIDES:
+            model_id = AGENT_MODEL_OVERRIDES[agent_id]
+            if model_id:
+                agent_entry["model"] = model_id
+            elif "model" in agent_entry:
+                del agent_entry["model"]
 
     _normalize_acp_config(config)
 
