@@ -510,6 +510,27 @@ def _install_extension(openclaw_home: Path | None = None) -> ComponentInstall | 
     if result.returncode != 0 and "already exists" not in (result.stdout + result.stderr):
         raise InstallError(f"Failed to install extension {OWNED_EXTENSION_ID}: {result.stderr}")
 
+    # Manually add to config if not present (openclaw plugins install doesn't always do this)
+    home = openclaw_home or Path.home() / ".openclaw"
+    config_path = resolve_openclaw_config_path(home)
+    config = _load_openclaw_config(config_path)
+
+    plugins = config.setdefault("plugins", {})
+    allow_list = plugins.setdefault("allow", [])
+    entries = plugins.setdefault("entries", {})
+
+    modified = False
+    if OWNED_EXTENSION_ID not in allow_list:
+        allow_list.append(OWNED_EXTENSION_ID)
+        modified = True
+
+    if OWNED_EXTENSION_ID not in entries:
+        entries[OWNED_EXTENSION_ID] = {"enabled": True}
+        modified = True
+
+    if modified:
+        _save_openclaw_config(config_path, config)
+
     if not _verify_extension_in_config(openclaw_home):
         raise InstallError(
             f"Extension {OWNED_EXTENSION_ID} was installed but not found in "
