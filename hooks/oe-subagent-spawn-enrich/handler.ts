@@ -22,11 +22,13 @@ export interface SpawnEnrichInput {
     task_description: string;
     estimated_toolcalls?: number;
     estimated_duration_minutes?: number;
+    prompt?: string;
   };
   context: {
     session_id: string;
     project?: string;
     parent_session?: string;
+    current_model?: string;
   };
 }
 
@@ -77,6 +79,27 @@ function readJsonFile(filePath: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Get main agent's current model from openclaw.json
+ */
+function getMainAgentModel(): string | null {
+  const openclawConfig = readJsonFile(join(homedir(), ".openclaw", "openclaw.json"));
+  if (!openclawConfig) return null;
+  
+  const agents = openclawConfig.agents as { list?: unknown[] } | undefined;
+  if (!agents?.list) return null;
+  
+  for (const agent of agents.list) {
+    if (typeof agent === "object" && agent !== null) {
+      const agentObj = agent as Record<string, unknown>;
+      if (agentObj.id === "main" && typeof agentObj.model === "string") {
+        return agentObj.model;
+      }
+    }
+  }
+  return null;
 }
 
 function managedRoot(): string {
@@ -244,6 +267,15 @@ export function enrichSpawnEvent(
   mutablePayload.runtime = "subagent";
   if ("streamTo" in mutablePayload) {
     delete mutablePayload.streamTo;
+  }
+
+  // Inject current model info for orchestrator
+  if (normalizedAgent === "oe-orchestrator") {
+    const mainModel = getMainAgentModel();
+    if (mainModel) {
+      const originalPrompt = payload.prompt || payload.task_description;
+      mutablePayload.prompt = `[SYSTEM: Use model ${mainModel} for this task]\n\n${originalPrompt}`;
+    }
   }
 
   const taskId = generateTaskId();
