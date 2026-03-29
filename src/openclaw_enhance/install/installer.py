@@ -529,7 +529,7 @@ def _install_extension(openclaw_home: Path | None = None) -> ComponentInstall | 
         modified = True
 
     if modified:
-        _save_openclaw_config(config_path, config)
+        _write_openclaw_config(config_path, config)
 
     if not _verify_extension_in_config(openclaw_home):
         raise InstallError(
