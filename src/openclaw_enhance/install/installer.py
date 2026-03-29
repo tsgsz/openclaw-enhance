@@ -459,7 +459,7 @@ _EXTENSION_SOURCE_DIR = (
 
 
 def _verify_extension_in_config(openclaw_home: Path | None = None) -> bool:
-    """Verify extension is in config (and optionally verify it loads if gateway is running)."""
+    """Verify extension is registered in openclaw.json config."""
     home = openclaw_home or Path.home() / ".openclaw"
     config_path = resolve_openclaw_config_path(home)
     config = _load_openclaw_config(config_path)
@@ -467,20 +467,7 @@ def _verify_extension_in_config(openclaw_home: Path | None = None) -> bool:
     allow_list = plugins.get("allow", [])
     entries = plugins.get("entries", {})
 
-    if OWNED_EXTENSION_ID not in allow_list or OWNED_EXTENSION_ID not in entries:
-        return False
-
-    # Best-effort verification: check if extension loads (requires gateway running)
-    result = _run_openclaw_cli(["plugins", "list", "--json"], check=False)
-    if result.returncode == 0:
-        try:
-            data = json.loads(result.stdout)
-            if not any(isinstance(p, dict) and p.get("id") == OWNED_EXTENSION_ID for p in data):
-                return False
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    return True
+    return OWNED_EXTENSION_ID in allow_list and OWNED_EXTENSION_ID in entries
 
 
 def _install_extension(openclaw_home: Path | None = None) -> ComponentInstall | None:
