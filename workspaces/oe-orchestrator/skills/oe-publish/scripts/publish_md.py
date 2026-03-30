@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import os
-import sys
-import re
-import shutil
-import time
 import argparse
 import hashlib
+import os
+import re
 import secrets
+import shutil
 from pathlib import Path
 from typing import List, Optional
 
@@ -47,7 +45,8 @@ def _rewrite_md_links_to_html(text: str) -> str:
 def _wrap_html(title: str, body_html: str) -> str:
     css = """
     :root { color-scheme: light; }
-    body { margin: 0; padding: 32px 20px; font: 16px/1.55 ui-serif, Georgia, serif; color: #111; background: #fff; }
+    body { margin: 0; padding: 32px 20px; font: 16px/1.55 ui-serif, Georgia,
+          serif; color: #111; background: #fff; }
     main { max-width: 900px; margin: 0 auto; }
     pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     pre { padding: 12px 14px; background: #f6f6f6; border-radius: 10px; overflow: auto; }
@@ -232,12 +231,15 @@ class SnapshotPublisher:
 
             try:
                 original_target = (original_md_path.parent / link).resolve()
-            except:
+            except OSError:
                 return full_match
 
             if original_target.exists():
                 # 这是一个外部依赖，搬运到 _assets
-                asset_name = f"{original_target.stem}_{self.get_hash(original_target)}{original_target.suffix}"
+                asset_name = (
+                    f"{original_target.stem}_{self.get_hash(original_target)}"
+                    f"{original_target.suffix}"
+                )
                 dest_path = self.external_dir / asset_name
 
                 if not dest_path.exists():
