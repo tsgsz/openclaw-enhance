@@ -5,7 +5,6 @@ import argparse
 import sys
 from pathlib import Path
 
-
 BEGIN = "<!-- SCRIPTS:BEGIN -->"
 END = "<!-- SCRIPTS:END -->"
 

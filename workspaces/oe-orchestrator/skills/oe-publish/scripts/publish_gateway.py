@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import shutil
-import sys
 import json
 import secrets
+import shutil
+import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from publish_md import SnapshotPublisher
+from publish_md import SnapshotPublisher  # noqa: E402
 
 # 配置映射
 CONFIG = {
