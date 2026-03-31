@@ -127,8 +127,8 @@ Orchestrator 汇总结果并返回给 Main
 - 用户明确请求 "用 opencode"、明确请求 OpenCode/opencode/ACP Harness，或明确点名 ACP Agent；正式开发流程（issue → worktree → PR → CI → merge）只在这些显式请求已存在时作为任务细节补充
 
 **验证状态**：
-- ✅ oe-orchestrator → opencode (ACP runtime) 直接路径已验证。
-- ✅ oe-runtime 运行时拦截门禁已验证（主会话禁用写/执行工具，强制路由）。
+- ✅ oe-orchestrator → opencode (ACP runtime) 直接路径已验证（需显式路由提示）。
+- ✅ oe-runtime 运行时拦截门禁已验证（主会话禁用写/执行工具，强制路由；已修复 null-guard 崩溃）。
 - ❌ Main → orch → opencode 全链路在飞书等真实场景下**未验证/存在缺陷**。主会话常出现“口头委派”现象（仅在回复中声称已委派，但未实际发出 `sessions_spawn` 工具调用）。
 
 ## openclaw.json 修改清单
@@ -247,4 +247,5 @@ Orchestrator 汇总结果并返回给 Main
 `python -m openclaw_enhance.cli uninstall`
 
 ## 版本
-Playbook Version: 1.0.0
+Playbook Version: 1.1.0
+Milestone: routing-chain-fix COMPLETE

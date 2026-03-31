@@ -77,7 +77,7 @@ Results → Announce back to orchestrator → Synthesis → Return to main
 **Verified Chains**:
 - ✅ Main → oe-orchestrator (native sessions_spawn) — Verified in isolated probes.
 - ✅ oe-orchestrator → worker (native sessions_spawn) — Verified in direct orchestrator probes (`orchestrator-spawn`).
-- ✅ oe-orchestrator → opencode (ACP runtime) — Verified in direct orchestrator probes (Task 8).
+- ✅ oe-orchestrator → opencode (ACP runtime) — Verified in direct orchestrator probes with targeted routing prompts.
 - ❌ Full chain: Main → orch → opencode — **UNPROVEN/BROKEN** in live Feishu-like scenarios. The main session often defaults to "speech-only delegation" (claiming delegation in text without emitting a real `sessions_spawn` tool call).
 
 **Runtime Gate (oe-runtime)**:
@@ -306,6 +306,16 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Documented the `main → oe-orchestrator` real-spawn failure in live scenarios.
 - Success criteria: `oe-runtime` blocks forbidden main tool calls, orchestrator triggers ACP sessions, docs reflect verified limitations.
 
+**routing-chain-fix** — COMPLETE
+- Date: 2026-03-30
+- Scope: Hardened the routing chain with null-safe runtime guards and explicit ACP dispatch branches.
+- Deliverables:
+  - `oe-runtime` null-guard hardening for `isMainSession` and fail-closed exception handling.
+  - `oe-runtime` interception corrected to use `params.agentId` for spawn routing.
+  - `oe-worker-dispatch` skill updated with explicit `runtime: "acp"` branch for opencode.
+  - Verified `oe-orchestrator → ACP/opencode` path with targeted routing prompts.
+- Success criteria: `oe-runtime` regression tests pass (66/66), orchestrator triggers ACP sessions, docs reflect verified state.
+
 ### Current Durable Status
 
 
@@ -403,4 +413,4 @@ python -m openclaw_enhance.cli uninstall
 
 **Version**: 1.3.2  
 **Last Updated**: 2026-03-23  
-**Milestone**: orchestrator-child-spawn-proof COMPLETE
+**Milestone**: routing-chain-fix COMPLETE

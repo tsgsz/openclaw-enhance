@@ -196,52 +196,53 @@ Some workers have dedicated routing paths outside normal scoring:
 
 ##### ACP/OpenCode Branch (External Development Harness)
 
-**Trigger**: User explicitly requests OpenCode/opencode/ACP harness execution. This branch is **opt-in only** and is not the default path for ordinary coding work.
+**Trigger**: Route here only when the user explicitly asks for OpenCode / opencode / ACP harness execution for development work. This branch is **opt-in only** and ordinary coding work must continue through the normal worker-selection path.
 
 **Detection signals** (ANY of the following explicit user intent signals):
-- User says "用 opencode 改" / "让 opencode 去做" / "用 opencode 开发"
-- User explicitly asks for OpenCode / opencode / ACP harness handling
-- User explicitly names a harness agent such as "opencode" while asking the Orchestrator to delegate execution through that harness
+- User says "用 opencode 改" / "让 opencode 去做" / "用 opencode 开发" / "让 opencode 修这个 bug"
+- User explicitly asks for OpenCode / opencode / ACP harness handling for code development, bug-fixing, or feature implementation
+- User explicitly names the harness agent `opencode` while asking the Orchestrator to delegate the development task
 
 **Non-triggers**:
-- A normal coding task without an explicit OpenCode/opencode/ACP request
+- A normal coding task with no explicit OpenCode / opencode / ACP request
 - A request for issue / worktree / PR / CI / merge workflow by itself
 - Ordinary search, diagnosis, or script work that already fits `oe-searcher`, `oe-syshelper`, or `oe-script_coder`
 
 **Flow**:
-1. Confirm project context via `oe-project-registry` (project path, branch)
-2. Dispatch via ACP runtime using `sessions_spawn`:
+1. Confirm project context via `oe-project-registry` so the ACP harness receives the correct project root and branch context.
+2. If the user explicitly requested opencode for the development task, dispatch through ACP runtime with the canonical spawn shape:
 
-```json
-{
-  "task": "<detailed task description with workflow instructions>",
-  "runtime": "acp",
-  "agentId": "opencode",
-  "mode": "persistent",
-  "cwd": "<project_root_path>"
-}
+```javascript
+sessions_spawn({
+  agentId: "opencode",
+  runtime: "acp",
+  mode: "persistent",
+  cwd: project_root,
+  task: "<detailed development task instructions>"
+})
 ```
 
-3. When the user also requests a formal development workflow, include that workflow explicitly inside the ACP task:
-   - Create issue describing the work
-   - Create git worktree for isolation
-   - Implement changes with tests
-   - Create PR with description
-   - Run CI checks
-   - Merge after approval
+3. The ACP task should preserve the user's requested development objective and, when applicable, explicitly instruct the harness to follow this workflow in order:
+   - open or update the issue
+   - create a dedicated worktree
+   - develop the fix or feature and run tests
+   - open a PR with a clear summary
+   - wait for / verify CI
+   - merge after approval / green checks
 
 **Constraints**:
-- Only dispatch to ACP when user explicitly requests OpenCode/opencode/ACP harness execution or explicitly names a harness agent for delegation
-- Do NOT treat issue → worktree → implementation/tests → PR → CI → merge workflow alone as sufficient to enter ACP; workflow wording only enriches the ACP task after the explicit harness trigger is present
-- Do NOT automatically route all coding tasks to opencode — `oe-script_coder` handles normal coding within the OpenClaw ecosystem
+- Only dispatch to ACP when the user explicitly requests OpenCode / opencode / ACP harness execution or explicitly says opencode should do the development task
+- Do NOT treat issue → worktree → develop/test → PR → CI → merge workflow language alone as sufficient to enter ACP; that workflow only enriches the ACP task after the explicit opencode trigger is present
+- Do NOT automatically route all coding tasks to opencode — `oe-script_coder` remains the default path for normal coding inside the OpenClaw worker system
+- Preserve existing worker dispatch behavior for ordinary search, diagnosis, and script tasks
 - ACP sessions have their own lifecycle; monitor via `oe-watchdog` for long-running sessions
 - `agentId` must match an entry in `openclaw.json` → `acp.allowedAgents` (default: `["opencode", "codex", "claude"]`)
 
 **Example**:
 ```
-Task: "用 opencode 修复 openclaw-enhance 的 session 清理 bug，要先提 issue 再开 worktree 再 PR 再 merge"
+Task: "用 opencode 修复 openclaw-enhance 的 session 清理 bug，按 issue → worktree → develop/test → PR → CI → merge 的流程来做"
 Enumerate: Check if ACP harness requested → YES ("用 opencode")
-Dispatch: sessions_spawn({ runtime: "acp", agentId: "opencode", mode: "persistent", cwd: "/path/to/openclaw-enhance", task: "..." })
+Dispatch: sessions_spawn({ agentId: "opencode", runtime: "acp", mode: "persistent", cwd: project_root, task: "Fix the session cleanup bug. Follow this workflow in order: issue → worktree → develop/test → PR → CI → merge." })
 ```
 
 **Note**: `opencode` is dispatched through ACP runtime, NOT as an OpenClaw native workspace agent. It runs outside OpenClaw's agent system via the ACPX bridge.
