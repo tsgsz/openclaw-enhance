@@ -269,21 +269,26 @@ export function enrichSpawnEvent(
     delete mutablePayload.streamTo;
   }
 
-  // Inject current model info for orchestrator
+  // Extract parent_session for context injection
+  const parentSession = context.parent_session ?? context.session_id;
+
+  // Inject parent_session and model info into prompt for orchestrator
+  // This ensures the model can load oe-memory-sync and get parent session history
   if (normalizedAgent === "oe-orchestrator") {
     const mainModel = getMainAgentModel();
-    if (mainModel) {
-      const originalPrompt = payload.prompt || payload.task_description;
-      mutablePayload.prompt = `[SYSTEM: Use model ${mainModel} for this task]\n\n${originalPrompt}`;
-    }
+    const originalPrompt = payload.prompt || payload.task_description;
+    const parentSessionNote = `[SYSTEM: parent_session=${parentSession}]\n[SYSTEM: Use model ${mainModel} for this task]\n`;
+    mutablePayload.prompt = parentSessionNote + originalPrompt;
+  } else {
+    // For all other subagents, still inject parent_session so they know their parent
+    const originalPrompt = payload.prompt || payload.task_description;
+    mutablePayload.prompt = `[SYSTEM: parent_session=${parentSession}]\n\n${originalPrompt}`;
   }
 
   const taskId = generateTaskId();
 
   const { projectId, projectContext } = resolveProjectContext(context.project);
   const project = projectId;
-
-  const parentSession = context.parent_session ?? context.session_id;
 
   // Categorize ETA from estimated duration or toolcalls
   let estimatedMinutes = payload.estimated_duration_minutes;
