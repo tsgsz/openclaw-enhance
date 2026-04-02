@@ -391,6 +391,35 @@ def _normalize_acp_config(config: dict[str, Any]) -> None:
     acp_obj["allowedAgents"] = allowed_agents
 
 
+ACP_MODEL_PRIORITY = [
+    "cliproxy/gpt-5.4",
+    "minimax-coding-plan/MiniMax-M2.7",
+    "minimax-coding-plan/MiniMax-M2.5",
+    "kimi-for-coding/k2p5",
+]
+
+MODEL_CONFIG_FILENAME = "model-config.json"
+
+
+def _configure_acp_model_priority(target_root: Path) -> ComponentInstall:
+    config_path = target_root / MODEL_CONFIG_FILENAME
+    config = {}
+    if config_path.exists():
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    config["acpModelPriority"] = ACP_MODEL_PRIORITY
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return ComponentInstall(
+        name="model:config",
+        version=VERSION,
+        install_time=datetime.utcnow(),
+        target_path=str(config_path.absolute()),
+    )
+
+
 def _register_agents_via_cli(
     target_root: Path,
 ) -> list[ComponentInstall]:
@@ -883,6 +912,12 @@ def install(
             all_components.extend(model_config_components)
         except Exception as exc:
             errors.append(f"Agent model configuration failed: {exc}")
+
+        try:
+            acp_model_config_component = _configure_acp_model_priority(target_root)
+            all_components.append(acp_model_config_component)
+        except Exception as exc:
+            errors.append(f"ACP model priority configuration failed: {exc}")
 
         # Extension install MUST be after all _write_openclaw_config calls.
         # openclaw plugins install --link writes to openclaw.json directly;

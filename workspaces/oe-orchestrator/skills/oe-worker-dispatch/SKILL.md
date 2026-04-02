@@ -210,7 +210,9 @@ Some workers have dedicated routing paths outside normal scoring:
 
 **Flow**:
 1. Confirm project context via `oe-project-registry` so the ACP harness receives the correct project root and branch context.
-2. If the user explicitly requested opencode for the development task, dispatch through ACP runtime with the canonical spawn shape:
+2. Probe available models: Call `discover_available_models()` to get the list of models available in the current opencode environment.
+3. Select best model: Call `select_model_by_priority()` which returns the highest-priority available model (default priority: `cliproxy/gpt-5.4` → `minimax-coding-plan/MiniMax-M2.7` → `minimax-coding-plan/MiniMax-M2.5` → `kimi-for-coding/k2p5`).
+4. Dispatch through ACP runtime with the selected model:
 
 ```javascript
 sessions_spawn({
@@ -218,11 +220,13 @@ sessions_spawn({
   runtime: "acp",
   mode: "persistent",
   cwd: project_root,
+  model: selected_model,
   task: "<detailed development task instructions>"
 })
 ```
 
-3. The ACP task should preserve the user's requested development objective and, when applicable, explicitly instruct the harness to follow this workflow in order:
+5. If the ACP session returns an error (provider failed, model failed, stream closed, or any non-success response), call `rotate_on_failure(failed_model)` to get the next available model and retry the dispatch (max 1 retry per model failure).
+6. The ACP task should preserve the user's requested development objective and, when applicable, explicitly instruct the harness to follow this workflow in order:
    - open or update the issue
    - create a dedicated worktree
    - develop the fix or feature and run tests
@@ -237,12 +241,17 @@ sessions_spawn({
 - Preserve existing worker dispatch behavior for ordinary search, diagnosis, and script tasks
 - ACP sessions have their own lifecycle; monitor via `oe-watchdog` for long-running sessions
 - `agentId` must match an entry in `openclaw.json` → `acp.allowedAgents` (default: `["opencode", "codex", "claude"]`)
+- Always include the `model` parameter selected via `select_model_by_priority()`; do not dispatch without a model
+- On failure, use `rotate_on_failure()` to select the next model in priority order; max 1 retry per failure
 
 **Example**:
 ```
 Task: "用 opencode 修复 openclaw-enhance 的 session 清理 bug，按 issue → worktree → develop/test → PR → CI → merge 的流程来做"
 Enumerate: Check if ACP harness requested → YES ("用 opencode")
-Dispatch: sessions_spawn({ agentId: "opencode", runtime: "acp", mode: "persistent", cwd: project_root, task: "Fix the session cleanup bug. Follow this workflow in order: issue → worktree → develop/test → PR → CI → merge." })
+Probe: discover_available_models() → ["cliproxy/gpt-5.4", "minimax-coding-plan/MiniMax-M2.7", ...]
+Select: select_model_by_priority() → "cliproxy/gpt-5.4"
+Dispatch: sessions_spawn({ agentId: "opencode", runtime: "acp", mode: "persistent", cwd: project_root, model: "cliproxy/gpt-5.4", task: "Fix the session cleanup bug. Follow this workflow in order: issue → worktree → develop/test → PR → CI → merge." })
+On Failure: rotate_on_failure("cliproxy/gpt-5.4") → "minimax-coding-plan/MiniMax-M2.7" → retry
 ```
 
 **Note**: `opencode` is dispatched through ACP runtime, NOT as an OpenClaw native workspace agent. It runs outside OpenClaw's agent system via the ACPX bridge.
@@ -707,6 +716,12 @@ async def dispatch_with_context(worker_type, task, context_hints=None):
 - Work in: {project_info.path}
 - Follow project conventions for {project_info.type}
 - Refer to Main Tools for available system capabilities and restrictions
+
+## Tool Usage Constraints
+- **exec**: When calling the `exec` tool, do NOT pass `security="allowlist"` as a parameter.
+  - Omit the `security` parameter entirely, or use `security="full"` if you must specify it.
+  - `security="allowlist"` restricts execution to paths within the agent's default workspace, which will cause `allowlist miss` errors when you need to work in `{project_info.path}`.
+  - The project directory `{project_info.path}` may be outside your default workspace; use `security="full"` (or no `security` param) to bypass this restriction.
 """
     
     # 5. Dispatch with enriched task
