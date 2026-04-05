@@ -13,6 +13,7 @@ import { createHash, randomBytes } from "crypto";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
+import { sanitizeEnhanceOutwardText } from "../../extensions/openclaw-enhance-runtime/src/runtime-bridge.js";
 
 /** Input payload for spawn enrichment */
 export interface SpawnEnrichInput {
@@ -29,6 +30,11 @@ export interface SpawnEnrichInput {
     project?: string;
     parent_session?: string;
     current_model?: string;
+    restart_epoch?: number;
+    ownership?: {
+      channel_type: string;
+      channel_conversation_id: string;
+    };
   };
 }
 
@@ -41,7 +47,9 @@ export interface SpawnEnrichOutput {
     eta_bucket: "short" | "medium" | "long";
     dedupe_key: string;
     project_context: ProjectContext;
+    ownership_status?: string;
   };
+  unsafe?: boolean;
   spawn_patch?: {
     agentId: string;
     runtime: "subagent";
@@ -224,16 +232,19 @@ function categorizeETA(minutes: number | undefined): ETABucket {
  * Generate a deterministic deduplication key.
  *
  * Format: {project}:{subagent_type}:{task_hash}:{date}
+ * With ownership: {project}:{subagent_type}:{channel_type}:{task_hash}:{date}
  *
  * @param project - Project identifier
  * @param subagentType - Type of subagent
  * @param taskDescription - Task description
+ * @param ownership - Optional ownership metadata for channel-aware dedupe
  * @returns Dedupe key string
  */
 function generateDedupeKey(
   project: string,
   subagentType: string,
   taskDescription: string,
+  ownership?: { channel_type: string; channel_conversation_id: string },
 ): string {
   // Normalize task description for consistent hashing
   const normalized = taskDescription.toLowerCase().trim().replace(/\s+/g, " ");
@@ -244,7 +255,51 @@ function generateDedupeKey(
   // Get current date in YYYYMMDD format
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
+  // Include channel identity in dedupe key if ownership is present
+  if (ownership?.channel_type) {
+    return `${project}:${subagentType}:${ownership.channel_type}:${hash}:${date}`;
+  }
+
   return `${project}:${subagentType}:${hash}:${date}`;
+}
+
+/**
+ * Validate ownership metadata and detect ambiguous restart scenarios.
+ *
+ * @param context - The spawn event context
+ * @returns Validation result with ownership status
+ */
+function validateOwnership(context: SpawnEnrichInput["context"]): {
+  valid: boolean;
+  unsafe: boolean;
+  ownership_status?: string;
+  ownership?: { channel_type: string; channel_conversation_id: string };
+} {
+  // If restart_epoch is present but ownership is missing/stale, this is unsafe
+  if (context.restart_epoch !== undefined && !context.ownership) {
+    return {
+      valid: false,
+      unsafe: true,
+      ownership_status: "unsafe_ambiguous_restart",
+    };
+  }
+
+  // Ownership is present and valid
+  if (context.ownership?.channel_type && context.ownership?.channel_conversation_id) {
+    return {
+      valid: true,
+      unsafe: false,
+      ownership_status: "verified",
+      ownership: context.ownership,
+    };
+  }
+
+  // No ownership metadata, but no restart epoch - acceptable for fresh sessions
+  return {
+    valid: true,
+    unsafe: false,
+    ownership_status: "unverified",
+  };
 }
 
 /**
@@ -257,6 +312,28 @@ export function enrichSpawnEvent(
   input: SpawnEnrichInput,
 ): SpawnEnrichOutput {
   const { payload, context } = input;
+
+  // Validate ownership before processing
+  const ownershipValidation = validateOwnership(context);
+  if (ownershipValidation.unsafe) {
+    return {
+      unsafe: true,
+      enriched_payload: {
+        task_id: generateTaskId(),
+        project: context.project || "default",
+        parent_session: context.parent_session || context.session_id,
+        eta_bucket: "medium",
+        dedupe_key: generateDedupeKey(
+          context.project || "default",
+          payload.subagent_type,
+          payload.task_description,
+        ),
+        project_context: DEFAULT_PROJECT_CONTEXT,
+        ownership_status: ownershipValidation.ownership_status,
+      },
+    };
+  }
+
   const requestedAgent = payload.subagent_type;
   const normalizedAgent =
     requestedAgent && requestedAgent !== "main" ? requestedAgent : "oe-orchestrator";
@@ -269,7 +346,7 @@ export function enrichSpawnEvent(
     delete mutablePayload.streamTo;
   }
 
-  // Extract parent_session for context injection
+  // Extract parent_session for context injection - only use ownership-verified parent
   const parentSession = context.parent_session ?? context.session_id;
 
   // Inject parent_session and model info into prompt for orchestrator
@@ -278,11 +355,11 @@ export function enrichSpawnEvent(
     const mainModel = getMainAgentModel();
     const originalPrompt = payload.prompt || payload.task_description;
     const parentSessionNote = `[SYSTEM: parent_session=${parentSession}]\n[SYSTEM: Use model ${mainModel} for this task]\n`;
-    mutablePayload.prompt = parentSessionNote + originalPrompt;
+    mutablePayload.prompt = sanitizeEnhanceOutwardText(parentSessionNote + originalPrompt);
   } else {
     // For all other subagents, still inject parent_session so they know their parent
     const originalPrompt = payload.prompt || payload.task_description;
-    mutablePayload.prompt = `[SYSTEM: parent_session=${parentSession}]\n\n${originalPrompt}`;
+    mutablePayload.prompt = sanitizeEnhanceOutwardText(`[SYSTEM: parent_session=${parentSession}]\n\n${originalPrompt}`);
   }
 
   const taskId = generateTaskId();
@@ -298,11 +375,12 @@ export function enrichSpawnEvent(
   }
   const etaBucket = categorizeETA(estimatedMinutes);
 
-  // Generate deduplication key
+  // Generate deduplication key with channel awareness
   const dedupeKey = generateDedupeKey(
     project,
     payload.subagent_type,
     payload.task_description,
+    ownershipValidation.ownership,
   );
 
   return {
@@ -313,6 +391,7 @@ export function enrichSpawnEvent(
       eta_bucket: etaBucket,
       dedupe_key: dedupeKey,
       project_context: projectContext,
+      ownership_status: ownershipValidation.ownership_status,
     },
     spawn_patch: {
       agentId: normalizedAgent,

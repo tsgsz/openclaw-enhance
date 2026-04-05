@@ -154,10 +154,35 @@ def _age_hours(path: Path) -> float:
     return max((now - modified).total_seconds() / 3600, 0.0)
 
 
+def _is_binding_stale_for_classification(
+    binding_status: dict[str, object],
+    restart_epoch: int,
+) -> bool:
+    """Determine if a binding is stale based on status and epoch comparison."""
+    status = binding_status.get("binding_status")
+    if status in ("unbound", "revoked"):
+        return True
+    if status == "bound":
+        binding_epoch_val = binding_status.get("binding_epoch", 0)
+        if isinstance(binding_epoch_val, int):
+            return binding_epoch_val < restart_epoch
+        return False
+    return False
+
+
 def classify_candidate(
     candidate: CleanupCandidate,
     stale_threshold_hours: float,
+    binding_status: dict[str, object] | None = None,
+    restart_epoch: int = 0,
 ) -> CleanupCandidate:
+    # For RUNTIME_STATE candidates, check ownership binding status.
+    # If binding is stale (unbound, revoked, or binding_epoch < restart_epoch),
+    # treat as safe to remove - the runtime state is orphaned.
+    if candidate.kind is CleanupKind.RUNTIME_STATE and binding_status is not None:
+        if _is_binding_stale_for_classification(binding_status, restart_epoch):
+            return replace(candidate, status=CleanupStatus.SAFE_TO_REMOVE)
+
     # RUNTIME_STATE files (.deleted., .reset.) are already terminated sessions.
     # Skip in_runtime_active_set check for these - the .deleted/.reset suffix
     # means the session was intentionally ended, so we trust the suffix over sessions.json.
@@ -181,6 +206,8 @@ def cleanup_paths(
     dry_run: bool,
     stale_threshold_hours: float,
     include_core_sessions: bool,
+    binding_status: dict[str, object] | None = None,
+    restart_epoch: int = 0,
 ) -> CleanupReport:
     safe_to_remove: list[str] = []
     skipped_active: list[str] = []
@@ -188,7 +215,12 @@ def cleanup_paths(
     removed: list[str] = []
 
     for candidate in candidates:
-        classified = classify_candidate(candidate, stale_threshold_hours)
+        classified = classify_candidate(
+            candidate,
+            stale_threshold_hours,
+            binding_status=binding_status,
+            restart_epoch=restart_epoch,
+        )
         if classified.kind is CleanupKind.CORE_SESSION and not include_core_sessions:
             skipped_uncertain.append(str(classified.path))
             continue

@@ -200,6 +200,15 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
    - **Install-time injection is allowed**: The installer may append idempotent, marker-delimited blocks to main's AGENTS.md (e.g., tool-gate rules). These blocks must be cleanly removable by the uninstaller.
    - CLI-first preference for all operations
 
+5. **Session ownership is mandatory for reuse**:
+   - Every session binding must have explicit `ownership` metadata (`channel_type`, `channel_conversation_id`).
+   - Ambiguous or missing ownership metadata results in a fail-closed rejection of session reuse.
+   - Restarting the system increments the `restart_epoch`, invalidating all previous bindings.
+
+6. **Sanitization is deterministic and boundary-limited**:
+   - Internal protocol markers (e.g., `[Pasted ~]`, `<|tool_call...|>`) are automatically stripped from enhance-controlled outward paths.
+   - Sanitization does not intercept core OpenClaw tool outputs unless they pass through an enhance-managed agent or skill.
+
 ### Worker Role Boundaries (Do Not Cross)
 
 - **oe-searcher**: Read-only file access, sandbox for temp files, NO agent spawning
@@ -316,6 +325,17 @@ The Orchestrator discovers workers by parsing frontmatter at runtime, not from h
   - Verified `oe-orchestrator → ACP/opencode` path with targeted routing prompts.
 - Success criteria: `oe-runtime` regression tests pass (66/66), orchestrator triggers ACP sessions, docs reflect verified state.
 
+**session-isolation-restart-guardrails** — COMPLETE
+- Date: 2026-04-05
+- Scope: Implemented session isolation, ownership binding, and restart safety guardrails.
+- Deliverables:
+  - `(channel_type, channel_conversation_id) -> session_id` ownership binding.
+  - `restart_epoch` mechanism in `runtime-state.json` to invalidate stale bindings.
+  - Fail-closed normalization for ambiguous or non-string session keys.
+  - Channel-aware deduplication keys to prevent cross-channel task collisions.
+  - Output sanitization for internal protocol markers (`[Pasted ~]`, `<|tool_call...|>`).
+- Success criteria: Unit tests pass, session isolation verified in probes, docs-check passes.
+
 ### Current Durable Status
 
 
@@ -411,6 +431,6 @@ python -m openclaw_enhance.cli uninstall
 
 ---
 
-**Version**: 1.3.2  
-**Last Updated**: 2026-03-23  
-**Milestone**: routing-chain-fix COMPLETE
+**Version**: 1.4.0  
+**Last Updated**: 2026-04-05  
+**Milestone**: session-isolation-restart-guardrails COMPLETE

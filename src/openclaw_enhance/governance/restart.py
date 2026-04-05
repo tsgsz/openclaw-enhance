@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 from typing import Any
+
+from openclaw_enhance.runtime.project_state import bump_restart_epoch, revoke_binding
 
 
 def run_openclaw_command(arguments: list[str], *, timeout: int = 30) -> dict[str, Any]:
@@ -32,21 +35,26 @@ def evaluate_safe_restart() -> dict[str, Any]:
     }
 
 
-def safe_restart(*, dry_run: bool) -> dict[str, Any]:
+def safe_restart(*, dry_run: bool, user_home: Path | None = None) -> dict[str, Any]:
     evaluation = evaluate_safe_restart()
     if dry_run or not evaluation["eligible"]:
         return {**evaluation, "executed": False}
 
     restart_result = run_openclaw_command(["gateway", "restart"])
+    executed = restart_result["returncode"] == 0
+    if executed:
+        bump_restart_epoch(user_home)
     return {
         **evaluation,
-        "executed": restart_result["returncode"] == 0,
+        "executed": executed,
         "restart": restart_result,
     }
 
 
-def immediate_restart_resume() -> dict[str, Any]:
+def immediate_restart_resume(user_home: Path | None = None) -> dict[str, Any]:
     restart_result = run_openclaw_command(["gateway", "restart"])
+    if restart_result["returncode"] == 0:
+        revoke_binding(user_home)
     return {
         "executed": restart_result["returncode"] == 0,
         "restart": restart_result,

@@ -209,6 +209,7 @@ def cleanup_sessions(
 ) -> None:
     """Classify and clean stale/orphaned session state."""
     from . import cleanup as cleanup_module
+    from .runtime.project_state import _load_state
 
     effective_dry_run = dry_run or not execute
     del include_logs
@@ -218,11 +219,17 @@ def cleanup_sessions(
         working_directory=Path.cwd(),
     )
 
+    state = _load_state()
+    binding_status = state.get("ownership_contract", {})
+    restart_epoch = state.get("restart_epoch", 0)
+
     report = cleanup_module.cleanup_paths(
         candidates,
         dry_run=effective_dry_run,
         stale_threshold_hours=stale_threshold_hours,
         include_core_sessions=include_core_sessions,
+        binding_status=binding_status,
+        restart_epoch=restart_epoch,
     )
 
     payload = cleanup_module.build_cleanup_report_payload(report)

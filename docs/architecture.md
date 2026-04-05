@@ -280,26 +280,47 @@ Enriches `subagent_spawning` events with:
 - `project`: Project context
 - `parent_session`: Originating session
 - `eta_bucket`: short/medium/long categorization
-- `dedupe_key`: Duplicate detection key
+- `ownership`: Channel identity metadata (`channel_type`, `channel_conversation_id`)
+- `restart_epoch`: Current system restart epoch
+- `dedupe_key`: Channel-aware duplicate detection key (includes `channel_type` to prevent cross-channel collisions)
 
 ### Extensions
 
 Location: `extensions/openclaw-enhance-runtime/`
 
 Thin TypeScript bridge for:
-- Runtime state integration
-- Hook event consumption
-- OpenClaw plugin registration
+- **Runtime state integration**: Synchronizes `runtime-state.json` with OpenClaw's internal state.
+- **Hook event consumption**: Processes enriched spawn events.
+- **Output Sanitization**: Automatically strips internal protocol markers (e.g., `[Pasted ~]`, `<|tool_call...|>`) from enhance-controlled outward paths.
+- **Session Ownership Validation**: Implements `isMainSession` and `before_tool_call` checks to enforce session isolation and fail-closed security.
+- **OpenClaw plugin registration**: Registers the enhancement layer as a native OpenClaw extension.
 
 ### Runtime State Store
 
 Location: `~/.openclaw/openclaw-enhance/state/runtime-state.json`
 
 Stores:
-- Task tracking metadata
+- Task tracking metadata (including `ownership` metadata)
 - Timeout events (suspected/confirmed/cleared)
 - Project registry cache
 - Session mapping
+- `restart_epoch`: Monotonically increasing counter for system restarts to invalidate stale session bindings.
+
+## Session Ownership Model
+
+To ensure secure session isolation in multi-user or multi-channel environments, `openclaw-enhance` implements a formal ownership mapping:
+
+### Identity Mapping
+The system maps external identities to OpenClaw sessions:
+`(channel_type, channel_conversation_id) -> session_id`
+
+### Binding Lifecycle
+1. **Creation**: When a new session is spawned, the `oe-subagent-spawn-enrich` hook captures the channel identity and binds it to the `session_id`.
+2. **Validation**: The `oe-runtime` extension intercepts `before_tool_call` and `isMainSession` checks to verify that the current requester owns the target session.
+3. **Invalidation**: Upon system restart, the `restart_epoch` is incremented. All existing bindings from previous epochs are marked as "stale" and require re-validation before reuse.
+
+### Fail-Closed Security
+If ownership is ambiguous (e.g., a restart occurred but no ownership metadata is provided), the system defaults to a "fail-closed" state, rejecting the session reuse to prevent potential hijacking.
 
 ## Managed Namespace
 
@@ -388,5 +409,5 @@ return {
 
 ## Version
 
-Architecture Version: 1.1.0
-Last Updated: 2026-03-14
+Architecture Version: 1.2.0
+Last Updated: 2026-04-05

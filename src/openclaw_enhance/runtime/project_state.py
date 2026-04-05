@@ -88,3 +88,58 @@ def get_project_owner(path: str, user_home: Path | None = None) -> str | None:
     state = _load_state(user_home)
     occupancy: dict[str, str] = state.get("project_occupancy", {})
     return occupancy.get(path)
+
+
+# ---------------------------------------------------------------------------
+# Restart epoch and ownership binding helpers
+# ---------------------------------------------------------------------------
+
+
+def bump_restart_epoch(user_home: Path | None = None) -> int:
+    """Increment restart_epoch by 1 and persist. Returns the new value."""
+    state = _load_state(user_home)
+    new_epoch = state.get("restart_epoch", 0) + 1
+    state["restart_epoch"] = new_epoch
+    _save_state(state, user_home)
+    return new_epoch
+
+
+def get_binding_status(user_home: Path | None = None) -> dict[str, Any]:
+    """Return the current ownership_contract dict."""
+    state = _load_state(user_home)
+    return dict(state.get("ownership_contract", {}))
+
+
+def is_binding_stale(user_home: Path | None = None) -> bool:
+    """Return True when binding_epoch < restart_epoch (binding is stale)."""
+    state = _load_state(user_home)
+    binding_epoch = state.get("ownership_contract", {}).get("binding_epoch", 0)
+    restart_epoch = state.get("restart_epoch", 0)
+    return binding_epoch < restart_epoch
+
+
+def revoke_binding(user_home: Path | None = None) -> None:
+    """Set binding_status to 'revoked' in the ownership contract."""
+    state = _load_state(user_home)
+    contract = state.get("ownership_contract", {})
+    contract["binding_status"] = "revoked"
+    state["ownership_contract"] = contract
+    _save_state(state, user_home)
+
+
+def rebind_ownership(
+    channel_type: str | None,
+    channel_conversation_id: str | None,
+    bound_session_id: str | None,
+    user_home: Path | None = None,
+) -> None:
+    """Bind the ownership contract with the current restart_epoch."""
+    state = _load_state(user_home)
+    state["ownership_contract"] = {
+        "channel_type": channel_type,
+        "channel_conversation_id": channel_conversation_id,
+        "bound_session_id": bound_session_id,
+        "binding_epoch": state.get("restart_epoch", 0),
+        "binding_status": "bound",
+    }
+    _save_state(state, user_home)
