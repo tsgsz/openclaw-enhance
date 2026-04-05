@@ -254,9 +254,6 @@ def test_cross_channel_collision_blocked_after_restart(tmp_home):
     After restart epoch bump, both channels without valid ownership binding
     should be detected as unsafe/ambiguous restart scenarios.
     """
-    from pathlib import Path
-    import json
-
     # Setup: Feishu channel initially owns the session
     rebind_ownership("feishu", "conv-feishu-001", "sess-lineage-abc", user_home=tmp_home)
 
@@ -279,7 +276,6 @@ def test_cross_channel_collision_blocked_after_restart(tmp_home):
 
     # Simulate Feishu trying to resume WITHOUT revalidation (no rebind)
     # This represents the collision scenario - old binding, new epoch
-    feishu_binding = get_binding_status(tmp_home)
     feishu_is_stale = is_binding_stale(tmp_home)
 
     # Simulate Telegram trying to claim the same session lineage
