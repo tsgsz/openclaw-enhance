@@ -346,25 +346,28 @@ export function enrichSpawnEvent(
     delete mutablePayload.streamTo;
   }
 
-  // Extract parent_session for context injection - only use ownership-verified parent
   const parentSession = context.parent_session ?? context.session_id;
+  const { projectId, projectContext } = resolveProjectContext(context.project);
 
-  // Inject parent_session and model info into prompt for orchestrator
-  // This ensures the model can load oe-memory-sync and get parent session history
+  const projectNote = `[SYSTEM: project_path=${projectContext.project_id}]
+[SYSTEM: project_type=${projectContext.project_type}]
+[SYSTEM: project_kind=${projectContext.project_kind}]
+[SYSTEM: Work in: ${projectContext.project_id}]
+[SYSTEM: parent_session=${parentSession}]
+`;
+
   if (normalizedAgent === "oe-orchestrator") {
     const mainModel = getMainAgentModel();
     const originalPrompt = payload.prompt || payload.task_description;
-    const parentSessionNote = `[SYSTEM: parent_session=${parentSession}]\n[SYSTEM: Use model ${mainModel} for this task]\n`;
-    mutablePayload.prompt = sanitizeEnhanceOutwardText(parentSessionNote + originalPrompt);
+    const orchestratorNote = `[SYSTEM: Use model ${mainModel} for this task]
+`;
+    mutablePayload.prompt = sanitizeEnhanceOutwardText(orchestratorNote + projectNote + originalPrompt);
   } else {
-    // For all other subagents, still inject parent_session so they know their parent
     const originalPrompt = payload.prompt || payload.task_description;
-    mutablePayload.prompt = sanitizeEnhanceOutwardText(`[SYSTEM: parent_session=${parentSession}]\n\n${originalPrompt}`);
+    mutablePayload.prompt = sanitizeEnhanceOutwardText(projectNote + originalPrompt);
   }
 
   const taskId = generateTaskId();
-
-  const { projectId, projectContext } = resolveProjectContext(context.project);
   const project = projectId;
 
   // Categorize ETA from estimated duration or toolcalls
