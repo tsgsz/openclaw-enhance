@@ -189,14 +189,16 @@ def test_install_registers_session_cleanup_launchagent_on_macos(
     payload = plistlib.loads(plist_path.read_bytes())
     assert payload["Label"] == "ai.openclaw.session-cleanup"
     assert payload["RunAtLoad"] is True
-    assert payload["StartInterval"] == 3600
+    assert payload["StartInterval"] == 1800
     assert payload["ProgramArguments"][:4] == [
         sys.executable,
         "-m",
         "openclaw_enhance.cleanup",
         "--execute",
     ]
-    assert "--include-core-sessions" not in payload["ProgramArguments"]
+    assert "--include-core-sessions" in payload["ProgramArguments"]
+    assert "--stale-threshold-hours" in payload["ProgramArguments"]
+    assert "0.5" in payload["ProgramArguments"]
     assert "~/.openclaw/workspace/scripts/maintenance/openclaw-session-cleanup.sh" not in " ".join(
         payload["ProgramArguments"]
     )
