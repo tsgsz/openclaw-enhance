@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openclaw_enhance.paths import ensure_managed_directories, runtime_state_file
 from openclaw_enhance.runtime.schema import RuntimeState
@@ -101,7 +101,7 @@ def bump_restart_epoch(user_home: Path | None = None) -> int:
     new_epoch = state.get("restart_epoch", 0) + 1
     state["restart_epoch"] = new_epoch
     _save_state(state, user_home)
-    return new_epoch
+    return cast(int, new_epoch)
 
 
 def get_binding_status(user_home: Path | None = None) -> dict[str, Any]:
@@ -115,7 +115,7 @@ def is_binding_stale(user_home: Path | None = None) -> bool:
     state = _load_state(user_home)
     binding_epoch = state.get("ownership_contract", {}).get("binding_epoch", 0)
     restart_epoch = state.get("restart_epoch", 0)
-    return binding_epoch < restart_epoch
+    return cast(bool, binding_epoch < restart_epoch)
 
 
 def revoke_binding(user_home: Path | None = None) -> None:

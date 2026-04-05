@@ -6,7 +6,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openclaw_enhance.paths import managed_root
 
@@ -42,7 +42,7 @@ def _load_model_cache(user_home: Path | None = None) -> dict[str, Any]:
     if not cache_path.exists():
         return {}
     try:
-        return json.loads(cache_path.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(cache_path.read_text(encoding="utf-8")))
     except (json.JSONDecodeError, OSError):
         return {}
 
@@ -58,7 +58,7 @@ def _load_model_config(user_home: Path | None = None) -> dict[str, Any]:
     if not config_path.exists():
         return {}
     try:
-        return json.loads(config_path.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(config_path.read_text(encoding="utf-8")))
     except (json.JSONDecodeError, OSError):
         return {}
 
@@ -71,7 +71,7 @@ def discover_available_models(
     if not force_refresh and cache.get("models"):
         cached_models = cache.get("models", [])
         if cached_models:
-            return cached_models
+            return cast(list[str], cached_models)
 
     models = _run_opencode_models()
 
