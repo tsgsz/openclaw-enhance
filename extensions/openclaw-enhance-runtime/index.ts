@@ -1,5 +1,7 @@
 // These tools are FORBIDDEN in the main session.
 // Main should only route, read, and spawn subagents.
+import { sanitizeEnhanceOutwardText } from "./src/runtime-bridge.js";
+
 const MAIN_FORBIDDEN_TOOLS = new Set([
   "edit",
   "write",
@@ -15,20 +17,13 @@ const MAIN_FORBIDDEN_TOOLS = new Set([
 // When a before_tool_call fires, we check if its runId is a known main-session run.
 const mainRunIds = new Set<string>();
 
-const asString = (value: unknown): string => (typeof value === "string" ? value : "");
-
-const normalizeSessionKey = (sessionKey: unknown): string => {
-  if (typeof sessionKey === "string") return sessionKey;
-  if (sessionKey && typeof sessionKey === "object") {
-    const candidate = sessionKey as Record<string, unknown>;
-    return asString(candidate.sessionKey || candidate.session_key || candidate.key || candidate.id);
-  }
-  return "";
-};
-
 const isMainSession = (sessionKey: unknown): boolean => {
-  const key = normalizeSessionKey(sessionKey);
-  return key === "main" || key.startsWith("agent:main:");
+  // Only accept string keys directly - reject ambiguous object-shaped keys
+  // Objects with just id/key fields are not trustworthy for main session identity
+  if (typeof sessionKey !== "string") {
+    return false;
+  }
+  return sessionKey === "main" || sessionKey.startsWith("agent:main:");
 };
 
 export default {
@@ -89,9 +84,13 @@ export default {
         if (typeof toolName === "string" && MAIN_FORBIDDEN_TOOLS.has(toolName)) {
           api.logger.warn(`oe-runtime: BLOCKED tool call [${toolName}] in main session (runId=${runId})`);
 
+          const blockReason = sanitizeEnhanceOutwardText(
+            `CRITICAL RULE VIOLATION: The 'main' session is strictly FORBIDDEN from using the '${toolName}' tool to mutate files or execute commands directly.\n\nYou are a ROUTER. For any task that requires writing code, editing files, or running commands, you MUST use sessions_spawn({ agentId: "oe-orchestrator", ... }) to delegate the work. Do not attempt to retry this tool.`
+          );
+
           return {
             block: true,
-            blockReason: `CRITICAL RULE VIOLATION: The 'main' session is strictly FORBIDDEN from using the '${toolName}' tool to mutate files or execute commands directly.\n\nYou are a ROUTER. For any task that requires writing code, editing files, or running commands, you MUST use sessions_spawn({ agentId: "oe-orchestrator", ... }) to delegate the work. Do not attempt to retry this tool.`
+            blockReason: blockReason
           };
         }
         return undefined;
@@ -104,7 +103,7 @@ export default {
         api.logger.error(`oe-runtime: before_tool_call handler crashed in main session, failing closed: ${err}`);
         return {
           block: true,
-          blockReason: "oe-runtime encountered an internal error. Tool call blocked for safety. Use sessions_spawn({ agentId: \"oe-orchestrator\", ... }) to delegate this work."
+          blockReason: sanitizeEnhanceOutwardText("oe-runtime encountered an internal error. Tool call blocked for safety. Use sessions_spawn({ agentId: \"oe-orchestrator\", ... }) to delegate this work.")
         };
       }
     });

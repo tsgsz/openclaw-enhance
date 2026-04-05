@@ -80,7 +80,7 @@ Before implementing any code:
 
 ## Current Architecture Milestone
 
-**Completed**: `real-environment-testing-loop` — Mandatory real-environment validation and report generation is the merge gate for all features.
+**Completed**: `session-isolation-restart-guardrails` — Mandatory real-environment validation and report generation is the merge gate for all features. Session isolation and restart safety are now enforced.
 
 **See handbook for full current state, orchestration loop rules, and invariants.**
 

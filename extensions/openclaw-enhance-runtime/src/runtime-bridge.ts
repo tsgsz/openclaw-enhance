@@ -194,3 +194,38 @@ export function createRuntimeBridge(
 ): RuntimeBridge {
   return new RuntimeBridge(config);
 }
+
+/**
+ * Known internal marker patterns that should be stripped from outward text.
+ */
+const INTERNAL_MARKERS = [
+  /\[Pasted ~\d+ lines\]/g,
+  /<\|tool_calls_section_begin\|>/g,
+  /<\|tool_call_begin\|>/g,
+  /<\|tool_call_end\|>/g,
+  /<\|tool_calls_section_end\|>/g,
+];
+
+/**
+ * Sanitize text for outward communication by stripping internal markers
+ * and normalizing whitespace.
+ *
+ * @param value - The input text to sanitize
+ * @returns Sanitized text with markers stripped and whitespace normalized
+ */
+export function sanitizeEnhanceOutwardText(value: string): string {
+  let result = value;
+
+  // Strip all known internal markers
+  for (const marker of INTERNAL_MARKERS) {
+    result = result.replace(marker, "");
+  }
+
+  // Collapse multiple whitespace into single space
+  result = result.replace(/\s+/g, " ");
+
+  // Strip leading and trailing whitespace
+  result = result.trim();
+
+  return result;
+}

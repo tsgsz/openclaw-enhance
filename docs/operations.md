@@ -422,27 +422,32 @@ All runtime state is stored at:
 
 ```json
 {
-  "version": "1.0.0",
-  "last_updated_utc": "2026-03-13T10:30:00",
+  "version": "1.1.0",
+  "last_updated_utc": "2026-04-05T10:30:00",
+  "restart_epoch": 1,
   "tasks": {
     "task_abc123": {
       "status": "active",
       "agent": "oe-orchestrator",
-      "started_at": "2026-03-13T10:00:00",
-      "eta_minutes": 20
+      "started_at": "2026-04-05T10:00:00",
+      "eta_minutes": 20,
+      "ownership": {
+        "channel_type": "feishu",
+        "channel_conversation_id": "conv_789"
+      }
     }
   },
   "timeouts": {
     "task_abc123": {
       "status": "suspected",
-      "detected_at": "2026-03-13T10:25:00"
+      "detected_at": "2026-04-05T10:25:00"
     }
   },
   "projects": {
     "my-project": {
       "path": "/home/user/projects/my-project",
       "type": "python",
-      "last_accessed": "2026-03-13T10:00:00"
+      "last_accessed": "2026-04-05T10:00:00"
     }
   }
 }
@@ -477,6 +482,39 @@ cp ~/.openclaw/openclaw-enhance/state/runtime-state.json \
 echo '{"version": "1.0.0", "tasks": {}, "timeouts": {}, "projects": {}}' \
   > ~/.openclaw/openclaw-enhance/state/runtime-state.json
 ```
+
+## Session Isolation & Restart Safety
+
+To prevent session collisions and hijacking, `openclaw-enhance` implements a strict ownership model.
+
+### Collision Prevention
+The system binds external identities to OpenClaw sessions using a composite key:
+`(channel_type, channel_conversation_id) -> session_id`
+
+This ensures that a task from Feishu cannot accidentally reuse or interfere with a session from Telegram, even if the task payload is identical.
+
+### Fail-Closed Behavior
+If session ownership cannot be verified (e.g., missing metadata, ambiguous identity, or invalid session key format), the system **fails closed**. It will refuse to reuse the existing session and instead force a fresh start or flag the scenario as unsafe.
+
+### Restart Epoch
+Every time the OpenClaw gateway or enhance-monitor restarts, the `restart_epoch` in `runtime-state.json` is incremented.
+- Existing session bindings are tagged with the epoch they were created in.
+- After a restart, bindings from previous epochs are considered "stale".
+- Stale bindings require explicit re-validation of ownership before they can be resumed.
+
+## Output Sanitization
+
+The `oe-runtime` extension automatically sanitizes outgoing content to prevent internal protocol markers from leaking to users or interfering with external parsers.
+
+### Sanitized Markers
+The following markers are stripped from enhance-controlled outward paths:
+- `[Pasted ~]` (Internal clipboard marker)
+- `<|tool_call...|>` (Internal tool call protocol)
+- `<|thought...|>` (Internal reasoning protocol)
+- Other internal metadata tags
+
+### Boundary Control
+Sanitization is applied only to "outward" paths controlled by the enhancement layer. It does not intercept core OpenClaw tool outputs unless they pass through an enhance-managed agent or skill.
 
 ## CLI Commands
 
@@ -626,5 +664,5 @@ See [Troubleshooting](troubleshooting.md) for:
 
 ## Version
 
-Operations Guide Version: 1.3.0
-Last Updated: 2026-03-23
+Operations Guide Version: 1.4.0
+Last Updated: 2026-04-05

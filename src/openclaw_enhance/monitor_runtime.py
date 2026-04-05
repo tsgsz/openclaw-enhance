@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from openclaw_enhance.cleanup import CleanupCandidate, CleanupKind, cleanup_paths
+from openclaw_enhance.runtime.project_state import _load_state
 from openclaw_enhance.watchdog.detector import DetectionConfig, TimeoutDetector
 from openclaw_enhance.watchdog.notifier import Notifier
 from openclaw_enhance.watchdog.policy import PolicyEngine
@@ -146,6 +147,8 @@ def run_cleanup_mode(args: argparse.Namespace) -> int:
             dry_run=False,
             stale_threshold_hours=24,
             include_core_sessions=True,
+            binding_status=_load_state().get("ownership_contract", {}),
+            restart_epoch=_load_state().get("restart_epoch", 0),
         )
         logger.info(
             "Automatic cleanup complete. removed=%s skipped_active=%s skipped_uncertain=%s",

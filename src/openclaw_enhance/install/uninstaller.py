@@ -392,6 +392,21 @@ def _remove_runtime_state(target_root: Path) -> list[str]:
     return removed
 
 
+def _remove_model_config(target_root: Path) -> list[str]:
+    """Remove model config file if present."""
+    removed: list[str] = []
+    config_file = target_root / "model-config.json"
+
+    if config_file.exists():
+        try:
+            config_file.unlink()
+            removed.append("model:config")
+        except OSError as exc:
+            raise UninstallError(f"Failed to remove model config: {exc}") from exc
+
+    return removed
+
+
 def _remove_lock_file(target_root: Path) -> list[str]:
     """Remove lock file if present."""
     removed: list[str] = []
@@ -558,6 +573,13 @@ def uninstall(
             removed.extend(runtime_removed)
         except UninstallError as exc:
             failed.append(f"runtime: {exc}")
+            # Non-fatal
+
+        try:
+            model_config_removed = _remove_model_config(target_root)
+            removed.extend(model_config_removed)
+        except UninstallError as exc:
+            failed.append(f"model:config: {exc}")
             # Non-fatal
 
         manifest_file = manifest_path(target_root)

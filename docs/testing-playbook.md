@@ -12,6 +12,7 @@ Validation requirements are determined by the feature class of the change.
 | `cli-surface` | Changes to `openclaw-enhance` CLI commands or output formatting. | CLI Surface Bundle |
 | `workspace-routing` | Changes to `AGENTS.md`, `TOOLS.md`, or agent registration. | Routing & Agent Bundle |
 | `runtime-watchdog` | Changes to hooks, runtime monitoring, or watchdog logic. | Runtime Integration Bundle |
+| `session-isolation` | Changes to session ownership, isolation, or sanitization. | Session Isolation Bundle |
 | `docs-test-only` | Changes only to documentation or unit/integration tests. | Docs Check Only (Exempt) |
 
 ## 2. Validation Bundles
@@ -84,7 +85,18 @@ Target: Default `~/.openclaw`
 3. **Watchdog Trigger**: (Specific trigger command or scenario)
    - *Pass*: Watchdog identifies timeout or state change as expected.
 
-### 2.5 Docs Check Only (`docs-test-only`)
+### 2.5 Session Isolation Bundle (`session-isolation`)
+
+1. **Ownership Binding Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test ownership-binding`
+   - *Pass*: Probe verifies that `(channel_type, channel_conversation_id)` is correctly bound to a `session_id` in `runtime-state.json`.
+2. **Fail-Closed Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test fail-closed`
+   - *Pass*: Probe verifies that ambiguous or non-string session keys are rejected by `oe-runtime`.
+3. **Restart Epoch Test**: `python -m openclaw_enhance.cli governance restart-resume && python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test restart-epoch`
+   - *Pass*: Probe verifies that `restart_epoch` is incremented and old session bindings are marked as stale.
+4. **Sanitization Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test sanitization`
+   - *Pass*: Probe verifies that internal markers like `[Pasted ~]` are stripped from enhance-controlled output.
+
+### 2.6 Docs Check Only (`docs-test-only`)
 - **Exemption Policy**: Real-environment testing is NOT required if changes are strictly limited to `.md` files or `tests/` (excluding `tests/e2e/`).
 - **Mandatory Command**: `python -m openclaw_enhance.cli docs-check`
   - *Pass*: Exit code 0.
@@ -142,6 +154,7 @@ This section tracks the canonical backfill slugs for features already shipped in
 | Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
 | Main-to-Orchestrator Escalation | `backfill-main-escalation` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes main-escalation` | **PROVISIONAL**: Main session transcript contains `sessions_spawn` for `oe-orchestrator`; both session IDs are captured. |
 | Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
+| Session Isolation | `backfill-session-isolation` | `session-isolation` | `python -m openclaw_enhance.validation.live_probes session-isolation` | **Strong Proof**: Ownership binding, fail-closed, restart-epoch, and sanitization verified in real environment. |
 
 ### 6.1 Method Contracts & Expectations
 
@@ -206,3 +219,8 @@ This section tracks the canonical backfill slugs for features already shipped in
 - **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`
 - **Expectation**: Verifies supported `hooks.internal` config (or workspace contract fallback) and live reminder delivery.
 - **Proof**: JSON output with `marker: PROBE_WATCHDOG_REMINDER_OK`, `proof: config_hook_plus_live_reminder` or `workspace_contract_plus_live_reminder`, and session_id evidence.
+
+#### `backfill-session-isolation`
+- **Command**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME"`
+- **Expectation**: Exit code 0. Probe verifies ownership binding, fail-closed behavior, restart epoch increment, and output sanitization.
+- **Proof**: JSON output with `marker: PROBE_SESSION_ISOLATION_OK` and evidence for all four guardrails.
