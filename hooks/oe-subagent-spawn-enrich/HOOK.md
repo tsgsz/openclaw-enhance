@@ -130,12 +130,28 @@ interface SpawnEnrichOutput {
 }
 ```
 
+## Blocking Logic
+
+Writer agents (`oe-script_coder`) require a valid project context. If no project is discovered (project_kind is "default"), the hook returns `unsafe: true` with a block reason:
+
+```json
+{
+  "unsafe": true,
+  "enriched_payload": {
+    "unsafe_reason": "BLOCKED: Cannot spawn oe-script_coder without a valid project. Project is 'default'. Use oe-project-registry to discover or register a project first."
+  }
+}
+```
+
+This prevents writer agents from operating without proper project context, ensuring file operations are scoped to registered projects per the README requirement.
+
 ## Error Handling
 
-The hook is designed to be non-blocking:
+The hook is designed to be non-blocking for non-writer agents:
 - Enrichment failures are logged but don't prevent spawn
 - Missing context fields use sensible defaults
 - Invalid durations default to "medium" bucket
+- Writer agents with "default" project are blocked via `unsafe: true`
 
 ## Integration Notes
 
