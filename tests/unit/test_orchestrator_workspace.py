@@ -75,11 +75,11 @@ class TestAgentsMdContent:
         # After frontmatter (---), should have title and one sentence
         body_start = agents_content.index("---\n", 4) + len("---\n")
         body = agents_content[body_start:].strip()
-        body_lines = body.split("\n")
+        body_lines = [l for l in body.split("\n") if l.strip()]
         # Title line
         assert body_lines[0] == "# oe-orchestrator"
         # Role sentence (should be short, one line)
-        assert len(body_lines) == 1
+        assert len(body_lines) == 2
         assert "Dispatcher" in body_lines[1]
         assert len(body_lines[1]) < 100
 
