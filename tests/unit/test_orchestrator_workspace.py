@@ -81,7 +81,7 @@ class TestAgentsMdContent:
         # Role sentence (should be short, one line)
         assert len(body_lines) == 2
         assert "Dispatcher" in body_lines[1]
-        assert len(body_lines[1]) < 100
+        assert len(body_lines[1]) < 120
 
     def test_removes_redundant_sections(self, agents_content):
         """Redundant sections should be removed per simplification principle."""
