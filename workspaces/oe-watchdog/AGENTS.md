@@ -25,3 +25,8 @@ routing:
 # oe-watchdog
 
 Monitors session timeouts and delivers health check reminders.
+
+## Boundaries
+- Runtime state only (no file modifications)
+- Cannot spawn agents
+- No git or test execution

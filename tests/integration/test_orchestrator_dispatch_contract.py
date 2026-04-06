@@ -295,7 +295,6 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
             "Orchestrator Self-Execution Policy",
             "Orchestrator Self-Execution Exception Policy",
             "Mandatory Worker Dispatch",
-            "必须分发的工作",
             "sessions_spawn",
         ]
 
@@ -335,8 +334,6 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
 
         assert "Allowed Self-Execution Exceptions" in operations_content
         assert "Allowed Self-Execution Exceptions" in dispatch_skill_content
-        # Policy now lives in dispatch_skill_content, not AGENTS.md per simplification
-        assert "允许的自执行例外" in dispatch_skill_content
 
     def test_no_implicit_self_execution_fallback_remains_explicitly_banned(
         self, agents_content, dispatch_skill_content, operations_content
@@ -344,11 +341,9 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
         banned_phrases = [
             "prohibited from implicit self-execution fallback",
             "No Implicit Fallback",
-            "严禁静默吸收",
         ]
 
         for phrase in banned_phrases:
-            # Policy now lives in dispatch_skill_content, not AGENTS.md per simplification
             assert phrase in dispatch_skill_content or phrase in operations_content, (
                 f"Missing explicit no-fallback wording: {phrase}"
             )

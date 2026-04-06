@@ -25,3 +25,8 @@ routing:
 # oe-script_coder
 
 Writes scripts, creates tests, and implements code modules.
+
+## Boundaries
+- Repo write access (can modify project files)
+- Cannot spawn agents (except searcher for research)
+- No system-level changes
