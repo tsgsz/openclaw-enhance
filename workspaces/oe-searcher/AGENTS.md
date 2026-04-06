@@ -25,8 +25,3 @@ routing:
 # oe-searcher
 
 Performs web searches and documentation lookups for research tasks.
-
-## Boundaries
-- Read-only (no file modifications)
-- Cannot spawn agents
-- Sandbox access for temporary research files only

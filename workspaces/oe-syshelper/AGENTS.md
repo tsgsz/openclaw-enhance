@@ -25,8 +25,3 @@ routing:
 # oe-syshelper
 
 Explores file structures, analyzes session history, and searches code.
-
-## Boundaries
-- Strictly read-only (no file modifications)
-- Cannot spawn agents
-- No background task management

@@ -25,8 +25,3 @@ routing:
 # oe-tool-recovery
 
 Diagnoses failed tool calls and provides recovery suggestions.
-
-## Boundaries
-- Read-only (no file modifications)
-- Agent Spawning: prohibited (cannot spawn agents)
-- No business task execution
