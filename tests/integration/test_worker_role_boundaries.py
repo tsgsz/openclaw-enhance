@@ -22,7 +22,6 @@ class TestSearcherBoundaries(TestWorkerRoleBoundaries):
     def test_searcher_has_readonly_file_access(self):
         """Searcher should have read-only file access to project files."""
         agents = self._read_file("oe-searcher", "AGENTS.md")
-        tools = self._read_file("oe-searcher", "skills/oe-web-search/SKILL.md")
 
         # Should NOT have write/edit capabilities for project files
         assert "read-only" in agents.lower() or "no modifications" in agents.lower()
@@ -49,8 +48,8 @@ class TestSearcherBoundaries(TestWorkerRoleBoundaries):
 
         assert "cheap" in agents.lower() or "fast" in agents.lower()
 
-    def test_searcher_has_web_search_tools(self):
-        """Searcher should have web search tools via frontmatter."""
+    def test_searcher_has_web_search_capability(self):
+        """Searcher should have web search capability via frontmatter."""
         agents = self._read_file("oe-searcher", "AGENTS.md")
 
         # Frontmatter should indicate web_research capability
@@ -254,7 +253,6 @@ class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
     def test_tool_recovery_cannot_modify_files(self):
         """Tool recovery cannot modify project files."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
-        tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
         assert "mutation_mode: read_only" in agents
         assert "read-only" in agents.lower() or "read_only" in agents
