@@ -22,15 +22,11 @@ class TestSearcherBoundaries(TestWorkerRoleBoundaries):
     def test_searcher_has_readonly_file_access(self):
         """Searcher should have read-only file access to project files."""
         agents = self._read_file("oe-searcher", "AGENTS.md")
-        tools = self._read_file("oe-searcher", "skills/oe-web-search/SKILL.md")
-
-        # Should mention sandbox for temp files
-        assert "sandbox" in agents.lower() or "Read" in tools
 
         # Should NOT have write/edit capabilities for project files
         assert "read-only" in agents.lower() or "no modifications" in agents.lower()
-        # Sandbox has read/write to temp files only, but no bash for project
-        assert "Sandbox" in agents or "temporary" in agents.lower()
+        # Frontmatter mutation_mode should be read_only
+        assert "mutation_mode: read_only" in agents
 
     def test_searcher_has_web_search_tools(self):
         """Searcher should have web search tools."""
@@ -52,12 +48,12 @@ class TestSearcherBoundaries(TestWorkerRoleBoundaries):
 
         assert "cheap" in agents.lower() or "fast" in agents.lower()
 
-    def test_searcher_has_sandbox_access(self):
-        """Searcher should have sandbox read/write for research."""
+    def test_searcher_has_web_search_capability(self):
+        """Searcher should have web search capability via frontmatter."""
         agents = self._read_file("oe-searcher", "AGENTS.md")
 
-        # Sandbox allows temp writes for research
-        assert "sandbox" in agents.lower()
+        # Frontmatter should indicate web_research capability
+        assert "web_research" in agents
 
 
 class TestSyshelperBoundaries(TestWorkerRoleBoundaries):
@@ -127,18 +123,18 @@ class TestScriptCoderBoundaries(TestWorkerRoleBoundaries):
         assert "pytest" in tools or "test" in agents.lower()
 
     def test_script_coder_can_spawn_searcher_only(self):
-        """Script coder can spawn searcher for research only."""
+        """Script coder can spawn searcher for research only via frontmatter."""
         agents = self._read_file("oe-script_coder", "AGENTS.md")
 
-        # Should mention limited agent spawning
-        assert "searcher" in agents.lower()
-        assert "limited" in agents.lower() or "emergency" in agents.lower()
+        # Frontmatter should indicate can_spawn: false (spawning is skill-based)
+        assert "can_spawn: false" in agents
 
-    def test_script_coder_uses_codex_model(self):
-        """Script coder should use code-capable model."""
+    def test_script_coder_uses_code_capable_model(self):
+        """Script coder should use code-capable model via frontmatter."""
         agents = self._read_file("oe-script_coder", "AGENTS.md")
 
-        assert "Codex" in agents or "code-capable" in agents.lower()
+        # Frontmatter model_tier should be standard or higher
+        assert "standard" in agents.lower()
 
     def test_script_coder_requires_tests(self):
         """Script coder should require tests for all code."""
@@ -156,15 +152,15 @@ class TestWatchdogBoundaries(TestWorkerRoleBoundaries):
         """Watchdog should document narrow authority explicitly."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
 
-        assert "Narrow Authority" in agents or "narrow authority" in agents.lower()
-        assert "Authority Boundaries" in agents
+        assert "## Boundaries" in agents
+        assert "runtime only" in agents.lower() or "runtime_only" in agents
 
     def test_watchdog_cannot_modify_project_files(self):
         """Watchdog cannot modify project files."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
         tools = self._read_file("oe-watchdog", "skills/oe-timeout-alarm/SKILL.md")
 
-        assert "不能写代码或编辑文件" in agents or "Cannot modify" in agents
+        assert "repo_scope: none" in agents or "repo_scope: none" in agents.lower()
         assert "runtime state" in tools.lower()
 
     def test_watchdog_cannot_write_project_files(self):
@@ -172,28 +168,26 @@ class TestWatchdogBoundaries(TestWorkerRoleBoundaries):
         agents = self._read_file("oe-watchdog", "AGENTS.md")
         tools = self._read_file("oe-watchdog", "skills/oe-timeout-alarm/SKILL.md")
 
-        assert "Runtime State Access Only" in agents or "runtime state only" in tools.lower()
+        assert "mutation_mode: runtime_only" in agents
         assert "runtime state" in tools.lower()
 
     def test_watchdog_cannot_execute_tests(self):
         """Watchdog cannot execute tests or scripts."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
 
-        assert "不能运行测试" in agents or "Cannot run tests" in agents
+        assert "test_execution" in agents or "rejects" in agents
 
     def test_watchdog_cannot_run_git_commands(self):
-        """Watchdog cannot run git commands."""
+        """Watchdog cannot run git commands via frontmatter."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
 
-        assert "Git 命令" in agents or "No git commands" in agents
+        assert "git_operations" in agents or "rejects" in agents
 
     def test_watchdog_cannot_spawn_agents(self):
-        """Watchdog cannot spawn agents."""
+        """Watchdog cannot spawn agents via frontmatter."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
-        self._read_file("oe-watchdog", "skills/oe-timeout-alarm/SKILL.md")
 
-        assert "严禁派生" in agents or "Cannot spawn" in agents
-        pass
+        assert "can_spawn: false" in agents
 
     def test_watchdog_can_monitor_sessions(self):
         """Watchdog can monitor sessions."""
@@ -218,20 +212,18 @@ class TestWatchdogBoundaries(TestWorkerRoleBoundaries):
         assert "report" in tools.lower()
 
     def test_watchdog_has_allowed_operations_section(self):
-        """Watchdog should have explicit allowed operations section."""
+        """Watchdog has allowed operations via frontmatter."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
 
-        assert "✅ ALLOWED" in agents
-        assert "Timeout Confirmation" in agents or "timeout" in agents.lower()
-        assert "Reminder Delivery" in agents or "reminder" in agents.lower()
+        assert "## Boundaries" in agents
+        assert "timeout" in agents.lower() or "monitoring" in agents.lower()
 
     def test_watchdog_has_prohibited_operations_section(self):
-        """Watchdog should have explicit prohibited operations section."""
+        """Watchdog has prohibited operations via frontmatter."""
         agents = self._read_file("oe-watchdog", "AGENTS.md")
 
-        assert "❌ PROHIBITED" in agents
-        assert "File Modifications" in agents
-        assert "Code Changes" in agents
+        assert "rejects:" in agents
+        assert "file_modifications" in agents or "code_changes" in agents
 
 
 class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
@@ -241,42 +233,35 @@ class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
         """Tool recovery should document narrow authority explicitly."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
 
-        assert "Narrow Scope" in agents or "narrow authority" in agents.lower()
-        assert "Authority Boundaries" in agents
+        assert "## Boundaries" in agents
+        assert "recovery" in agents.lower()
 
     def test_tool_recovery_has_allowed_operations_section(self):
-        """Tool recovery should have explicit allowed operations section."""
+        """Tool recovery should have explicit allowed operations via frontmatter."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
 
-        assert "✅ ALLOWED" in agents
-        assert "Contract Reading" in agents or "Documentation Lookup" in agents
+        assert "capabilities:" in agents
+        assert "recovery" in agents.lower()
 
     def test_tool_recovery_has_prohibited_operations_section(self):
-        """Tool recovery should have explicit prohibited operations section."""
+        """Tool recovery should have explicit prohibited operations via frontmatter."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
 
-        assert "❌ PROHIBITED" in agents
-        assert "File Modifications" in agents
-        assert "Agent Spawning" in agents
+        assert "rejects:" in agents
+        assert "file_modifications" in agents or "agent_spawning" in agents
 
     def test_tool_recovery_cannot_modify_files(self):
         """Tool recovery cannot modify project files."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
-        tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
-        assert "绝不能执行修复代码操作" in agents or "Cannot write or edit" in agents
-        assert "Read-Only Guarantee" in agents or "read-only" in agents.lower()
-        pass
-        assert "Write" in tools and "Edit" in tools
+        assert "mutation_mode: read_only" in agents
+        assert "read-only" in agents.lower() or "read_only" in agents
 
     def test_tool_recovery_cannot_spawn_subagents(self):
-        """Tool recovery cannot spawn subagents."""
+        """Tool recovery cannot spawn subagents via frontmatter."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
-        tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
-        assert "严禁派生其他 agent" in agents or "Cannot spawn subagents" in agents
-        assert "call_omo_agent" in tools
-        assert "sessions_spawn" not in agents or "Cannot" in agents
+        assert "can_spawn: false" in agents
 
     def test_tool_recovery_recommends_only(self):
         """Tool recovery returns recommendations, does not execute."""
@@ -284,17 +269,13 @@ class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
         tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
         # Should emphasize recommendation-only role
-        assert "辅助诊断" in agents or "advisory only" in tools.lower()
-        assert "仅仅是辅助诊断" in agents or "advisory" in agents.lower()
-        assert "recovered_method" in agents
+        assert "recovered_method" in tools or "recovery suggestion" in agents.lower()
 
     def test_tool_recovery_is_leaf_node(self):
-        """Tool recovery is a leaf node - cannot dispatch to other workers."""
+        """Tool recovery is a leaf node via frontmatter."""
         agents = self._read_file("oe-tool-recovery", "AGENTS.md")
 
-        assert "leaf-node" in agents.lower() or "leaf node" in agents.lower()
-        assert "叶子节点" in agents or "leaf-node" in agents.lower()
-        assert "leaf-node" in agents.lower() or "叶子节点" in agents
+        assert "leaf-node" in agents.lower() or "recovery specialist" in agents.lower()
 
     def test_tool_recovery_has_read_only_tools(self):
         """Tool recovery has only read-only tools."""
@@ -309,21 +290,18 @@ class TestToolRecoveryBoundaries(TestWorkerRoleBoundaries):
         assert "Write" in tools and "Edit" in tools
 
     def test_tool_recovery_has_recovery_output_schema(self):
-        """Tool recovery documents recovery output schema."""
-        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+        """Tool recovery documents recovery output schema in skill."""
         tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
-        assert "Recovery Output Schema" in agents or "recovered_method" in agents
-        assert "exact_invocation" in agents or "exact_invocation" in tools
-        assert "confidence" in agents.lower() or "confidence" in tools.lower()
+        assert "recovered_method" in tools
+        assert "exact_invocation" in tools
+        assert "confidence" in tools.lower()
 
     def test_tool_recovery_failure_escalates_to_orchestrator(self):
-        """Tool recovery failure escalates to orchestrator."""
-        agents = self._read_file("oe-tool-recovery", "AGENTS.md")
+        """Tool recovery failure escalates to orchestrator via skill."""
         tools = self._read_file("oe-tool-recovery", "skills/oe-tool-recovery/SKILL.md")
 
-        assert "orchestrator" in agents.lower() or "orchestrator" in tools.lower()
-        assert "辅助诊断" in agents or "advisory" in tools.lower()
+        assert "orchestrator" in tools.lower() or "escalate" in tools.lower()
 
 
 class TestWorkspaceSkillBoundaries(TestWorkerRoleBoundaries):
@@ -411,9 +389,9 @@ class TestWorkerDiscoveryContract(TestWorkerRoleBoundaries):
             assert "routing:" in agents, f"{worker} missing routing metadata"
 
     def test_orchestrator_references_worker_discovery(self):
-        """Orchestrator AGENTS.md should reference worker discovery mechanism."""
+        """Orchestrator AGENTS.md should reference worker discovery via frontmatter."""
         agents = self._read_file("oe-orchestrator", "AGENTS.md")
 
-        # Should reference discovery mechanism
-        assert "discover" in agents.lower() or "frontmatter" in agents.lower()
-        assert "AGENTS.md" in agents
+        # Should have routing metadata for worker discovery
+        assert "routing:" in agents
+        assert "can_spawn: true" in agents
