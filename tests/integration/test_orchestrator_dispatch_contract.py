@@ -128,9 +128,7 @@ class TestWorkspaceDiscoveryIntegration:
         ]
 
         for skill in skills:
-            # Skills are loaded via native mechanism, not explicitly referenced in AGENTS.md
-            # Per simplification principle: Skills exist in workspaces/*/skills/ and auto-loaded
-            pass
+            assert skill in agents_content, f"AGENTS.md should reference {skill}"
 
     def test_tools_md_keeps_local_notes_only(self):
         """TOOLS.md should keep local notes and point to skills."""
@@ -295,6 +293,7 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
             "Orchestrator Self-Execution Policy",
             "Orchestrator Self-Execution Exception Policy",
             "Mandatory Worker Dispatch",
+            "必须分发的工作",
             "sessions_spawn",
         ]
 
@@ -334,6 +333,7 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
 
         assert "Allowed Self-Execution Exceptions" in operations_content
         assert "Allowed Self-Execution Exceptions" in dispatch_skill_content
+        assert "允许的自执行例外" in agents_content
 
     def test_no_implicit_self_execution_fallback_remains_explicitly_banned(
         self, agents_content, dispatch_skill_content, operations_content
@@ -341,12 +341,15 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
         banned_phrases = [
             "prohibited from implicit self-execution fallback",
             "No Implicit Fallback",
+            "严禁静默吸收",
         ]
 
         for phrase in banned_phrases:
-            assert phrase in dispatch_skill_content or phrase in operations_content, (
-                f"Missing explicit no-fallback wording: {phrase}"
-            )
+            assert (
+                phrase in agents_content
+                or phrase in dispatch_skill_content
+                or phrase in operations_content
+            ), f"Missing explicit no-fallback wording: {phrase}"
 
         assert "must become child `sessions_spawn` dispatches" in operations_content.lower()
         assert "MUST NOT silently absorb substantive worker-eligible work" in dispatch_skill_content
@@ -376,9 +379,9 @@ class TestOrchestratorEndToEndWorkflow:
 
     def test_workspace_components_integrated(self):
         """All workspace components should be integrated."""
-        # Skills are auto-loaded via native mechanism, not referenced in AGENTS.md
-        # Per simplification principle: Skills exist in workspaces/*/skills/ and auto-loaded
-        pass
+        # AGENTS should reference skills
+        agents = Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
+        assert "oe-project-registry" in agents
 
         # TOOLS should stay as local notes and point to skills
         tools = Path("workspaces/oe-orchestrator/TOOLS.md").read_text()
@@ -421,8 +424,7 @@ class TestOrchestratorRecoveryFlow:
         The short AGENTS.md should point to oe-worker-dispatch, and the detailed
         recovery contract should live in the worker-dispatch skill.
         """
-        # Skills are auto-loaded via native mechanism, not referenced in AGENTS.md
-        # Per simplification principle: Skills exist in workspaces/*/skills/ and auto-loaded
+        assert "oe-worker-dispatch" in agents_content
 
         # Worker dispatch skill must classify tool_not_found as Tool-Usage Failure
         assert "tool_not_found" in dispatch_skill_content, (
