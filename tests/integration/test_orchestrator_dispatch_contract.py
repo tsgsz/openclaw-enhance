@@ -116,19 +116,14 @@ class TestWorkspaceDiscoveryIntegration:
             assert skill_dir.exists(), f"Skill directory {skill} missing"
             assert (skill_dir / "SKILL.md").exists(), f"SKILL.md for {skill} missing"
 
-    def test_agents_md_references_all_skills(self):
-        """AGENTS.md should reference all available skills."""
+    def test_agents_md_has_minimal_body(self):
+        """AGENTS.md should have minimal body content."""
         agents_content = Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
 
-        skills = [
-            "oe-project-registry",
-            "oe-worker-dispatch",
-            "oe-agentos-practice",
-            "oe-git-context",
-        ]
-
-        for skill in skills:
-            assert skill in agents_content, f"AGENTS.md should reference {skill}"
+        assert "# oe-orchestrator" in agents_content
+        assert "## Boundaries" in agents_content
+        assert "## Skills" not in agents_content
+        assert "## Session Startup" not in agents_content
 
     def test_tools_md_keeps_local_notes_only(self):
         """TOOLS.md should keep local notes and point to skills."""
@@ -290,21 +285,15 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
         self, agents_content, dispatch_skill_content, operations_content
     ):
         required_markers = [
-            "Orchestrator Self-Execution Policy",
-            "Orchestrator Self-Execution Exception Policy",
-            "Mandatory Worker Dispatch",
-            "必须分发的工作",
             "sessions_spawn",
         ]
 
         for marker in required_markers:
-            assert (
-                marker in agents_content
-                or marker in dispatch_skill_content
-                or marker in operations_content
-            ), f"Expected orchestrator dispatch contract marker: {marker}"
+            assert marker in dispatch_skill_content or marker in operations_content, (
+                f"Expected orchestrator dispatch contract marker: {marker}"
+            )
 
-        for content in (agents_content, dispatch_skill_content, operations_content):
+        for content in (dispatch_skill_content, operations_content):
             assert "sessions_spawn" in content, (
                 "Orchestrator dispatch contract must require child sessions_spawn dispatches"
             )
@@ -314,9 +303,7 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
         assert "coding" in dispatch_skill_content.lower()
         assert "monitoring" in dispatch_skill_content.lower()
 
-    def test_exception_list_stays_narrow(
-        self, agents_content, dispatch_skill_content, operations_content
-    ):
+    def test_exception_list_stays_narrow(self, dispatch_skill_content, operations_content):
         expected_exceptions = [
             "worker selection",
             "dispatch planning",
@@ -333,23 +320,19 @@ class TestOrchestratorSelfExecutionPolicyIntegration:
 
         assert "Allowed Self-Execution Exceptions" in operations_content
         assert "Allowed Self-Execution Exceptions" in dispatch_skill_content
-        assert "允许的自执行例外" in agents_content
 
     def test_no_implicit_self_execution_fallback_remains_explicitly_banned(
-        self, agents_content, dispatch_skill_content, operations_content
+        self, dispatch_skill_content, operations_content
     ):
         banned_phrases = [
             "prohibited from implicit self-execution fallback",
             "No Implicit Fallback",
-            "严禁静默吸收",
         ]
 
         for phrase in banned_phrases:
-            assert (
-                phrase in agents_content
-                or phrase in dispatch_skill_content
-                or phrase in operations_content
-            ), f"Missing explicit no-fallback wording: {phrase}"
+            assert phrase in dispatch_skill_content or phrase in operations_content, (
+                f"Missing explicit no-fallback wording: {phrase}"
+            )
 
         assert "must become child `sessions_spawn` dispatches" in operations_content.lower()
         assert "MUST NOT silently absorb substantive worker-eligible work" in dispatch_skill_content
@@ -379,9 +362,10 @@ class TestOrchestratorEndToEndWorkflow:
 
     def test_workspace_components_integrated(self):
         """All workspace components should be integrated."""
-        # AGENTS should reference skills
+        # AGENTS should have minimal body - skills referenced via frontmatter
         agents = Path("workspaces/oe-orchestrator/AGENTS.md").read_text()
-        assert "oe-project-registry" in agents
+        assert "# oe-orchestrator" in agents
+        assert "## Boundaries" in agents
 
         # TOOLS should stay as local notes and point to skills
         tools = Path("workspaces/oe-orchestrator/TOOLS.md").read_text()
@@ -421,10 +405,10 @@ class TestOrchestratorRecoveryFlow:
     ):
         """Verify orchestrator detects tool_not_found failure and dispatches oe-tool-recovery.
 
-        The short AGENTS.md should point to oe-worker-dispatch, and the detailed
-        recovery contract should live in the worker-dispatch skill.
+        The short AGENTS.md has minimal body, and the detailed
+        recovery contract lives in the worker-dispatch skill.
         """
-        assert "oe-worker-dispatch" in agents_content
+        assert "## Boundaries" in agents_content
 
         # Worker dispatch skill must classify tool_not_found as Tool-Usage Failure
         assert "tool_not_found" in dispatch_skill_content, (
@@ -782,8 +766,8 @@ class TestOrchestratorRecoveryFlow:
 
         # Must prohibit agent spawning
         assert (
-            "Agent Spawning" in recovery_agents_content
-            or "严禁派生其他 agent" in recovery_agents_content
+            "Cannot spawn" in recovery_agents_content
+            or "cannot spawn" in recovery_agents_content.lower()
         ), "oe-tool-recovery must document agent spawning prohibition"
 
     def test_recovery_uses_sessions_spawn_and_yield(self, dispatch_skill_content):
