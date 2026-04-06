@@ -67,33 +67,31 @@ class TestAgentsMdContent:
         assert "workspace: oe-orchestrator" in agents_content
         assert "routing:" in agents_content
 
-    def test_has_short_operational_sections(self, agents_content):
-        """Should keep only short operational sections in AGENTS.md."""
-        assert "# AGENTS.md - Orchestrator Workspace" in agents_content
-        assert "## Session Startup" in agents_content
-        assert "## Role" in agents_content
-        assert "## Boundaries" in agents_content
-        assert "## Skills" in agents_content
+    def test_has_minimal_body_structure(self, agents_content):
+        """AGENTS.md body should only contain frontmatter and a short Role sentence."""
+        lines = agents_content.strip().split("\n")
+        # First line should be ---
+        assert lines[0] == "---"
+        # After frontmatter (---), should have title and one sentence
+        body_start = agents_content.index("---\n", 4) + len("---\n")
+        body = agents_content[body_start:].strip()
+        body_lines = body.split("\n")
+        # Title line
+        assert body_lines[0] == "# oe-orchestrator"
+        # Role sentence (should be short, one line)
+        assert len(body_lines) == 1
+        assert "Dispatcher" in body_lines[1]
+        assert len(body_lines[1]) < 100
 
-    def test_removes_embedded_workflow_manuals(self, agents_content):
-        """Detailed dispatch workflow should live in skills, not AGENTS.md."""
+    def test_removes_redundant_sections(self, agents_content):
+        """Redundant sections should be removed per simplification principle."""
+        assert "## Session Startup" not in agents_content
+        assert "## Skills" not in agents_content
+        assert "## Boundaries" not in agents_content
         assert "## Workflow" not in agents_content
+        assert "## Version" not in agents_content
         assert "Bounded Round-Based Orchestration Loop" not in agents_content
         assert "## Output Format" not in agents_content
-        assert "task_id" not in agents_content
-        assert "Recovery Cap" not in agents_content
-
-    def test_references_skills_without_repeating_full_contracts(self, agents_content):
-        """AGENTS.md should point to skills without restating their full logic."""
-        skills = [
-            "oe-project-registry",
-            "oe-worker-dispatch",
-            "oe-agentos-practice",
-            "oe-git-context",
-        ]
-        for skill in skills:
-            assert skill in agents_content, f"Missing skill reference: {skill}"
-        assert "skills/" in agents_content
 
 
 class TestToolsMdContent:
@@ -254,7 +252,7 @@ class TestWorkspaceRenderingLogic:
         from openclaw_enhance.workspaces import render_workspace
 
         output = render_workspace("oe-orchestrator")
-        assert "# AGENTS.md - Orchestrator Workspace" in output
+        assert "# oe-orchestrator" in output
 
     def test_render_includes_tools_md(self):
         """Rendering should include TOOLS.md content."""
