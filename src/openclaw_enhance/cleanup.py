@@ -187,8 +187,18 @@ def classify_candidate(
     # Skip in_runtime_active_set check for these - the .deleted/.reset suffix
     # means the session was intentionally ended, so we trust the suffix over sessions.json.
     is_terminated = candidate.kind is CleanupKind.RUNTIME_STATE
+
+    # If a session appears in sessions.json but its file is way older than the
+    # stale threshold (>= 48x), the sessions.json entry is orphaned and we
+    # should trust the file age over sessions.json. OpenClaw doesn't always
+    # clean up sessions.json entries when sessions end.
+    sessions_json_max_age_hours = stale_threshold_hours * 48
+    is_sessions_json_stale = (
+        candidate.in_runtime_active_set and candidate.age_hours >= sessions_json_max_age_hours
+    )
+
     if not is_terminated and (
-        candidate.in_runtime_active_set
+        (candidate.in_runtime_active_set and not is_sessions_json_stale)
         or candidate.held_by_project_occupancy
         or candidate.has_recent_activity
     ):
