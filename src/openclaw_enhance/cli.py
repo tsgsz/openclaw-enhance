@@ -1068,9 +1068,12 @@ def docs_check() -> None:
 
     from openclaw_enhance.agent_catalog import validate_workspace_manifests
 
-    manifest_errors = validate_workspace_manifests(project_root)
-    if manifest_errors:
-        errors.extend(manifest_errors)
+    # Skip workspace validation in v2 - no workspaces directory
+    workspaces_path = project_root / "workspaces"
+    if workspaces_path.exists():
+        manifest_errors = validate_workspace_manifests(project_root)
+        if manifest_errors:
+            errors.extend(manifest_errors)
 
     if errors:
         for err in errors:

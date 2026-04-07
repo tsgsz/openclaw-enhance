@@ -958,7 +958,7 @@ Evidence saved to `.sisyphus/evidence/`.
 
 ---
 
-- [ ] T20. Integration Tests
+- [x] T20. Integration Tests
 
   **What to do**:
   - Run full test suite: `pytest tests/ -q`
@@ -996,7 +996,7 @@ Evidence saved to `.sisyphus/evidence/`.
 
 ---
 
-- [ ] T21. Docs Check + Validation
+- [x] T21. Docs Check + Validation
 
   **What to do**:
   - Run `python -m openclaw_enhance.cli docs-check`
