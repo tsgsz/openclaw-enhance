@@ -29,8 +29,6 @@ def discover_session_candidates(sessions_root: Path) -> list[CleanupCandidate]:
                 kind=CleanupKind.CORE_SESSION,
                 age_hours=72,
                 in_runtime_active_set=False,
-                held_by_project_occupancy=False,
-                has_recent_activity=False,
             )
         )
     return candidates
@@ -83,13 +81,9 @@ def classify_archive_candidate(
     stale_threshold_hours: float,
     include_core_sessions: bool,
 ) -> CleanupStatus:
-    if (
-        candidate.in_runtime_active_set
-        or candidate.held_by_project_occupancy
-        or candidate.has_recent_activity
-    ):
-        return CleanupStatus.SKIPPED_ACTIVE
     if candidate.age_hours < stale_threshold_hours:
+        return CleanupStatus.SKIPPED_ACTIVE
+    if candidate.in_runtime_active_set:
         return CleanupStatus.SKIPPED_ACTIVE
     if not include_core_sessions and candidate.kind is CleanupKind.CORE_SESSION:
         return CleanupStatus.SKIPPED_UNCERTAIN

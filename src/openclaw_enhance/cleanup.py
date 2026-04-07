@@ -26,8 +26,6 @@ class CleanupCandidate:
     kind: CleanupKind
     age_hours: float
     in_runtime_active_set: bool
-    held_by_project_occupancy: bool
-    has_recent_activity: bool
     status: CleanupStatus | None = None
 
 
@@ -74,8 +72,6 @@ def _discover_working_directory_candidates(base_dir: Path) -> list[CleanupCandid
                 kind=CleanupKind.RUNTIME_STATE,
                 age_hours=72,
                 in_runtime_active_set=False,
-                held_by_project_occupancy=False,
-                has_recent_activity=False,
             )
         )
     return candidates
@@ -102,8 +98,6 @@ def _discover_openclaw_home_candidates(openclaw_home: Path) -> list[CleanupCandi
                     kind=kind,
                     age_hours=_age_hours(path),
                     in_runtime_active_set=session_id in active_session_ids,
-                    held_by_project_occupancy=False,
-                    has_recent_activity=False,
                 )
             )
 
@@ -176,35 +170,27 @@ def classify_candidate(
     binding_status: dict[str, object] | None = None,
     restart_epoch: int = 0,
 ) -> CleanupCandidate:
-    # For RUNTIME_STATE candidates, check ownership binding status.
-    # If binding is stale (unbound, revoked, or binding_epoch < restart_epoch),
-    # treat as safe to remove - the runtime state is orphaned.
+    # RUNTIME_STATE with stale binding -> orphaned, safe to remove
     if candidate.kind is CleanupKind.RUNTIME_STATE and binding_status is not None:
         if _is_binding_stale_for_classification(binding_status, restart_epoch):
             return replace(candidate, status=CleanupStatus.SAFE_TO_REMOVE)
 
-    # RUNTIME_STATE files (.deleted., .reset.) are already terminated sessions.
-    # Skip in_runtime_active_set check for these - the .deleted/.reset suffix
-    # means the session was intentionally ended, so we trust the suffix over sessions.json.
-    is_terminated = candidate.kind is CleanupKind.RUNTIME_STATE
-
-    # If a session appears in sessions.json but its file is way older than the
-    # stale threshold (>= 48x), the sessions.json entry is orphaned and we
-    # should trust the file age over sessions.json. OpenClaw doesn't always
-    # clean up sessions.json entries when sessions end.
-    sessions_json_max_age_hours = stale_threshold_hours * 48
-    is_sessions_json_stale = (
-        candidate.in_runtime_active_set and candidate.age_hours >= sessions_json_max_age_hours
-    )
-
-    if not is_terminated and (
-        (candidate.in_runtime_active_set and not is_sessions_json_stale)
-        or candidate.held_by_project_occupancy
-        or candidate.has_recent_activity
-    ):
-        return replace(candidate, status=CleanupStatus.SKIPPED_ACTIVE)
+    # Too recent -> skip regardless
     if candidate.age_hours < stale_threshold_hours:
         return replace(candidate, status=CleanupStatus.SKIPPED_ACTIVE)
+
+    # sessions.json orphans: if file is way older than threshold (>= 48x),
+    # trust file age over sessions.json. OpenClaw doesn't always clean up
+    # sessions.json entries when sessions end.
+    sessions_json_max_age_hours = stale_threshold_hours * 48
+    if candidate.age_hours >= sessions_json_max_age_hours:
+        return replace(candidate, status=CleanupStatus.SAFE_TO_REMOVE)
+
+    # sessions.json entry exists and file isn't old enough to be orphaned.
+    # Trust sessions.json (err on side of caution).
+    if candidate.in_runtime_active_set:
+        return replace(candidate, status=CleanupStatus.SKIPPED_ACTIVE)
+
     if candidate.kind is CleanupKind.CORE_SESSION:
         return replace(candidate, status=CleanupStatus.SKIPPED_UNCERTAIN)
     return replace(candidate, status=CleanupStatus.SAFE_TO_REMOVE)

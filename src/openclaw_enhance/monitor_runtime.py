@@ -137,8 +137,6 @@ def run_cleanup_mode(args: argparse.Namespace) -> int:
                         kind=CleanupKind.RUNTIME_STATE,
                         age_hours=72,
                         in_runtime_active_set=False,
-                        held_by_project_occupancy=False,
-                        has_recent_activity=False,
                     )
                 )
 
