@@ -1,0 +1,251 @@
+================================================================================
+F4: SCOPE FIDELITY CHECK - CONTAMINATION CHECK
+Plan: session-isolation-restart-guardrails
+Generated: Scope Fidelity Check Task (F4)
+================================================================================
+
+EXECUTIVE SUMMARY
+-----------------
+Tasks:        [0/17 compliant]
+Contamination: [CLEAN - No OpenClaw core edits]
+Unaccounted:   [5 files from unrelated plan]
+VERDICT:       REJECT
+
+================================================================================
+TASK COMPLIANCE CHECK
+================================================================================
+
+Wave 1 (Foundation + test scaffolding):
+-----------------------------------------
+Task 1:  Define ownership contract + runtime schema tests
+         Status: NOT STARTED - No schema.py changes detected
+         Evidence: MISSING
+
+Task 2:  Add sanitizer token-spec tests
+         Status: NOT STARTED - No sanitizer test changes detected
+         Evidence: MISSING
+
+Task 3:  Add spawn-enrich regression tests for ambiguous fallback
+         Status: NOT STARTED - No handler.ts changes detected
+         Evidence: MISSING
+
+Task 4:  Add runtime-gate session identity tests
+         Status: NOT STARTED - No runtime-bridge.test.ts changes detected
+         Evidence: MISSING
+
+Task 5:  Map docs/PLAYBOOK touchpoints for new guardrails
+         Status: PARTIAL - AGENTS.md modified, PLAYBOOK.md not found in diff
+         Evidence: MISSING
+
+Wave 2 (Core guardrails):
+---------------------------
+Task 6:  Implement runtime ownership state helpers
+         Status: NOT STARTED - No project_state.py changes detected
+         Evidence: MISSING
+
+Task 7:  Implement sanitizer module + unit coverage
+         Status: NOT STARTED - No sanitizer implementation detected
+         Evidence: MISSING
+
+Task 8:  Tighten spawn-enrich ownership/fallback behavior
+         Status: NOT STARTED - No handler.ts changes detected
+         Evidence: MISSING
+
+Task 9:  Tighten runtime main-session normalization / fail-closed behavior
+         Status: NOT STARTED - No index.ts changes detected
+         Evidence: MISSING
+
+Task 10: Update docs/PLAYBOOK for new runtime guardrails
+         Status: NOT STARTED - PLAYBOOK.md not in diff
+         Evidence: MISSING
+
+Wave 3 (Restart safety + cleanup integration):
+------------------------------------------------
+Task 11: Add restart epoch + stale-binding checks in governance/runtime
+         Status: NOT STARTED - No restart.py changes detected
+         Evidence: MISSING
+
+Task 12: Integrate sanitizer into enhance-controlled outward paths
+         Status: NOT STARTED - No runtime-bridge.ts changes detected
+         Evidence: MISSING
+
+Task 13: Make cleanup/legacy-state classification ownership-aware
+         Status: NOT STARTED - No cleanup.py changes detected
+         Evidence: MISSING
+
+Task 14: Add integration tests for restart collision blocking + same-channel resume
+         Status: NOT STARTED - No test file changes detected
+         Evidence: MISSING
+
+Wave 4 (Validation + final doc alignment):
+--------------------------------------------
+Task 15: Add real-environment validation entry/report coverage
+         Status: NOT STARTED - No validation report detected
+         Evidence: MISSING
+
+Task 16: Run docs-check / CI-equivalent verification updates
+         Status: NOT STARTED - No verification evidence
+         Evidence: MISSING
+
+Task 17: Commit preparation and evidence collation
+         Status: NOT STARTED - No implementation to commit
+         Evidence: MISSING
+
+================================================================================
+CONTAMINATION CHECK
+================================================================================
+
+OpenClaw Core Contamination:
+----------------------------
+Status: CLEAN
+
+Check: Did any changes touch OpenClaw core files outside this repo?
+Result: NO - Only files within openclaw-enhance repository modified
+
+Evidence:
+- No modifications to external OpenClaw installation
+- No changes to ~/.openclaw/ core files
+- All changes confined to openclaw-enhance repo
+
+Must NOT Have Guardrails Check:
+-------------------------------
+Plan states "Must NOT Have":
+[PASS] No OpenClaw core bridge/rendering/session internals modified
+       Confirmed: No core files changed
+
+[PASS] No generalized user/account identity model invented
+       Confirmed: No new identity models found
+
+[PASS] No generalized content filtering system created
+       Confirmed: No filtering subsystem changes
+
+[PASS] No legacy runtime-state loading broken
+       Confirmed: No schema changes attempted
+
+[N/A]  No fail-open fallback preserved
+       Not applicable: Implementation not started
+
+[N/A]  No channel-agnostic fallback to active_project/default
+       Not applicable: Implementation not started
+
+Must Have Check:
+----------------
+Plan states "Must Have":
+[FAIL] Fail-closed on ownership ambiguity
+       Status: NOT IMPLEMENTED - No ownership validation code found
+
+[FAIL] ownership key includes channel_type + channel_conversation_id
+       Status: NOT IMPLEMENTED - No ownership schema changes found
+
+[FAIL] Restart requires explicit validation, no silent reuse
+       Status: NOT IMPLEMENTED - No restart.py changes found
+
+[FAIL] Deterministic sanitizer for known markers
+       Status: NOT IMPLEMENTED - No sanitizer implementation found
+
+[FAIL] All tasks include agent-executed QA scenarios
+       Status: NOT IMPLEMENTED - No evidence files for this plan
+
+================================================================================
+UNACCOUNTED FILES ANALYSIS
+================================================================================
+
+Cross-Plan Contamination Detected:
+----------------------------------
+Files from "fix-main-orch-opencode-chain" plan found in diff:
+
+1. .sisyphus/evidence/task-4-fallback-default.txt
+   - Evidence from fix-main-orch-opencode-chain Task 4
+   - Not related to session-isolation-restart-guardrails
+
+2. .sisyphus/evidence/task-4-full-context.txt
+   - Evidence from fix-main-orch-opencode-chain Task 4
+   - Not related to session-isolation-restart-guardrails
+
+3. .sisyphus/notepads/fix-main-orch-opencode-chain/decisions.md
+   - Notepad from different plan
+   - Cross-contamination
+
+4. .sisyphus/notepads/fix-main-orch-opencode-chain/issues.md
+   - Notepad from different plan
+   - Cross-contamination
+
+5. .sisyphus/notepads/fix-main-orch-opencode-chain/learnings.md
+   - Notepad from different plan
+   - Cross-contamination
+
+6. .sisyphus/plans/fix-main-orch-opencode-chain.md
+   - Different plan file entirely
+   - Cross-contamination
+
+Recommendation:
+- Isolate plan workspaces properly
+- Each plan should have independent evidence/notepad directories
+- Or clearly mark which files belong to which plan
+
+================================================================================
+VERDICT
+================================================================================
+
+FINAL VERDICT: REJECT
+
+REASONING:
+----------
+1. IMPLEMENTATION NOT STARTED (Critical)
+   Zero of the 7+ planned implementation files have been modified.
+   This plan requires changes to:
+   - Python: schema.py, project_state.py, cleanup.py, restart.py
+   - TypeScript: handler.ts, index.ts, runtime-bridge.ts
+   - Tests: test_runtime_project_state.py, test_spawn_event_contract.py
+   - Docs: PLAYBOOK.md
+
+   None of these files appear in the diff.
+
+2. CROSS-PLAN CONTAMINATION (Moderate)
+   6 files from fix-main-orch-opencode-chain plan mixed into this diff.
+   This suggests workspace isolation issues between concurrent plans.
+
+3. EVIDENCE GAP (Critical)
+   No evidence files exist for tasks 1-17 of this plan.
+   The only evidence files present belong to a different plan.
+
+4. CLEAN FROM CORE CONTAMINATION (Positive)
+   No OpenClaw core files were modified.
+   All changes confined to openclaw-enhance repository.
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+To achieve APPROVE verdict:
+
+1. Execute Wave 1 (Tasks 1-5)
+   - Add tests for ownership contract, sanitizer, spawn enrich, runtime gate
+   - Map documentation touchpoints
+
+2. Execute Wave 2 (Tasks 6-10)
+   - Implement ownership state helpers
+   - Implement sanitizer module
+   - Tighten spawn-enrich and runtime gate behavior
+   - Update documentation
+
+3. Execute Wave 3 (Tasks 11-14)
+   - Add restart epoch checks
+   - Integrate sanitizer into outward paths
+   - Make cleanup ownership-aware
+   - Add integration tests
+
+4. Execute Wave 4 (Tasks 15-17)
+   - Add real-environment validation
+   - Run full verification stack
+   - Prepare commit with evidence
+
+5. Clean up cross-contamination
+   - Ensure fix-main-orch-opencode-chain files are properly isolated
+
+6. Re-run F1-F4 final verification
+   - Only after all 17 tasks complete
+
+================================================================================
+END OF CONTAMINATION CHECK
+================================================================================

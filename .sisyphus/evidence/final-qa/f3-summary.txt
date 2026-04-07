@@ -1,0 +1,40 @@
+# F3: Agent-Executed Final QA Sweep - Summary
+
+## Test Scenarios Results
+
+### Scenario 1: Cross-Channel Collision Block
+- pytest: PASSED
+- npm: 41/41 pass
+- Status: ✅ PASS
+
+### Scenario 2: Same-Channel Resume
+- pytest: PASSED
+- Status: ✅ PASS
+
+### Scenario 3: Sanitization Check
+- npm: 41/41 pass (includes sanitizer tests)
+- Status: ✅ PASS
+
+### Scenario 4: Restart Epoch and Stale Binding
+- pytest (restart_epoch, stale_binding, rebind): 5/5 PASSED
+  - test_restart_epoch_bump_increments_value
+  - test_stale_binding_detected_when_epoch_mismatch
+  - test_rebind_ownership_updates_epoch
+  - test_same_channel_resume_after_rebind
+  - test_cleanup_classifies_stale_binding_as_needs_rebind
+- Status: ✅ PASS
+
+### Scenario 5: Ambiguous Ownership Blocked
+- pytest: PASSED
+- npm: 41/41 pass
+- Status: ✅ PASS
+
+## Summary Counts
+- Scenarios: 5/5 pass
+- Integration Tests (pytest): 7/7 pass
+- Edge Cases (npm): 41/41 pass
+- Edge Cases tested: restart_epoch, stale_binding, rebind, ambiguous, sanitize, cross-channel
+
+## VERDICT: APPROVE
+
+All highest-risk regression scenarios pass successfully.

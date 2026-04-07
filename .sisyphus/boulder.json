@@ -1,10 +1,37 @@
 {
-  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/fix-main-orch-opencode-chain.md",
-  "started_at": "2026-03-22T04:11:28.477Z",
+  "active_plan": "/Users/tsgsz/workspace/openclaw-enhance/.sisyphus/plans/skill-only-v2-implementation.md",
+  "started_at": "2026-04-07T13:06:59.369Z",
   "session_ids": [
-    "ses_2ec7d41b5ffeczGFVJNjNhqErw",
-    "ses_2ec407974ffe0iEO0nDUv7UptA",
-    "ses_2ec407933ffe44SYzee10p1DMG"
+    "ses_298b03da7ffeb9ub2A0r6kSMbn",
+    "ses_297f0b50dffeBCeq7eZchjicDb",
+    "ses_297f0595dffeA6lJ0lF24UdC8F",
+    "ses_297f094a0ffe4PPQqvm4EoQed7",
+    "ses_297f0795dffe39sK0nFpCnMtki",
+    "ses_297de2f19ffey2pqoaXmLmQH4C",
+    "ses_297d6e615ffe5ysvmKXDKRySny",
+    "ses_297d3e149ffey5eIBrJ1xHy6L2",
+    "ses_297d09162ffecU3AoQe2mLrTsp",
+    "ses_297d07a28ffexIUyF3l0odyHfr",
+    "ses_297d0616efferEJRHTemAfqnWh",
+    "ses_297cd3cc8ffeQenZA5dhPQKaTF",
+    "ses_297ccac1dffe11k4NsOfnvbKil",
+    "ses_297ccdf7cffeEHXlgMKkwHXjjL",
+    "ses_297cd0dfeffepSmVWIWG5SOmpi",
+    "ses_297ca6ca7ffegD5DInQJABD9ab",
+    "ses_297ca300bffeErMJz7NOSd1i1M",
+    "ses_297c70ec2ffeQf0JanZ745lsz6"
   ],
-  "plan_name": "fix-main-orch-opencode-chain"
+  "plan_name": "skill-only-v2-implementation",
+  "agent": "atlas",
+  "task_sessions": {
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_297c70ec2ffeQf0JanZ745lsz6",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-07T13:56:22.332Z"
+    }
+  }
 }
