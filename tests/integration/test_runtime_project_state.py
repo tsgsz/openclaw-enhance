@@ -205,8 +205,6 @@ def test_cleanup_classifies_stale_binding_as_needs_rebind(tmp_home: Path) -> Non
         kind=CleanupKind.RUNTIME_STATE,
         age_hours=1,
         in_runtime_active_set=False,
-        held_by_project_occupancy=False,
-        has_recent_activity=False,
     )
 
     binding = get_binding_status(tmp_home)
@@ -230,8 +228,6 @@ def test_cleanup_classifies_active_binding_as_safe(tmp_home: Path) -> None:
         kind=CleanupKind.RUNTIME_STATE,
         age_hours=1,
         in_runtime_active_set=False,
-        held_by_project_occupancy=False,
-        has_recent_activity=False,
     )
 
     binding = get_binding_status(tmp_home)
