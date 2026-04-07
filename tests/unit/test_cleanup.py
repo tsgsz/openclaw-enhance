@@ -14,8 +14,6 @@ def test_classify_core_session_as_skipped_active_when_recent() -> None:
         kind=CleanupKind.CORE_SESSION,
         age_hours=1,
         in_runtime_active_set=True,
-        held_by_project_occupancy=False,
-        has_recent_activity=True,
     )
 
     classified = classify_candidate(candidate, stale_threshold_hours=24)
@@ -29,8 +27,6 @@ def test_classify_core_session_as_skipped_uncertain_when_old_but_unproven() -> N
         kind=CleanupKind.CORE_SESSION,
         age_hours=72,
         in_runtime_active_set=False,
-        held_by_project_occupancy=False,
-        has_recent_activity=False,
     )
 
     classified = classify_candidate(candidate, stale_threshold_hours=24)
@@ -44,8 +40,6 @@ def test_classify_runtime_candidate_as_safe_to_remove_when_old_and_unowned() -> 
         kind=CleanupKind.RUNTIME_STATE,
         age_hours=72,
         in_runtime_active_set=False,
-        held_by_project_occupancy=False,
-        has_recent_activity=False,
     )
 
     classified = classify_candidate(candidate, stale_threshold_hours=24)
