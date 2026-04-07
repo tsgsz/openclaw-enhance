@@ -55,7 +55,6 @@ export interface SpawnEnrichOutput {
   };
   unsafe?: boolean;
   spawn_patch?: {
-    agentId: string;
     runtime: "subagent";
     streamTo?: undefined;
   };
@@ -346,7 +345,6 @@ export function enrichSpawnEvent(
 
   const mutablePayload = payload as Record<string, unknown>;
   mutablePayload.subagent_type = normalizedAgent;
-  mutablePayload.agentId = normalizedAgent;
   mutablePayload.runtime = "subagent";
   if ("streamTo" in mutablePayload) {
     delete mutablePayload.streamTo;
@@ -404,7 +402,6 @@ export function enrichSpawnEvent(
       ownership_status: ownershipValidation.ownership_status,
     },
     spawn_patch: {
-      agentId: normalizedAgent,
       runtime: "subagent",
       streamTo: undefined,
     },

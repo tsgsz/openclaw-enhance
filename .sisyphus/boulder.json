@@ -20,7 +20,8 @@
     "ses_297ca6ca7ffegD5DInQJABD9ab",
     "ses_297ca300bffeErMJz7NOSd1i1M",
     "ses_297c70ec2ffeQf0JanZ745lsz6",
-    "ses_297c26528ffeCSXOG9QYlqv0Re"
+    "ses_297c26528ffeCSXOG9QYlqv0Re",
+    "ses_297b676bbffeMU2ijt6h5XcrBB"
   ],
   "plan_name": "skill-only-v2-implementation",
   "agent": "atlas",
@@ -29,10 +30,10 @@
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_297c26528ffeCSXOG9QYlqv0Re",
+      "session_id": "ses_297b676bbffeMU2ijt6h5XcrBB",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-07T14:02:02.628Z"
+      "category": "unspecified-high",
+      "updated_at": "2026-04-07T14:15:33.941Z"
     }
   }
 }
