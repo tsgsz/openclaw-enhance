@@ -91,7 +91,7 @@ class TestSkillRegistry:
         """Registry should contain all three main-session skills."""
         skill_names = {skill.name for skill in SKILLS_REGISTRY}
         assert "oe-eta-estimator" in skill_names
-        assert "oe-toolcall-router" in skill_names
+        assert "oe-tag-router" in skill_names
         assert "oe-timeout-state-sync" in skill_names
 
     def test_registry_skills_have_routing_heuristics(self):
@@ -102,7 +102,7 @@ class TestSkillRegistry:
 
     def test_toolcall_router_has_special_heuristics(self):
         """Toolcall router should have toolcall-specific heuristics."""
-        router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-toolcall-router")
+        router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-tag-router")
         assert router_skill.routing_heuristics["escalation_threshold"] == 0
 
 
@@ -118,8 +118,8 @@ class TestRenderSkillContract:
 
     def test_render_toolcall_router_contract(self):
         """Toolcall router contract matches SKILL.md exactly."""
-        contract = render_skill_contract("oe-toolcall-router")
-        expected = Path("skills/oe-toolcall-router/SKILL.md").read_text(encoding="utf-8")
+        contract = render_skill_contract("oe-tag-router")
+        expected = Path("skills/oe-tag-router/SKILL.md").read_text(encoding="utf-8")
         assert contract == expected
 
     def test_render_timeout_sync_contract(self):
@@ -143,12 +143,12 @@ class TestRenderSkillContract:
         """Skill listing includes known contracts."""
         names = list_skill_contract_names()
         assert "oe-eta-estimator" in names
-        assert "oe-toolcall-router" in names
+        assert "oe-tag-router" in names
         assert "oe-timeout-state-sync" in names
 
     def test_render_contract_has_yaml_frontmatter(self):
         """Rendered contract should have YAML frontmatter."""
-        contract = render_skill_contract("oe-toolcall-router")
+        contract = render_skill_contract("oe-tag-router")
         assert contract.startswith("---")
         assert "name:" in contract
 
@@ -164,26 +164,26 @@ class TestSkillContracts:
             assert field in contract, f"Missing field: {field}"
 
     def test_toolcall_router_contract_has_required_fields(self):
-        """oe-toolcall-router contract should have all required fields."""
-        contract = render_skill_contract("oe-toolcall-router")
+        """oe-tag-router contract should have all required fields."""
+        contract = render_skill_contract("oe-tag-router")
         required_fields = [
             "name:",
             "version:",
             "description:",
-            "oe-toolcall-router",
+            "oe-tag-router",
             "Main session",
         ]
         for field in required_fields:
             assert field in contract, f"Missing field: {field}"
 
-    def test_toolcall_router_contract_has_issue9_heavy_research_example(self):
-        contract = render_skill_contract("oe-toolcall-router")
-        assert "issue #9" in contract.lower()
-        assert "ppt" in contract.lower()
-        assert "traceable data" in contract.lower()
+    def test_tag_router_contract_has_v2_content(self):
+        """oe-tag-router contract should have v2 architecture content."""
+        contract = render_skill_contract("oe-tag-router")
+        assert "tag-based" in contract.lower()
+        assert "router only" in contract.lower()
         assert "sessions_spawn" in contract
-        assert '"agentId": "oe-orchestrator"' in contract
-        assert "no python wrappers" in contract.lower()
+        assert "prompt" in contract.lower()
+        assert "model" in contract.lower()
 
     def test_timeout_sync_contract_has_required_fields(self):
         """oe-timeout-state-sync contract should have all required fields."""

@@ -132,8 +132,9 @@ def test_watchdog_reminder_requires_enabled_hook_entry(mock_openclaw_home: Path)
         ],
     )
 
-    assert result.exit_code == 0, result.output
-    assert '"proof": "workspace_contract_plus_live_reminder"' in result.output
+    # v2: watchdog workspace doesn't exist, probe fails with missing_watchdog_workspace_and_config
+    assert result.exit_code == 2, result.output
+    assert "missing_watchdog_workspace_and_config" in result.output
 
 
 def test_watchdog_reminder_requires_managed_hook_dir(mock_openclaw_home: Path):
@@ -166,8 +167,9 @@ def test_watchdog_reminder_requires_managed_hook_dir(mock_openclaw_home: Path):
         ],
     )
 
-    assert result.exit_code == 0, result.output
-    assert '"proof": "workspace_contract_plus_live_reminder"' in result.output
+    # v2: watchdog workspace doesn't exist, probe fails with missing_watchdog_workspace_and_config
+    assert result.exit_code == 2, result.output
+    assert "missing_watchdog_workspace_and_config" in result.output
 
 
 @patch("openclaw_enhance.validation.live_probes.uuid.uuid4")

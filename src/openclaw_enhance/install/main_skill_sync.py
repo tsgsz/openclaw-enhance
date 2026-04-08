@@ -12,7 +12,7 @@ from openclaw_enhance.skills_catalog import _skill_contract_path
 
 MAIN_SKILL_IDS: tuple[str, ...] = (
     "oe-eta-estimator",
-    "oe-toolcall-router",
+    "oe-tag-router",
     "oe-timeout-state-sync",
 )
 

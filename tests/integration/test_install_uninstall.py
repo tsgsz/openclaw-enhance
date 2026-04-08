@@ -75,7 +75,7 @@ class TestInstallUninstallSymmetry:
         # Should have runtime state component
         assert any("runtime" in name for name in component_names)
         assert "main-skill:oe-eta-estimator" in component_names
-        assert "main-skill:oe-toolcall-router" in component_names
+        assert "main-skill:oe-tag-router" in component_names
         assert "main-skill:oe-timeout-state-sync" in component_names
 
     def test_install_deploys_playbook(
@@ -339,7 +339,7 @@ class TestInstallUninstallSymmetry:
         result = runner.invoke(cli, ["status", "--json"])
         assert result.exit_code == 0
         status = json.loads(result.output)
-        assert status["installed"] is False
+        assert status["install_status"]["installed"] is False
 
         # Install
         result = runner.invoke(

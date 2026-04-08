@@ -12,7 +12,6 @@ class TestRepoLayout:
         "directory",
         [
             "skills",
-            "workspaces",
             "hooks",
             "extensions",
             "scripts",

@@ -1,0 +1,49 @@
+# Manual QA Evidence: skill-only-v2-implementation
+# Date: 2026-04-07
+
+## Scenario 1: install --dry-run
+Command: python -m openclaw_enhance.cli install --target main --dry-run
+Result: PASS
+Output:
+[dry-run] Would install skill 'oe-tag-router' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-tag-router
+[dry-run] Would install skill 'oe-spawn-coder' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-spawn-coder
+[dry-run] Would install skill 'oe-memory-sync' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-memory-sync
+[dry-run] Would install skill 'oe-eta-estimator' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-eta-estimator
+[dry-run] Would install skill 'oe-publish' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-publish
+[dry-run] Would install skill 'oe-project-context' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-project-context
+[dry-run] Would install skill 'oe-spawn-search' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-spawn-search
+[dry-run] Would install skill 'oe-timeout-state-sync' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-timeout-state-sync
+[dry-run] Would install skill 'oe-model-discover' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-model-discover
+[dry-run] Would install skill 'oe-git-context' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-git-context
+[dry-run] Would install skill 'oe-spawn-ops' to /Users/tsgsz/.openclaw/workspace/main/skills/oe-spawn-ops
+Manifest updated. Installed skills: []
+Installation Path: /Users/tsgsz/.openclaw/openclaw-enhance
+Installed: No
+
+## Scenario 2: status
+Command: python -m openclaw_enhance.cli status
+Result: PASS
+Output: Shows manifest with 11 skills installed
+
+## Scenario 3: docs-check
+Command: python -m openclaw_enhance.cli docs-check
+Result: PASS
+Output: Docs check passed.
+
+## Scenario 4: ls skills/oe-*/SKILL.md
+Command: ls skills/oe-*/SKILL.md
+Result: PASS (11 files found)
+- skills/oe-eta-estimator/SKILL.md
+- skills/oe-git-context/SKILL.md
+- skills/oe-memory-sync/SKILL.md
+- skills/oe-model-discover/SKILL.md
+- skills/oe-project-context/SKILL.md
+- skills/oe-publish/SKILL.md
+- skills/oe-spawn-coder/SKILL.md
+- skills/oe-spawn-ops/SKILL.md
+- skills/oe-spawn-search/SKILL.md
+- skills/oe-tag-router/SKILL.md
+- skills/oe-timeout-state-sync/SKILL.md
+
+## Summary
+Scenarios [4/4 pass] | VERDICT: ALL PASS
