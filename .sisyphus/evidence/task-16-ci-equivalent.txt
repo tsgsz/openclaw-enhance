@@ -1,0 +1,222 @@
+# Task 16: CI-Equivalent Verification Evidence
+# Date: 2026-04-05
+
+## Verification Suite Results
+
+All commands PASSED. No failures detected.
+
+---
+
+## 1. Python Tests (pytest)
+
+Command:
+```bash
+pytest tests/integration/test_runtime_project_state.py tests/unit/test_cleanup.py -q --tb=short
+```
+
+Output:
+```
+...................                                                                                      [100%]
+=============================================== warnings summary ===============================================
+tests/integration/test_runtime_project_state.py::test_backward_compatible_load_defaults_missing_ownership_metadata
+  /Users/tsgsz/workspace/openclaw-enhance/tests/integration/test_runtime_project_state.py:41: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "last_updated_utc": datetime.utcnow().isoformat(),
+
+warnings
+  /opt/homebrew/Caskroom/miniconda/base/envs/jupyterlab313/lib/python3.13/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use datetime.datetime.now(datetime.UTC).
+  /Users/tsgsz/workspace/openclaw-enhance/src/openclaw_enhance/runtime/project_state.py:32: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use datetime.datetime.now(datetime.UTC).
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+19 passed, 51 warnings in 0.04s
+```
+
+**STATUS: PASS** (19 tests passed, warnings are pre-existing deprecation notices)
+
+---
+
+## 2. TypeScript Tests (npm test)
+
+Command:
+```bash
+npm test
+```
+
+Output:
+```
+> openclaw-enhance@0.1.0 test
+> npm run build && node --test dist/extensions/openclaw-enhance-runtime/src/runtime-bridge.test.js
+
+> openclaw-enhance@0.1.0 build
+> tsc && npm run copy:json
+
+> openclaw-enhance@0.1.0 copy:json
+> cp extensions/openclaw-enhance-runtime/package.json dist/extensions/openclaw-enhance-runtime/ && cp extensions/openclaw-enhance-runtime/openclaw.plugin.json dist/extensions/openclaw-enhance-runtime/
+
+[oe:runtime-bridge] [info] Tracked spawn: task_test_123 (oe-orchestrator) [medium] project=test-project
+[oe:runtime-bridge] [warn] Spawn event missing task_id enrichment
+[oe:runtime-bridge] [info] Tracked spawn: task_test_123 (oe-orchestrator) [short] project=test-project
+[oe:runtime-bridge] [info] Tracked spawn: task_test_123 (oe-orchestrator) [medium] project=test-project
+[oe:runtime-bridge] [info] Completed task: task_test_123
+[oe:runtime-bridge] [warn] Attempted to complete unknown task: nonexistent
+[oe:runtime-bridge] [info] Tracked spawn: task_test_123 (oe-orchestrator) [medium] project=test-project
+[oe:runtime-bridge] [info] Configuration updated: {"enabled":true,"namespace":"oe","logLevel":"debug"}
+[oe:runtime-bridge] [info] Tracked spawn: task_001 (oe-orchestrator) [short] project=project-a
+[oe:runtime-bridge] [info] Tracked spawn: task_002 (oe-searcher) [long] project=project-b
+[oe:runtime-bridge] [info] Tracked spawn: task_abc123_xyz789 (oe-orchestrator) [medium] project=my-project
+▶ RuntimeBridge
+  ▶ constructor
+    ✔ should create with default config (0.205375ms)
+    ✔ should create with custom config (0.050041ms)
+  ✔ constructor (0.46825ms)
+  ▶ createRuntimeBridge
+    ✔ should create bridge with factory function (0.067333ms)
+  ✔ createRuntimeBridge (0.10325ms)
+  ▶ handleSpawnEvent
+    ✔ should process enriched spawn event (0.967666ms)
+    ✔ should reject event when bridge is disabled (0.072ms)
+    ✔ should warn on missing task_id enrichment (0.073166ms)
+  ✔ handleSpawnEvent (1.196083ms)
+  ▶ getTask
+    ✔ should retrieve tracked task by ID (0.079042ms)
+    ✔ should return undefined for unknown task (0.033541ms)
+  ✔ getTask (0.181333ms)
+  ▶ completeTask
+    ✔ should remove completed task from tracking (0.076875ms)
+    ✔ should return false for unknown task (0.060875ms)
+  ✔ completeTask (0.171292ms)
+  ▶ isDuplicate
+    ✔ should detect duplicate based on dedupe key (0.06175ms)
+  ✔ isDuplicate (0.080875ms)
+  ▶ updateConfig
+    ✔ should update configuration partially (0.055459ms)
+  ✔ updateConfig (0.07175ms)
+  ▶ sanitizeEnhanceOutwardText
+    ✔ should strip known leaked internal markers from outward text (0.09075ms)
+    ✔ should preserve ordinary prose unchanged (0.01975ms)
+  ✔ sanitizeEnhanceOutwardText (0.13425ms)
+  ▶ getActiveTasks
+    ✔ should return empty array when no tasks (0.237708ms)
+    ✔ should return all active tasks (0.09375ms)
+  ✔ getActiveTasks (0.354834ms)
+✔ RuntimeBridge (3.032584ms)
+▶ oe-runtime tool gate (index.ts)
+  ▶ runId-based session identification
+    ✔ should only track valid main session keys (0.556334ms)
+    ✔ should treat plain main sessionKey as main and block forbidden tools (0.059916ms)
+    ✔ should not block when runId is unknown (not registered as main) (0.039959ms)
+    ✔ should not block when runId is undefined (0.04325ms)
+    ✔ should block forbidden tool when runId is registered as main (0.052583ms)
+    ✔ should fail closed for a known main-session run when the handler throws (0.094042ms)
+    ✔ should allow subagent runId to use forbidden tools (0.04075ms)
+  ✔ runId-based session identification (0.956291ms)
+  ▶ Task 4: session identity guardrails
+    ✔ should reject ambiguous object-shaped session keys as unsafe instead of silently falling back (0.06575ms)
+    ✔ should preserve canonical main session recognition for 'main' and 'agent:main:*' forms (0.082917ms)
+  ✔ Task 4: session identity guardrails (0.180583ms)
+  ▶ fail-closed behavior
+    ✔ should block when handler encounters unexpected error (0.052625ms)
+  ✔ fail-closed behavior (0.065542ms)
+  ▶ blockReason routing guidance
+    ✔ should recommend oe-orchestrator in blockReason (0.064709ms)
+    ✔ should recommend oe-orchestrator in fail-closed blockReason (0.054208ms)
+  ✔ blockReason routing guidance (0.137333ms)
+  ▶ sessions_spawn routing metadata
+    ✔ should inspect agentId rather than agent when warning on non-orchestrator spawn targets (0.046875ms)
+    ✔ should warn when sessions_spawn agentId is not oe-orchestrator (0.031583ms)
+  ✔ sessions_spawn routing metadata (0.101792ms)
+  ▶ forbidden tools enforcement
+    ✔ should block all forbidden tools in main session (0.081917ms)
+    ✔ should allow non-forbidden tools in main session (0.042958ms)
+  ✔ forbidden tools enforcement (0.146042ms)
+  ▶ Task 12: Sanitizer integration at enhance-controlled outward boundaries
+    ✔ should sanitize blockReason when blocking forbidden tools (0.073125ms)
+    ✔ should sanitize fail-closed blockReason (0.0585ms)
+  ✔ Task 12: Sanitizer integration at enhance-controlled outward boundaries (0.456083ms)
+✔ oe-runtime tool gate (index.ts) (2.129792ms)
+▶ Integration: Hook and Bridge
+  ✔ should handle events from oe-subagent-spawn-enrich hook format (0.06125ms)
+  ✔ should reject or mark ambiguous restart ownership unsafe instead of silently falling back (0.369959ms)
+  ✔ should keep dedupe identity distinct for channel-distinct ownership on the same task payload (0.454ms)
+✔ Integration: Hook and Bridge (0.911667ms)
+▶ Task 14: Cross-channel collision blocking after restart
+  ✔ should return unsafe: true for cross-channel ambiguous restart (0.054583ms)
+  ✔ should NOT mark unsafe for valid same-channel ownership with matching epoch (0.136584ms)
+  ✔ should mark unsafe when ownership metadata is missing (0.027458ms)
+  ✔ should allow fresh session without ownership when no restart_epoch (0.101541ms)
+✔ Task 14: Cross-channel collision blocking after restart (0.347416ms)
+ℹ tests 41
+ℹ suites 20
+ℹ pass 41
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50.415917
+```
+
+**STATUS: PASS** (41 tests passed across 20 suites)
+
+---
+
+## 3. TypeScript Typecheck (npm run typecheck)
+
+Command:
+```bash
+npm run typecheck
+```
+
+Output:
+```
+> openclaw-enhance@0.1.0 typecheck
+> tsc --noEmit
+```
+
+(No errors, empty output means success)
+
+**STATUS: PASS**
+
+---
+
+## 4. Docs Check (python -m openclaw_enhance.cli docs-check)
+
+Command:
+```bash
+python -m openclaw_enhance.cli docs-check
+```
+
+Output:
+```
+Docs check passed.
+```
+
+**STATUS: PASS**
+
+---
+
+## 5. Python Typecheck (python -m py_compile)
+
+Command:
+```bash
+python -m py_compile src/openclaw_enhance/**/*.py 2>&1
+```
+
+Output:
+```
+(null - no errors)
+```
+
+**STATUS: PASS**
+
+---
+
+## SUMMARY
+
+| Command | Status |
+|---------|--------|
+| pytest | PASS (19 passed) |
+| npm test | PASS (41 passed) |
+| npm run typecheck | PASS |
+| python -m openclaw_enhance.cli docs-check | PASS |
+| python -m py_compile | PASS |
+
+**ALL VERIFICATION COMMANDS PASSED**

@@ -1,14 +1,18 @@
 ---
 name: oe-timeout-state-sync
-version: 1.0.0
+version: 2.0.0
 description: Synchronizes timeout state between main session and runtime storage. Triggered when tasks exceed ETA or sessions appear hung.
 user-invocable: false
+skill-type: utility
+tags: []
 allowed-tools: "Read, Write, Bash"
 metadata:
   routing_heuristics:
     max_toolcalls: 1
     max_duration_minutes: 5
     sync_interval_seconds: 60
+  architecture_version: "2.0"
+  contract: "prompt+model for sessions_spawn (utility skill - no routing)"
 ---
 
 # Timeout State Sync

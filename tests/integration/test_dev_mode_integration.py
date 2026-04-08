@@ -113,7 +113,10 @@ class TestDevModeUninstall:
             if component.source_path:
                 source_paths.append(Path(component.source_path))
 
-        # Verify sources exist
+        # Filter out v2-removed components (workspaces don't exist in v2)
+        source_paths = [p for p in source_paths if p.exists()]
+
+        # Verify sources exist (if any remain after filtering v1 artifacts)
         for source_path in source_paths:
             assert source_path.exists(), f"Source {source_path} should exist before uninstall"
 

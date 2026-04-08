@@ -9,7 +9,7 @@ from openclaw_enhance.install.manifest import load_manifest
 
 MAIN_SKILL_IDS = [
     "oe-eta-estimator",
-    "oe-toolcall-router",
+    "oe-tag-router",
     "oe-timeout-state-sync",
 ]
 

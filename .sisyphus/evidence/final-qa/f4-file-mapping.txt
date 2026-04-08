@@ -1,0 +1,159 @@
+================================================================================
+F4: SCOPE FIDELITY CHECK - FILE MAPPING
+Plan: session-isolation-restart-guardrails
+Generated: Scope Fidelity Check Task (F4)
+================================================================================
+
+SUMMARY
+-------
+Total changed files: 9
+Planned implementation files found: 0
+Unaccounted files: 5 (from unrelated plan)
+Expected but missing: 7 core implementation files
+
+================================================================================
+FILE-BY-FILE ANALYSIS
+================================================================================
+
+PLANNED FILES (Expected in diff but NOT FOUND):
+------------------------------------------------
+[MISSING] src/openclaw_enhance/runtime/schema.py
+          Expected: restart_epoch, ownership_contract fields
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] src/openclaw_enhance/runtime/project_state.py
+          Expected: ownership binding helpers
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] hooks/oe-subagent-spawn-enrich/handler.ts
+          Expected: validateOwnership, dedupe logic
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] extensions/openclaw-enhance-runtime/index.ts
+          Expected: isMainSession tightened
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] extensions/openclaw-enhance-runtime/src/runtime-bridge.ts
+          Expected: sanitizeEnhanceOutwardText
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] src/openclaw_enhance/cleanup.py
+          Expected: ownership-aware classification
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] src/openclaw_enhance/governance/restart.py
+          Expected: restart epoch handling
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] tests/integration/test_runtime_project_state.py
+          Expected: Tests for restart collision blocking
+          Status: NOT MODIFIED - Implementation not started
+
+[MISSING] tests/integration/test_spawn_event_contract.py
+          Expected: Tests for spawn ownership validation
+          Status: NOT MODIFIED - Implementation not started
+
+ACTUAL CHANGED FILES (from git diff --name-status):
+----------------------------------------------------
+[UNACCOUNTED] .sisyphus/boulder.json
+          Type: Session state tracking
+          Related to plan: NO - Session metadata, not implementation
+          Note: Boulder tracks current session pointer
+
+[UNACCOUNTED] .sisyphus/evidence/task-4-fallback-default.txt
+          Type: Evidence file from DIFFERENT plan
+          Related to plan: NO - Belongs to fix-main-orch-opencode-chain
+          Note: Cross-contamination from unrelated work
+
+[UNACCOUNTED] .sisyphus/evidence/task-4-full-context.txt
+          Type: Evidence file from DIFFERENT plan
+          Related to plan: NO - Belongs to fix-main-orch-opencode-chain
+          Note: Cross-contamination from unrelated work
+
+[UNACCOUNTED] .sisyphus/notepads/fix-main-orch-opencode-chain/decisions.md
+          Type: Notepad from DIFFERENT plan
+          Related to plan: NO - Belongs to fix-main-orch-opencode-chain
+          Note: Cross-contamination from unrelated work
+
+[UNACCOUNTED] .sisyphus/notepads/fix-main-orch-opencode-chain/issues.md
+          Type: Notepad from DIFFERENT plan
+          Related to plan: NO - Belongs to fix-main-orch-opencode-chain
+          Note: Cross-contamination from unrelated work
+
+[UNACCOUNTED] .sisyphus/notepads/fix-main-orch-opencode-chain/learnings.md
+          Type: Notepad from DIFFERENT plan
+          Related to plan: NO - Belongs to fix-main-orch-opencode-chain
+          Note: Cross-contamination from unrelated work
+
+[UNACCOUNTED] .sisyphus/plans/fix-main-orch-opencode-chain.md
+          Type: Different plan file
+          Related to plan: NO - Entirely separate plan
+          Note: Cross-contamination from unrelated work
+
+[ACCOUNTED]   .sisyphus/plans/session-isolation-restart-guardrails.md
+          Type: This plan file itself
+          Related to plan: YES - The plan document
+          Note: Plan file modifications (expected during planning)
+
+[ACCOUNTED]   AGENTS.md
+          Type: Documentation
+          Related to plan: PARTIAL - General project docs, may need updates
+          Note: If guardrails change agent behavior, docs should reflect this
+
+================================================================================
+SCOPE DEVIATION ANALYSIS
+================================================================================
+
+CRITICAL FINDINGS:
+------------------
+1. ZERO implementation files modified
+   - All 7 core implementation files from the plan are unchanged
+   - This indicates implementation has NOT started for this plan
+
+2. Cross-plan contamination detected
+   - 5 files from fix-main-orch-opencode-chain plan mixed into diff
+   - Evidence files, notepads, and plan file from unrelated work
+   - This violates isolation between separate plans
+
+3. Evidence files missing for this plan
+   - No evidence files for tasks 1-17 of session-isolation-restart-guardrails
+   - Only contains evidence from unrelated fix-main-orch-opencode-chain
+
+PLANNED FILES CHECKLIST:
+------------------------
+[ ] src/openclaw_enhance/runtime/schema.py
+[ ] src/openclaw_enhance/runtime/project_state.py
+[ ] hooks/oe-subagent-spawn-enrich/handler.ts
+[ ] extensions/openclaw-enhance-runtime/index.ts
+[ ] extensions/openclaw-enhance-runtime/src/runtime-bridge.ts
+[ ] src/openclaw_enhance/cleanup.py
+[ ] src/openclaw_enhance/governance/restart.py
+[ ] tests/integration/test_runtime_project_state.py
+[ ] tests/integration/test_spawn_event_contract.py
+[ ] PLAYBOOK.md (documentation update)
+
+================================================================================
+VERDICT: REJECT
+================================================================================
+
+REASON: Implementation has not started. The diff contains only:
+        - Session state files (.sisyphus/boulder.json)
+        - Cross-contamination from unrelated plan (fix-main-orch-opencode-chain)
+        - The plan file itself
+        - Minor AGENTS.md update
+
+        NONE of the 7+ planned implementation files have been modified.
+        This scope fidelity check cannot pass until implementation tasks
+        (1-17) are completed and their files appear in the diff.
+
+RECOMMENDED ACTION:
+-------------------
+1. Execute implementation tasks 1-17 from the plan
+2. Ensure all planned files are modified
+3. Remove/fix cross-contamination from fix-main-orch-opencode-chain
+4. Create evidence files for each task
+5. Re-run F4 scope fidelity check after implementation complete
+
+================================================================================
+END OF FILE MAPPING REPORT
+================================================================================

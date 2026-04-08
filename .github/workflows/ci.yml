@@ -99,9 +99,6 @@ jobs:
       - name: Smoke test - Render skill
         run: openclaw-enhance render-skill oe-eta-estimator
 
-      - name: Smoke test - Render workspace
-        run: openclaw-enhance render-workspace oe-orchestrator
-
       - name: Smoke test - Render hook
         run: openclaw-enhance render-hook oe-subagent-spawn-enrich
 

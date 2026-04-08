@@ -1,0 +1,1 @@
+Running the existing Node test surface via `runtime-bridge.test.ts` currently includes unrelated red sanitizer specs (`sanitizeEnhanceOutwardText` is still undefined), so Task 3 verification should read the new failures by test name rather than expecting a clean 2-failure-only run.

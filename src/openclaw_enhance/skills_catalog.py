@@ -46,10 +46,10 @@ SKILLS_REGISTRY: list[SkillMetadata] = [
         },
     ),
     SkillMetadata(
-        name="oe-toolcall-router",
+        name="oe-tag-router",
         description=(
-            "MANDATORY router. Main session is a ROUTER ONLY - "
-            "all execution MUST go through sessions_spawn."
+            "MANDATORY tag-based router for v2 architecture. "
+            "Analyzes task content and assigns tags for routing to specialized agents."
         ),
         version="2.0.0",
         user_invocable=True,

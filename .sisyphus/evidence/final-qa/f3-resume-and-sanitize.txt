@@ -1,0 +1,41 @@
+# F3 Scenarios 2 & 3: Same-Channel Resume and Sanitization - Evidence
+
+## Scenario 2: Same-Channel Resume
+
+### pytest results
+Command: pytest tests/integration/test_runtime_project_state.py::test_same_channel_resume_after_revalidation -v
+
+Status: PASSED
+
+Output:
+```
+tests/integration/test_runtime_project_state.py::test_same_channel_resume_after_revalidation PASSED [100%]
+1 passed, 4 warnings in 0.02s
+```
+
+## Scenario 3: Sanitization Check
+
+### npm test results
+Command: npm test -- --test-name-pattern "sanitize"
+
+Status: 41 pass, 0 fail
+
+Output:
+```
+▶ sanitizeEnhanceOutwardText
+  ✔ should strip known leaked internal markers from outward text (0.098334ms)
+  ✔ should preserve ordinary prose unchanged (0.024458ms)
+✔ sanitizeEnhanceOutwardText (0.148959ms)
+
+▶ Task 12: Sanitizer integration at enhance-controlled outward boundaries
+  ✔ should sanitize blockReason when blocking forbidden tools (0.089833ms)
+  ✔ should sanitize fail-closed blockReason (0.082583ms)
+✔ Task 12: Sanitizer integration at enhance-controlled outward boundaries (0.502875ms)
+
+ℹ tests 41
+ℹ suites 20
+ℹ pass 41
+ℹ fail 0
+```
+
+## VERDICT: PASS

@@ -41,8 +41,33 @@ def cli() -> None:
     is_flag=True,
     help="Development mode: use symlinks instead of copying files (macOS/Linux only)",
 )
-def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> None:
-    """Install OpenClaw hooks and extensions."""
+@click.option(
+    "--target",
+    type=click.Choice(["main", "global"]),
+    default=None,
+    help="Install skills to 'main' workspace or 'global' location",
+)
+@click.option(
+    "--skill",
+    "skill_name",
+    default=None,
+    help="Install specific skill by name (requires --target)",
+)
+def install(
+    openclaw_home: Path,
+    force: bool,
+    dry_run: bool,
+    dev_mode: bool,
+    target: str | None,
+    skill_name: str | None,
+) -> None:
+    """Install OpenClaw hooks, extensions, and optionally skills."""
+    # Handle skill installation with target
+    if target is not None:
+        _install_skills(target, skill_name, dry_run)
+        return
+
+    # Original hook/extension installation behavior
     import openclaw_enhance.install as install_module
 
     # Run preflight checks
@@ -96,6 +121,135 @@ def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> 
         raise click.ClickException(str(exc)) from exc
 
 
+def _inject_soul_to_main() -> None:
+    """Inject SOUL content into main's SOUL.md file."""
+    openclaw_home = Path.home() / ".openclaw"
+    soul_file = openclaw_home / "workspace" / "main" / "SOUL.md"
+
+    soul_content = """<!-- oe-soul-start -->
+## Main Agent SOUL
+
+You are the orchestration layer. Your rules:
+1. NEVER directly execute large tasks (>5 tool calls or >15 min)
+2. ALL complex tasks MUST be delegated via sessions_spawn
+3. You only do: analyze → tag → spawn → synthesize
+4. ETA must be announced upfront
+<!-- oe-soul-end -->
+"""
+
+    # Create parent directory if it doesn't exist
+    soul_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Read existing content or start fresh
+    if soul_file.exists():
+        content = soul_file.read_text(encoding="utf-8")
+    else:
+        content = ""
+
+    # Check if markers already exist
+    if "<!-- oe-soul-start -->" in content and "<!-- oe-soul-end -->" in content:
+        click.echo(f"SOUL already present in {soul_file}")
+        return
+
+    # Inject SOUL content
+    if content:
+        new_content = content.rstrip() + "\n\n" + soul_content
+    else:
+        new_content = soul_content
+
+    soul_file.write_text(new_content, encoding="utf-8")
+    click.echo(f"Injected SOUL into {soul_file}")
+
+
+def _remove_soul_from_main() -> None:
+    """Remove SOUL content from main's SOUL.md file."""
+    openclaw_home = Path.home() / ".openclaw"
+    soul_file = openclaw_home / "workspace" / "main" / "SOUL.md"
+
+    if not soul_file.exists():
+        click.echo(f"SOUL file does not exist: {soul_file}")
+        return
+
+    content = soul_file.read_text(encoding="utf-8")
+
+    # Check if markers exist
+    if "<!-- oe-soul-start -->" not in content or "<!-- oe-soul-end -->" not in content:
+        click.echo(f"No SOUL markers found in {soul_file}")
+        return
+
+    # Remove content between markers
+    lines = content.split("\n")
+    result_lines = []
+    skip = False
+
+    for line in lines:
+        if "<!-- oe-soul-start -->" in line:
+            skip = True
+            result_lines.append(line)
+        elif "<!-- oe-soul-end -->" in line:
+            skip = False
+            result_lines.append(line)
+        elif not skip:
+            result_lines.append(line)
+
+    new_content = "\n".join(result_lines).rstrip() + "\n"
+
+    soul_file.write_text(new_content, encoding="utf-8")
+    click.echo(f"Removed SOUL from {soul_file}")
+
+
+def _install_skills(target: str, skill_name: str | None, dry_run: bool) -> None:
+    from openclaw_enhance.manifest import add_skill, load_manifest
+
+    openclaw_home = Path.home() / ".openclaw"
+
+    if target == "main":
+        skills_dir = openclaw_home / "workspace" / "main" / "skills"
+    else:
+        skills_dir = openclaw_home / "openclaw-enhance" / "skills"
+
+    skills_dir.mkdir(parents=True, exist_ok=True)
+
+    skills_source = Path(__file__).parent.parent.parent / "skills"
+
+    if not skills_source.exists():
+        raise click.ClickException(f"Skills source directory not found: {skills_source}")
+
+    available_skills = [
+        d.name for d in skills_source.iterdir() if d.is_dir() and (d / "SKILL.md").exists()
+    ]
+
+    skills_to_install = [skill_name] if skill_name else available_skills
+
+    for skill in skills_to_install:
+        if skill not in available_skills:
+            raise click.ClickException(
+                f"Skill not found: {skill}. Available: {', '.join(available_skills)}"
+            )
+
+        source_dir = skills_source / skill
+        target_dir = skills_dir / skill
+
+        if dry_run:
+            click.echo(f"[dry-run] Would install skill '{skill}' to {target_dir}")
+        else:
+            import shutil
+
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            shutil.copytree(source_dir, target_dir)
+
+            location = str(target_dir)
+            add_skill(name=skill, location=location)
+            click.echo(f"Installed skill '{skill}' to {location}")
+
+    manifest = load_manifest()
+    click.echo(f"\nManifest updated. Installed skills: {list(manifest.get('skills', {}).keys())}")
+
+    if target == "main" and not dry_run:
+        _inject_soul_to_main()
+
+
 @cli.command()
 @click.option(
     "--openclaw-home",
@@ -108,8 +262,18 @@ def install(openclaw_home: Path, force: bool, dry_run: bool, dev_mode: bool) -> 
     is_flag=True,
     help="Force uninstall even if checks fail",
 )
-def uninstall(openclaw_home: Path | None, force: bool) -> None:
-    """Uninstall OpenClaw hooks and extensions."""
+@click.option(
+    "--target",
+    type=click.Choice(["main", "global"]),
+    default=None,
+    help="Remove skills from 'main' workspace or 'global' location",
+)
+def uninstall(openclaw_home: Path | None, force: bool, target: str | None) -> None:
+    """Uninstall OpenClaw hooks, extensions, and optionally skills."""
+    if target is not None:
+        _uninstall_skills(target)
+        return
+
     from openclaw_enhance.install import uninstall as do_uninstall
 
     try:
@@ -128,6 +292,40 @@ def uninstall(openclaw_home: Path | None, force: bool) -> None:
 
     except Exception as exc:
         raise click.ClickException(f"Uninstall failed: {exc}") from exc
+
+
+def _uninstall_skills(target: str) -> None:
+    if target == "main":
+        _remove_soul_from_main()
+
+    from openclaw_enhance.manifest import load_manifest, remove_skill
+
+    openclaw_home = Path.home() / ".openclaw"
+
+    if target == "main":
+        skills_dir = openclaw_home / "workspace" / "main" / "skills"
+    else:
+        skills_dir = openclaw_home / "openclaw-enhance" / "skills"
+
+    manifest = load_manifest()
+    skills = manifest.get("skills", {})
+
+    removed = []
+    for name, info in list(skills.items()):
+        if info.get("location", "").startswith(str(skills_dir)):
+            import shutil
+
+            skill_path = Path(info["location"])
+            if skill_path.exists():
+                shutil.rmtree(skill_path)
+
+            remove_skill(name)
+            removed.append(name)
+
+    if removed:
+        click.echo(f"Removed skills from {skills_dir}: {', '.join(removed)}")
+    else:
+        click.echo(f"No skills found at {skills_dir}")
 
 
 @cli.command()
@@ -155,11 +353,13 @@ def doctor(openclaw_home: Path) -> None:
 def status(output_json: bool) -> None:
     """Show current OpenClaw installation status."""
     from openclaw_enhance.install import get_install_status
+    from openclaw_enhance.manifest import load_manifest
 
     install_status = get_install_status()
+    manifest = load_manifest()
 
     if output_json:
-        click.echo(json.dumps(install_status, indent=2))
+        click.echo(json.dumps({"install_status": install_status, "manifest": manifest}, indent=2))
     else:
         click.echo(f"Installation Path: {install_status['install_path']}")
         click.echo(f"Installed: {'Yes' if install_status['installed'] else 'No'}")
@@ -173,8 +373,19 @@ def status(output_json: bool) -> None:
                 for component in install_status["components"]:
                     click.echo(f"  - {component}")
 
+        if manifest.get("skills"):
+            click.echo(f"\nSkills ({len(manifest['skills'])}):")
+            for name, info in manifest["skills"].items():
+                click.echo(f"  - {name}: {info.get('location', 'unknown')}")
+
+        if manifest.get("hooks"):
+            click.echo(f"\nHooks ({len(manifest['hooks'])}):")
+            for name, info in manifest["hooks"].items():
+                enabled = "enabled" if info.get("enabled") else "disabled"
+                click.echo(f"  - {name}: {enabled}")
+
         if install_status["locked"]:
-            click.echo("Status: Locked")
+            click.echo("\nStatus: Locked")
             if install_status.get("lock_info"):
                 lock_info = install_status["lock_info"]
                 click.echo(f"  Operation: {lock_info['operation']}")
@@ -857,9 +1068,12 @@ def docs_check() -> None:
 
     from openclaw_enhance.agent_catalog import validate_workspace_manifests
 
-    manifest_errors = validate_workspace_manifests(project_root)
-    if manifest_errors:
-        errors.extend(manifest_errors)
+    # Skip workspace validation in v2 - no workspaces directory
+    workspaces_path = project_root / "workspaces"
+    if workspaces_path.exists():
+        manifest_errors = validate_workspace_manifests(project_root)
+        if manifest_errors:
+            errors.extend(manifest_errors)
 
     if errors:
         for err in errors:

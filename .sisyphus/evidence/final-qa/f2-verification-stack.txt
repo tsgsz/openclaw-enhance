@@ -1,0 +1,49 @@
+# F2 Verification Stack Results
+
+## pytest tests/unit -q --tb=short
+```
+393 passed, 64 warnings in 33.45s
+```
+STATUS: PASS
+
+## pytest tests/integration -q --tb=short
+```
+3 failed, 376 passed, 6117 warnings in 41.67s
+```
+STATUS: FAIL (3 failures)
+
+FAILURES:
+- test_uninstall_removes_symlinks_not_sources (TestDevModeUninstall)
+- test_uninstall_after_dev_mode_is_symmetric (TestDevModeUninstall)
+- test_install_uninstall_symmetry (TestInstallUninstallSymmetry)
+
+All three failures are related to uninstall leaving behind `model-config.json` file.
+
+## npm test
+```
+> openclaw-enhance@0.1.0 test
+> npm run build && node --test dist/extensions/openclaw-enhance-runtime/src/runtime-bridge.test.js
+
+ℹ tests 41
+ℹ suites 20
+ℹ pass 41
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.525584
+```
+STATUS: PASS
+
+## npm run typecheck
+```
+> openclaw-enhance@0.1.0 typecheck
+> tsc --noEmit
+```
+STATUS: PASS
+
+## python -m openclaw_enhance.cli docs-check
+```
+Docs check passed.
+```
+STATUS: PASS

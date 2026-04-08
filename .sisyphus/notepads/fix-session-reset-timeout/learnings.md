@@ -1,0 +1,3 @@
+- Backed up `~/.openclaw/openclaw.json` to `~/.openclaw/openclaw.json.bak.session-timeout` before editing.
+- Updated only `session.reset.idleMinutes` from 10 to 120 using a JSON parse/write cycle to preserve structure.
+- Verified live config with `jq '.session.reset.idleMinutes'` and full JSON validity with `jq . ... > /dev/null`.

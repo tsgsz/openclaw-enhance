@@ -59,11 +59,12 @@ class TestStatusCommandCLI:
 
         data = json.loads(result.output)
 
-        assert "install_path" in data
-        assert "installed" in data
-        assert "version" in data
-        assert "components" in data
-        assert "locked" in data
+        assert "install_status" in data
+        assert "install_path" in data["install_status"]
+        assert "installed" in data["install_status"]
+        assert "version" in data["install_status"]
+        assert "components" in data["install_status"]
+        assert "locked" in data["install_status"]
 
     def test_status_json_installed_is_boolean(self):
         """Status JSON 'installed' field should be boolean."""
@@ -72,7 +73,7 @@ class TestStatusCommandCLI:
 
         data = json.loads(result.output)
 
-        assert isinstance(data["installed"], bool)
+        assert isinstance(data["install_status"]["installed"], bool)
 
     def test_status_json_locked_is_boolean(self):
         """Status JSON 'locked' field should be boolean."""
@@ -81,7 +82,7 @@ class TestStatusCommandCLI:
 
         data = json.loads(result.output)
 
-        assert isinstance(data["locked"], bool)
+        assert isinstance(data["install_status"]["locked"], bool)
 
     def test_status_json_components_is_list(self):
         """Status JSON 'components' field should be a list."""
@@ -90,7 +91,7 @@ class TestStatusCommandCLI:
 
         data = json.loads(result.output)
 
-        assert isinstance(data["components"], list)
+        assert isinstance(data["install_status"]["components"], list)
 
 
 class TestStatusCommandSubprocess:
@@ -117,7 +118,8 @@ class TestStatusCommandSubprocess:
         assert result.returncode == 0
 
         data = json.loads(result.stdout)
-        assert "install_path" in data
+        assert "install_status" in data
+        assert "install_path" in data["install_status"]
 
 
 class TestStatusWithInstall:
@@ -188,7 +190,7 @@ class TestStatusWithInstall:
 
         status = json.loads(result.output)
         for skill_id in MAIN_SKILL_IDS:
-            assert f"main-skill:{skill_id}" in status["components"]
+            assert f"main-skill:{skill_id}" in status["install_status"]["components"]
 
     def test_status_version_matches_install(
         self,
@@ -418,6 +420,6 @@ class TestStatusConsistency:
         cli_status = json.loads(result.output)
 
         # Results should match
-        assert prog_status["installed"] == cli_status["installed"]
-        assert prog_status["version"] == cli_status["version"]
-        assert len(prog_status["components"]) == len(cli_status["components"])
+        assert prog_status["installed"] == cli_status["install_status"]["installed"]
+        assert prog_status["version"] == cli_status["install_status"]["version"]
+        assert len(prog_status["components"]) == len(cli_status["install_status"]["components"])

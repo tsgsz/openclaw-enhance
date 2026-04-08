@@ -1,7 +1,7 @@
 ---
 name: oe-subagent-spawn-enrich
-description: Enrich and normalize subagent spawn events for OpenClaw Enhance.
-metadata: { "openclaw": { "emoji": "🔗", "events": ["subagent_spawning"] } }
+description: Enrich and normalize subagent spawn events for OpenClaw Enhance v2.
+metadata: { "openclaw": { "emoji": "🔗", "events": ["subagent_spawning"] }, "version": "2.0.0" }
 ---
 
 # oe-subagent-spawn-enrich
@@ -28,12 +28,20 @@ The hook adds the following fields to the spawn event:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `task_id` | string | Unique identifier for this task invocation |
+| `task_id` | string | UUID v4 format: `task_{8-4-4-4-12}` |
 | `project` | string | Resolved project identifier (canonical path or "default") |
 | `parent_session` | string | Parent session ID that initiated the spawn |
 | `eta_bucket` | string | Categorized ETA: "short" (<5min), "medium" (5-30min), "long" (>30min) |
-| `dedupe_key` | string | Deterministic key for duplicate detection |
+| `dedupe_key` | string | Deterministic hash for duplicate detection |
 | `project_context` | object | Full project metadata (see below) |
+
+### `task_id` Format (v2)
+
+```
+task_XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+```
+
+UUID v4 format generated with proper version and variant bits.
 
 ### `project_context` Shape
 

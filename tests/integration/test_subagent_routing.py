@@ -29,28 +29,24 @@ class TestSkillContractRendering:
         assert "Human-Intuitive Expectation Protocol" in contract
 
     def test_render_toolcall_router_contract(self):
-        """Should render oe-toolcall-router contract."""
-        contract = render_skill_contract("oe-toolcall-router")
+        """Should render oe-tag-router contract."""
+        contract = render_skill_contract("oe-tag-router")
 
-        assert "oe-toolcall-router" in contract
-        assert "MANDATORY router" in contract
+        assert "oe-tag-router" in contract
+        assert "MANDATORY tag-based" in contract
         assert "ROUTER ONLY" in contract
 
-    def test_toolcall_router_contract_includes_issue9_heavy_research_example(self):
-        contract = render_skill_contract("oe-toolcall-router")
-        assert "issue #9" in contract.lower()
-        assert "ppt" in contract.lower()
-        assert "traceable data" in contract.lower()
-        assert '"agentId": "oe-orchestrator"' in contract
-
-    def test_toolcall_router_contract_preserves_native_execution_invariants(self):
-        contract = render_skill_contract("oe-toolcall-router")
+    def test_tag_router_contract_has_v2_content(self):
+        contract = render_skill_contract("oe-tag-router")
+        assert "tag-based" in contract.lower()
         assert "sessions_spawn" in contract
-        assert "no python wrappers" in contract.lower()
-        assert (
-            "do not route main directly to workers" in contract.lower()
-            or "oe-orchestrator" in contract
-        )
+        assert "prompt" in contract.lower()
+        assert "model" in contract.lower()
+
+    def test_tag_router_contract_uses_sessions_spawn(self):
+        contract = render_skill_contract("oe-tag-router")
+        assert "sessions_spawn" in contract
+        assert "router only" in contract.lower()
 
     def test_render_timeout_state_sync_contract(self):
         """Should render oe-timeout-state-sync contract."""
@@ -261,7 +257,7 @@ class TestSkillRegistryIntegration:
 
     def test_toolcall_router_has_escalation_threshold(self):
         """Toolcall router should have escalation threshold in heuristics."""
-        router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-toolcall-router")
+        router_skill = next(s for s in SKILLS_REGISTRY if s.name == "oe-tag-router")
         assert "escalation_threshold" in router_skill.routing_heuristics
         assert router_skill.routing_heuristics["escalation_threshold"] == 0
 
