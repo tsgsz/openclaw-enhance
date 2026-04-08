@@ -20,7 +20,7 @@ def load_manifest() -> dict:
     if not MANIFEST_PATH.exists():
         return {}
     try:
-        return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
     except (json.JSONDecodeError, OSError):
         return {}
 

@@ -32,7 +32,7 @@ def _get_openclaw_config() -> dict[str, Any]:
     config_path = Path.home() / ".openclaw" / "openclaw.json"
     if not config_path.exists():
         return {}
-    return json.loads(config_path.read_text(encoding="utf-8"))
+    return json.loads(config_path.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
 
 
 def get_openclaw_models() -> list[dict[str, Any]]:
