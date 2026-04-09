@@ -1,6 +1,7 @@
 """Tests for development mode install functionality."""
 
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 from openclaw_enhance.install.installer import _sync_workspaces, preflight_checks
@@ -55,104 +56,21 @@ class TestPreflightChecks:
 
 
 class TestSyncWorkspaces:
-    """Tests for _sync_workspaces with dev_mode."""
+    """Tests for _sync_workspaces - v2 returns empty list (no workspaces)."""
 
-    def test_sync_workspaces_creates_symlinks_in_dev_mode(self, tmp_path):
-        """Test that _sync_workspaces creates symlinks when dev_mode=True."""
-        # Create mock source workspace
-        source_workspace = tmp_path / "source" / "workspaces" / "test-workspace"
-        source_workspace.mkdir(parents=True)
-        (source_workspace / "AGENTS.md").write_text("# Test")
-
+    def test_sync_workspaces_returns_empty_list(self):
+        """v2: workspaces are archived, _sync_workspaces returns empty list."""
         manifest = InstallManifest()
-        target_root = tmp_path / "target"
+        target_root = Path("/tmp/test")
 
-        with patch(
-            "openclaw_enhance.install.installer.WORKSPACES_DIR",
-            source_workspace.parent,
-        ):
-            with patch("openclaw_enhance.install.installer.list_workspaces") as mock_list:
-                mock_list.return_value = ["test-workspace"]
+        components = _sync_workspaces(
+            manifest=manifest,
+            target_root=target_root,
+            dev_mode=True,
+        )
 
-                components = _sync_workspaces(
-                    manifest=manifest,
-                    target_root=target_root,
-                    dev_mode=True,
-                )
-
-        # Check that symlink was created
-        target_path = target_root / "workspaces" / "test-workspace"
-        assert target_path.is_symlink()
-        assert target_path.resolve() == source_workspace.resolve()
-
-        # Check component has is_symlink=True
-        assert len(components) == 1
-        assert components[0].is_symlink is True
-        assert components[0].name == "workspace:test-workspace"
-
-    def test_sync_workspaces_copies_in_production_mode(self, tmp_path):
-        """Test that _sync_workspaces copies files when dev_mode=False."""
-        # Create mock source workspace
-        source_workspace = tmp_path / "source" / "workspaces" / "test-workspace"
-        source_workspace.mkdir(parents=True)
-        (source_workspace / "AGENTS.md").write_text("# Test")
-
-        manifest = InstallManifest()
-        target_root = tmp_path / "target"
-
-        with patch(
-            "openclaw_enhance.install.installer.WORKSPACES_DIR",
-            source_workspace.parent,
-        ):
-            with patch("openclaw_enhance.install.installer.list_workspaces") as mock_list:
-                mock_list.return_value = ["test-workspace"]
-
-                components = _sync_workspaces(
-                    manifest=manifest,
-                    target_root=target_root,
-                    dev_mode=False,
-                )
-
-        # Check that directory was copied (not symlink)
-        target_path = target_root / "workspaces" / "test-workspace"
-        assert target_path.exists()
-        assert not target_path.is_symlink()
-        assert (target_path / "AGENTS.md").exists()
-
-        # Check component has is_symlink=False
-        assert len(components) == 1
-        assert components[0].is_symlink is False
-
-    def test_sync_workspaces_removes_existing_symlink(self, tmp_path):
-        """Test that _sync_workspaces removes existing symlink before creating new one."""
-        source_workspace = tmp_path / "source" / "workspaces" / "test-workspace"
-        source_workspace.mkdir(parents=True)
-        (source_workspace / "AGENTS.md").write_text("# Test")
-
-        # Create existing symlink
-        target_root = tmp_path / "target"
-        target_path = target_root / "workspaces" / "test-workspace"
-        target_path.parent.mkdir(parents=True)
-        target_path.symlink_to(tmp_path / "old-location")
-
-        manifest = InstallManifest()
-
-        with patch(
-            "openclaw_enhance.install.installer.WORKSPACES_DIR",
-            source_workspace.parent,
-        ):
-            with patch("openclaw_enhance.install.installer.list_workspaces") as mock_list:
-                mock_list.return_value = ["test-workspace"]
-
-                _sync_workspaces(
-                    manifest=manifest,
-                    target_root=target_root,
-                    dev_mode=True,
-                )
-
-        # Check that new symlink points to correct location
-        assert target_path.is_symlink()
-        assert target_path.resolve() == source_workspace.resolve()
+        assert components == []
+        assert len(manifest.components) == 0
 
 
 class TestComponentInstall:

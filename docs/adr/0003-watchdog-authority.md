@@ -2,21 +2,28 @@
 
 ## Status
 
-Accepted
+Accepted (Updated for v2)
+
+## v2 Architecture Note
+
+In v2, the watchdog functionality is implemented differently than v1:
+- **No oe-watchdog Agent**: The dedicated watchdog agent no longer exists
+- **Timeout Detection**: Implemented via `monitor_runtime` script and runtime state
+- **Session Monitoring**: Uses native OpenClaw mechanisms without dedicated agent
 
 ## Context
 
-The `oe-watchdog` agent monitors OpenClaw sessions for timeouts and handles related diagnostics. It requires certain privileges to be effective, but must not compromise system security or user data.
+The watchdog system monitors OpenClaw sessions for timeouts and handles related diagnostics. It must be effective without compromising system security or user data.
 
 Key questions:
-1. What actions can watchdog take on suspected timeouts?
+1. What actions can the watchdog system take on suspected timeouts?
 2. How does watchdog communicate with other sessions?
 3. What are the limits of watchdog's authority?
 4. How do we prevent watchdog from being a security risk?
 
 ## Decision
 
-We define strict **authority boundaries** for the watchdog agent:
+We define strict **authority boundaries** for the watchdog system:
 
 ### Permitted Actions
 
@@ -48,15 +55,15 @@ Monitor Script (1 min interval)
         │ Detects timeout suspicion
         ▼
 ┌───────────────────┐
-│ Runtime State     │ ◄─── Watchdog reads/writes
-│ (state.json)      │       only this file
+│ Runtime State      │ ◄─── Watchdog reads/writes
+│ (state.json)       │       only this file
 └───────────────────┘
         │
         │ timeout_suspected event
         ▼
 ┌───────────────────┐
-│ oe-watchdog       │ ◄─── Confirms/rejects suspicion
-│ (diagnosis)       │       Sends reminder if confirmed
+│ Timeout Detector   │ ◄─── Confirms/rejects suspicion
+│ (Runtime State)    │       Sends reminder if confirmed
 └───────────────────┘
         │
         │ Confirmed timeout
@@ -73,12 +80,12 @@ Monitor Script (1 min interval)
 - Writes `timeout_suspected` events
 - Never reads or modifies other state
 
-**Watchdog ↔ State** (read/write):
+**Detector ↔ State** (read/write):
 - Reads suspicion events
 - Updates status: `confirmed`, `rejected`, `cleared`
 - Writes diagnostic notes
 
-**Watchdog → Session** (notify only):
+**Detector → Session** (notify only):
 - Uses `session_send` to deliver reminders
 - Message contains: timeout duration, suggested actions
 - No commands or forced operations
@@ -114,7 +121,7 @@ Monitor Script (1 min interval)
 
 ### Security Controls
 
-1. **Read-only filesystem**: Watchdog workspace has limited filesystem access
+1. **Read-only filesystem**: Watchdog has limited filesystem access
 2. **Sandbox execution**: Runs in OpenClaw's sandbox environment
 3. **Audit logging**: All state modifications logged
 4. **No network access**: Cannot exfiltrate data
@@ -139,23 +146,16 @@ Monitor Script (1 min interval)
 
 ## Implementation Details
 
-### Watchdog Workspace
+### v2 Implementation
 
-Location: `workspaces/oe-watchdog/`
+Location: `src/openclaw_enhance/watchdog/`
 
-**AGENTS.md constraints**:
-```markdown
-## Authority
+**Components**:
+- `detector.py`: Timeout detection logic
+- `state_sync.py`: Runtime state synchronization
+- `monitor_runtime`: CLI entry point for monitoring
 
-- ✅ Read runtime state
-- ✅ Write timeout status
-- ✅ Send session notifications
-- ❌ Kill processes
-- ❌ Edit user repos
-- ❌ Modify non-owned config
-```
-
-**TOOLS.md restrictions**:
+**Constraints**:
 - Read access: `~/.openclaw/openclaw-enhance/state/`
 - Write access: Same directory only
 - No bash execution except for diagnostics
@@ -174,10 +174,10 @@ Location: `workspaces/oe-watchdog/`
            ┌─────────────────┐
            │  suspected      │
            └────────┬────────┘
-                    │ watchdog reads
+                    │ detector reads
                     ▼
            ┌─────────────────┐
-           │  watchdog       │
+           │  detector        │
            │  confirms?      │
            └────────┬────────┘
               yes /   \ no
@@ -222,11 +222,10 @@ Default thresholds in `runtime-state.json`:
 
 ## References
 
-- `workspaces/oe-watchdog/AGENTS.md`
-- `workspaces/oe-watchdog/TOOLS.md`
 - `src/openclaw_enhance/watchdog/detector.py`
-- `src/openclaw_enhance/watchdog/policy.py`
+- `src/openclaw_enhance/watchdog/state_sync.py`
+- `src/openclaw_enhance/monitor_runtime.py`
 
 ## Date
 
-2026-03-13
+2026-03-13 (Updated 2026-04-09 for v2)

@@ -4,24 +4,10 @@ from typing import Any
 
 OWNED_NAMESPACE = "openclawEnhance"
 
-OWNED_AGENT_SPECS: tuple[tuple[str, str], ...] = (
-    ("oe-orchestrator", "oe-orchestrator"),
-    ("oe-searcher", "oe-searcher"),
-    ("oe-syshelper", "oe-syshelper"),
-    ("oe-script_coder", "oe-script_coder"),
-    ("oe-watchdog", "oe-watchdog"),
-    ("oe-tool-recovery", "oe-tool-recovery"),
-    ("oe-specialist-ops", "oe-specialist-ops"),
-    ("oe-specialist-finance", "oe-specialist-finance"),
-    ("oe-specialist-km", "oe-specialist-km"),
-    ("oe-specialist-creative", "oe-specialist-creative"),
-    ("oe-specialist-game-design", "oe-specialist-game-design"),
-)
+# v2: No owned agent specs - agents no longer exist in v2 architecture
+OWNED_AGENT_SPECS: tuple[tuple[str, str], ...] = ()
 
-OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = (
-    "oe-subagent-spawn-enrich",
-    "oe-main-routing-gate",
-)
+OWNED_HOOK_ENTRY_IDS: tuple[str, ...] = ("oe-subagent-spawn-enrich",)
 
 OWNED_EXTENSION_ID = "oe-runtime"
 

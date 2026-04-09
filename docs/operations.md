@@ -2,208 +2,80 @@
 
 This guide covers day-to-day operations with `openclaw-enhance`.
 
+## v2 Architecture Overview
+
+**openclaw-enhance v2 采用纯 Skill 架构**：
+- **无工作区 (Workspaces)**：v1 的 agent 工作区已归档至 `~/.openclaw/openclaw-enhance/v1-archive/`
+- **无 Agent 注册**：不再使用 `oe-orchestrator`、`oe-searcher` 等托管 Agent
+- **纯 Skill 路由**：所有路由逻辑通过 Skills 实现，使用 OpenClaw 原生的 `sessions_spawn` 机制
+
 ## Overview
 
 Once installed, `openclaw-enhance` operates transparently:
 - **Main session** gets routing skills for task assessment
-- **Complex tasks** automatically escalate to the orchestrator
-- **Workers** handle specialized subtasks
+- **Complex tasks** automatically escalate via sessions_spawn
+- **Skills** handle specialized subtasks
 - **Watchdog** monitors for timeouts
 
 You interact with OpenClaw normally—the enhancement layer handles complexity behind the scenes.
 
-**How Routing Works**: The `oe-toolcall-router` skill (a markdown contract in your workspace's `skills/` directory) guides the decision to stay in main or escalate to the orchestrator. Escalation happens via native `sessions_spawn` to `oe-orchestrator`. 
+**How Routing Works**: The `oe-tag-router` skill guides routing decisions. Tasks are dispatched via native `sessions_spawn` to appropriate skills (oe-spawn-search, oe-spawn-coder, oe-spawn-ops).
 
-The system distinguishes four separate routing proofs:
-1. **Direct Orchestrator Runtime Surface** (`backfill-routing-yield`): Direct interaction with `oe-orchestrator` for complex planning. This is a runtime-surface-only proof.
-2. **Orchestrator Child-Dispatch Surface** (`backfill-orchestrator-spawn`): Strong proof that an already-running orchestrator actually spawned a child worker for a substantive task.
-3. **Recovery-Worker Runtime Surface** (`backfill-recovery-worker`): Specialized `oe-tool-recovery` worker for tool-failure diagnosis.
-4. **Main-Session Escalation Runtime Surface** (`backfill-main-escalation`): Automatic escalation from the main session to the orchestrator for heavy tasks.
+## Tag-Based Routing
 
-The orchestrator manages a **bounded orchestration loop**, dispatching workers through the native announce chain and using `sessions_yield` to synchronize across turns.
+The `oe-tag-router` skill implements tag-based routing:
 
-## Orchestrator Self-Execution Policy
+1. **Tag Extraction**: Analyze task to extract intent tags
+2. **Tag Matching**: Match tags to appropriate skills
+3. **Dispatch**: Spawn the matched skill via sessions_spawn
 
-The orchestrator is a dispatcher and MUST NOT silently absorb substantive worker-eligible work.
+### Routing Examples
 
-### Allowed Self-Execution Exceptions
+| Task Type | Tags | Skill |
+|-----------|------|-------|
+| Research, web search | `research`, `search`, `lookup` | oe-spawn-search |
+| Code writing, testing | `code`, `write`, `test`, `implement` | oe-spawn-coder |
+| Ops, tunnels, backup | `ops`, `backup`, `deploy`, `tunnel` | oe-spawn-ops |
+| Project context | `project`, `context` | oe-project-context |
+| Git history | `git`, `history`, `log` | oe-git-context |
 
-The orchestrator may self-execute only for narrow bookkeeping, synthesis, checkpointing, and worker-selection work:
-- **Worker Selection**: Identifying and ranking eligible workers from their `AGENTS.md` frontmatter.
-- **Dispatch Planning**: Breaking down complex tasks into subtasks for workers.
-- **Checkpoint Communication**: Reporting milestones or blockers to the main session.
-- **Result Synthesis**: Aggregating and summarizing worker results into a final report.
-- **Trivial Bookkeeping**: Managing the round-based loop state and deduplication keys.
+## Task Routing Examples
 
-### Mandatory Worker Dispatch
+### Example 1: Simple Task (Stays on Main)
 
-Substantive research, introspection, coding, monitoring, and other worker-eligible subwork MUST become child `sessions_spawn` dispatches. The orchestrator is prohibited from implicit self-execution fallback for any task that fits a worker's role.
+**User**: "What time is it?"
 
-## Using the Orchestrator
+**Flow**:
+1. `oe-eta-estimator` estimates 1 TOOLCALL
+2. `oe-tag-router` decides: handle locally
+3. Main session responds directly
 
-### When It Activates
+### Example 2: Complex Task (Escalates via sessions_spawn)
 
-The orchestrator is invoked when:
-1. Task requires > 2 TOOLCALLs (estimated)
-2. Task can be parallelized across multiple workers
-3. Task expected duration > 5 minutes
-4. Explicit user request: "Use orchestrator for this"
+**User**: "Refactor the auth module to use JWT tokens"
 
-### Task Flow: Bounded Orchestration Loop
+**Flow**:
+1. `oe-eta-estimator` estimates 8 TOOLCALLs, 20 minutes
+2. `oe-tag-router` escalates via `sessions_spawn`
+3. oe-spawn-coder handles:
+   - Find auth-related files (via oe-git-context)
+   - Research JWT best practices (via oe-spawn-search)
+   - Implement changes
+4. Returns to main session
 
-The orchestrator handles complex tasks using an iterative, round-based approach:
+### Example 3: Research Task
 
-```
-User Request → Main Session → oe-toolcall-router → oe-orchestrator
-                                                      │
-                                                      ▼
-                                            ┌──────────────────┐
-                                 ┌──────────┤  Dispatch Round  │◄─────────┐
-                                 │          │ (sessions_spawn) │          │
-                                 │          └────────┬─────────┘          │
-                                 │                   │                    │
-                                 │                   ▼                    │
-                                 │          ┌──────────────────┐          │
-                                 │          │   Yield Turn     │          │
-                                 │          │ (sessions_yield) │          │
-                                 │          └────────┬─────────┘          │
-                                 │                   │                    │
-                                 │                   ▼                    │
-                                 │          ┌──────────────────┐          │
-                                 │          │ Collect Results  │          │
-                                 │          │ (auto-announce)  │          │
-                                 │          └────────┬─────────┘          │
-                                 │                   │                    │
-                                 │                   ▼                    │
-                                 │          ┌──────────────────┐          │
-                                 │          │ Evaluate Progress│──────────┘
-                                 │          └────────┬─────────┘
-                                 │                   │
-                                 └───────────────────┼────────────────────┐
-                                                     ▼                    ▼
-                                            ┌──────────────────┐   ┌──────────────┐
-                                            │ Synthesize       │   │ Blocked/     │
-                                            │ Return to Main   │   │ Exhausted    │
-                                            └──────────────────┘   └──────────────┘
-```
+**User**: "Compare TypeScript vs Python for our new service"
 
-### Round Lifecycle
+**Flow**:
+1. Main routes to oe-spawn-search
+2. oe-spawn-search:
+   - Research TypeScript ecosystem
+   - Research Python ecosystem
+   - Find comparison benchmarks
+3. Returns structured analysis
 
-1. **Dispatch**: Orchestrator spawns specialized workers (`oe-searcher`, `oe-syshelper`, etc.) via `sessions_spawn`.
-2. **Yield**: Orchestrator calls `sessions_yield` to end its current turn and wait for worker results.
-3. **Collect**: Worker results are automatically announced to the orchestrator on its next turn.
-4. **Evaluate**: Orchestrator analyzes results and decides whether to complete, re-dispatch for another round, or mark as blocked.
-
-### Orchestrator Output Format
-
-All orchestrator responses include:
-
-```markdown
-## Summary
-Brief description of what was done
-
-## Results
-Synthesized output from workers
-
-## Artifacts
-- `/path/to/file1` - Description
-- `/path/to/file2` - Description
-
-## Next Steps
-1. Recommendation 1
-2. Recommendation 2
-```
-
-## Worker Roles
-
-Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator reads routing metadata (capabilities, constraints, cost) from each worker's frontmatter to select the best match for your task.
-
-**Current Built-in Workers** (capabilities defined in `workspaces/*/AGENTS.md`):
-
-### oe-searcher
-
-**Purpose**: Research, web search, documentation lookup
-
-**When to use**:
-- Looking up API documentation
-- Researching libraries or frameworks
-- Finding code examples
-- Competitive analysis
-
-**Example**:
-```
-"Research the best Python testing frameworks for async code"
-"Find the OpenClaw documentation on hooks"
-"Look up React Server Components best practices"
-```
-
-**Characteristics**:
-- Uses cheaper model (cost-effective)
-- Has sandbox read/write access
-- Returns structured research summaries
-
-### oe-syshelper
-
-**Purpose**: System introspection, file operations, read-only discovery
-
-**When to use**:
-- Finding files matching patterns
-- Reading configuration files
-- Listing directory contents
-- Searching code with grep
-
-**Example**:
-```
-"Find all Python files that import requests"
-"List the contents of src/ directory"
-"Show me the git log for the last week"
-```
-
-**Characteristics**:
-- Uses cheaper model (cost-effective)
-- Read-only access (safe for exploration)
-- Fast for file system operations
-
-**Constraints**:
-- Strictly read-only (cannot modify files)
-- **No recovery**: Does not diagnose or fix tool failures
-- Cannot execute arbitrary bash commands
-- Cannot access network resources
-
-### oe-script_coder
-
-**Purpose**: Script development, testing, automation
-
-**When to use**:
-- Writing utility scripts
-- Creating test suites
-- Building automation tools
-- Prototyping solutions
-
-**Example**:
-```
-"Write a Python script to parse JSONL files"
-"Create a bash script to backup git repositories"
-"Build a test harness for the API client"
-```
-
-**Characteristics**:
-- Uses code-specialized model (Codex-class)
-- Sandbox read/write access
-- Can write, test, and iterate on code
-
-**Workflow**:
-1. Receive script requirements
-2. Write initial implementation
-3. Test in sandbox
-4. Refine based on results
-5. Return final script
-
-### oe-watchdog
-
-**Purpose**: Session monitoring, timeout detection, diagnostics
-
-### Session Cleanup Command
+## Session Cleanup Command
 
 `python -m openclaw_enhance.cli cleanup-sessions` provides a conservative cleanup surface for stale session state.
 
@@ -222,128 +94,19 @@ Workers are discovered dynamically from AGENTS.md frontmatter. The orchestrator 
 **Managed automation**:
 - On macOS install, `ai.openclaw.session-cleanup` runs this cleanup surface hourly via `python -m openclaw_enhance.cleanup --execute --openclaw-home <...> --json`
 - The automatic LaunchAgent path is intentionally conservative: it cleans clearly stale non-core artifacts by default, while `--include-core-sessions` remains a manual operator choice.
-- This replaces the previous external launchd dependency on `~/.openclaw/workspace/scripts/maintenance/openclaw-session-cleanup.sh`
-
-
-**When it's used**:
-- Long-running tasks (> 30 minutes)
-- Background monitoring
-- Timeout suspicion handling
-- System health checks
-
-**Authority**:
-- ✅ Confirm timeout suspicions
-- ✅ Send reminders to sessions
-- ✅ Read runtime state
-- ✅ Update timeout state
-
-- ❌ Kill processes
-- ❌ Edit user repositories
-- ❌ Modify non-owned config
-- ❌ Access user credentials
 
 ## Governance CLI Surface
 
-`openclaw-enhance` owns the supported replacement for the legacy governance scripts that previously lived under `~/.openclaw/workspace/scripts/governance/`.
+`openclaw-enhance` owns the supported replacement for the legacy governance scripts.
 
 | Legacy script | OE-managed replacement |
 |---|---|
-| `anti_stuckctl.sh` | `python -m openclaw_enhance.cli governance ...` |
 | `diagnose_stuck.sh` | `python -m openclaw_enhance.cli governance diagnose --json` |
 | `healthcheck_openclaw.sh` | `python -m openclaw_enhance.cli governance healthcheck --json` |
 | `safe_gateway_restart.py` | `python -m openclaw_enhance.cli governance safe-restart --dry-run --json` |
 | `immediate_restart_resume.py` | `python -m openclaw_enhance.cli governance restart-resume --json` |
 | `session_archiver.py` | `python -m openclaw_enhance.cli governance archive-sessions --dry-run --json` |
 | `sub_agentsctl.py` | `python -m openclaw_enhance.cli governance subagents ...` |
-| `sub_agents_statectl.py` | `python -m openclaw_enhance.cli governance subagents merge-state ...` |
-| `watch_stuck.py` | `python -m openclaw_enhance.monitor_runtime ...` |
-
-Governance/admin operations stay outside `oe-watchdog` on purpose. The watchdog confirms timeout suspicions and sends reminders; the CLI surface owns archive, restart, and legacy subagent state operations.
-
-### oe-tool-recovery
-
-**Purpose**: Tool failure diagnosis and recovery suggestion
-
-**When to use**:
-- A tool call returns an error (syntax, schema, or logic)
-- A tool call fails due to missing preconditions
-- The orchestrator needs a precise correction for a failed step
-- Diagnosing why a specific tool invocation failed
-
-**Example**:
-```
-"The Write tool failed with 'oldString not found'"
-"Why is the Bash command returning exit code 1?"
-"Diagnose the failed Edit operation"
-```
-
-**Characteristics**:
-- Uses reasoning-capable model for accurate diagnosis
-- **Recovery Specialist**: Specifically designed to fix tool-usage errors
-- Read-only access (does not modify files)
-- Leaf-node specialist (cannot spawn subagents)
-- Returns structured `recovered_method` for retry
-
-**Constraints**:
-- **Max one retry**: Only one recovery-assisted retry allowed per failed step
-- **No execution**: Suggests corrections but does not execute them
-- **No business logic**: Focuses on tool mechanics, not task goals
-
-## Tool-Failure Recovery Workflow
-
-The orchestrator manages tool failures through a specialized recovery process:
-
-1. **Detection**: Orchestrator identifies a tool-usage failure (e.g., `tool_not_found`, `invalid_parameters`, `tool_execution_error`) in worker results.
-2. **Diagnosis Dispatch**: If no previous recovery attempt for this step, orchestrator spawns `oe-tool-recovery` via `sessions_spawn`.
-3. **Yield**: Orchestrator calls `sessions_yield` to wait for the recovery suggestion.
-4. **Recovery Integration**: Orchestrator receives the `RecoveredMethod` (corrected invocation, preconditions, etc.).
-5. **Assisted Retry**: Orchestrator re-dispatches the original worker using the corrected method.
-6. **Completion/Escalation**:
-   - If retry succeeds: Orchestration continues.
-   - If recovery fails or retry fails: Orchestration terminates as `escalated` to the user.
-
-**Note**: This flow ensures that complex tool failures are handled by a reasoning-capable specialist without cluttering the main orchestration logic or the read-only `oe-syshelper` worker.
-
-## Task Routing Examples
-
-### Example 1: Simple Task (Stays on Main)
-
-**User**: "What time is it?"
-
-**Flow**:
-1. `oe-eta-estimator` estimates 1 TOOLCALL
-2. `oe-toolcall-router` decides: handle locally
-3. Main session responds directly
-
-### Example 2: Complex Task (Escalates to Orchestrator)
-
-**User**: "Refactor the auth module to use JWT tokens"
-
-**Flow**:
-1. `oe-eta-estimator` estimates 8 TOOLCALLs, 20 minutes
-2. `oe-toolcall-router` escalates to `oe-orchestrator`
-3. Orchestrator:
-   - Assesses task complexity
-   - Creates execution plan
-   - Dispatches:
-     - `oe-syshelper` to find auth-related files
-     - `oe-searcher` to research JWT best practices
-     - `oe-script_coder` to implement changes
-4. Synthesizes results
-5. Returns to main session
-
-### Example 3: Research Task
-
-**User**: "Compare TypeScript vs Python for our new service"
-
-**Flow**:
-1. Main routes to orchestrator
-2. Orchestrator dispatches:
-   - `oe-searcher`: Research TypeScript ecosystem
-   - `oe-searcher`: Research Python ecosystem
-   - `oe-searcher`: Find comparison benchmarks
-3. Synthesizes comparison report
-4. Returns structured analysis
 
 ## Timeout Monitoring
 
@@ -351,8 +114,8 @@ The orchestrator manages tool failures through a specialized recovery process:
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   monitor   │────▶│  Runtime    │────▶│  watchdog   │
-│   script    │     │   Store     │     │   agent     │
+│   monitor   │────▶│  Runtime    │────▶│  Timeout    │
+│   script    │     │   Store     │     │  Detector   │
 └─────────────┘     └─────────────┘     └─────────────┘
    (1 min)             (state)             (confirm)
 ```
@@ -360,7 +123,7 @@ The orchestrator manages tool failures through a specialized recovery process:
 1. **Monitor script** runs every minute
 2. Detects sessions exceeding expected duration
 3. Writes `timeout_suspected` event to runtime store
-4. **Watchdog** confirms or rejects the suspicion
+4. **Timeout Detector** confirms or rejects the suspicion
 5. If confirmed: sends reminder to original session
 
 ### Checking Timeout State
@@ -382,31 +145,10 @@ python -m openclaw_enhance.cli status --json | jq '.timeouts'
 
 | State | Meaning | Action |
 |-------|---------|--------|
-| `suspected` | Monitor detected possible timeout | Waiting for watchdog confirmation |
-| `confirmed` | Watchdog confirmed timeout | Reminder sent to session |
+| `suspected` | Monitor detected possible timeout | Waiting for confirmation |
+| `confirmed` | Timeout confirmed | Reminder sent to session |
 | `cleared` | Timeout resolved | No action needed |
 | `escalated` | Escalated to user | Manual intervention may be needed |
-
-### Configuring Timeouts
-
-Default timeout thresholds (in `runtime-state.json`):
-
-```json
-{
-  "timeout_policy": {
-    "short_tasks": 5,
-    "medium_tasks": 30,
-    "long_tasks": 120
-  }
-}
-```
-
-Modify thresholds by editing the runtime state (use with caution):
-
-```bash
-# Edit runtime state
-nano ~/.openclaw/openclaw-enhance/state/runtime-state.json
-```
 
 ## Runtime State Management
 
@@ -422,14 +164,14 @@ All runtime state is stored at:
 
 ```json
 {
-  "version": "1.1.0",
-  "last_updated_utc": "2026-04-05T10:30:00",
+  "version": "2.0.0",
+  "last_updated_utc": "2026-04-09T10:30:00",
   "restart_epoch": 1,
   "tasks": {
     "task_abc123": {
       "status": "active",
-      "agent": "oe-orchestrator",
-      "started_at": "2026-04-05T10:00:00",
+      "skill": "oe-spawn-coder",
+      "started_at": "2026-04-09T10:00:00",
       "eta_minutes": 20,
       "ownership": {
         "channel_type": "feishu",
@@ -440,47 +182,17 @@ All runtime state is stored at:
   "timeouts": {
     "task_abc123": {
       "status": "suspected",
-      "detected_at": "2026-04-05T10:25:00"
+      "detected_at": "2026-04-09T10:25:00"
     }
   },
   "projects": {
     "my-project": {
       "path": "/home/user/projects/my-project",
       "type": "python",
-      "last_accessed": "2026-04-05T10:00:00"
+      "last_accessed": "2026-04-09T10:00:00"
     }
   }
 }
-```
-
-### Inspecting State
-
-```bash
-# Pretty-print full state
-cat ~/.openclaw/openclaw-enhance/state/runtime-state.json | jq
-
-# View active tasks
-cat ~/.openclaw/openclaw-enhance/state/runtime-state.json | jq '.tasks'
-
-# View timeout status
-cat ~/.openclaw/openclaw-enhance/state/runtime-state.json | jq '.timeouts'
-
-# View project registry
-cat ~/.openclaw/openclaw-enhance/state/runtime-state.json | jq '.projects'
-```
-
-### Clearing Stale State
-
-If state becomes inconsistent:
-
-```bash
-# Backup current state
-cp ~/.openclaw/openclaw-enhance/state/runtime-state.json \
-   ~/.openclaw/openclaw-enhance/state/runtime-state.json.bak.$(date +%s)
-
-# Reset to empty state (use with caution)
-echo '{"version": "1.0.0", "tasks": {}, "timeouts": {}, "projects": {}}' \
-  > ~/.openclaw/openclaw-enhance/state/runtime-state.json
 ```
 
 ## Session Isolation & Restart Safety
@@ -491,30 +203,22 @@ To prevent session collisions and hijacking, `openclaw-enhance` implements a str
 The system binds external identities to OpenClaw sessions using a composite key:
 `(channel_type, channel_conversation_id) -> session_id`
 
-This ensures that a task from Feishu cannot accidentally reuse or interfere with a session from Telegram, even if the task payload is identical.
-
 ### Fail-Closed Behavior
-If session ownership cannot be verified (e.g., missing metadata, ambiguous identity, or invalid session key format), the system **fails closed**. It will refuse to reuse the existing session and instead force a fresh start or flag the scenario as unsafe.
+If session ownership cannot be verified, the system **fails closed**.
 
 ### Restart Epoch
-Every time the OpenClaw gateway or enhance-monitor restarts, the `restart_epoch` in `runtime-state.json` is incremented.
+Every time the OpenClaw gateway or enhance-monitor restarts, the `restart_epoch` is incremented.
 - Existing session bindings are tagged with the epoch they were created in.
 - After a restart, bindings from previous epochs are considered "stale".
-- Stale bindings require explicit re-validation of ownership before they can be resumed.
 
 ## Output Sanitization
 
-The `oe-runtime` extension automatically sanitizes outgoing content to prevent internal protocol markers from leaking to users or interfering with external parsers.
+The `oe-runtime` extension automatically sanitizes outgoing content.
 
 ### Sanitized Markers
-The following markers are stripped from enhance-controlled outward paths:
 - `[Pasted ~]` (Internal clipboard marker)
 - `<|tool_call...|>` (Internal tool call protocol)
 - `<|thought...|>` (Internal reasoning protocol)
-- Other internal metadata tags
-
-### Boundary Control
-Sanitization is applied only to "outward" paths controlled by the enhancement layer. It does not intercept core OpenClaw tool outputs unless they pass through an enhance-managed agent or skill.
 
 ## CLI Commands
 
@@ -524,12 +228,6 @@ Check installation status:
 
 ```bash
 python -m openclaw_enhance.cli status
-```
-
-With JSON output:
-
-```bash
-python -m openclaw_enhance.cli status --json
 ```
 
 ### Doctor
@@ -545,18 +243,9 @@ python -m openclaw_enhance.cli doctor --openclaw-home "$HOME/.openclaw"
 View skill contracts:
 
 ```bash
-python -m openclaw_enhance.cli render-skill oe-toolcall-router
+python -m openclaw_enhance.cli render-skill oe-tag-router
 python -m openclaw_enhance.cli render-skill oe-eta-estimator
-python -m openclaw_enhance.cli render-skill oe-timeout-state-sync
-```
-
-### Render Workspaces
-
-View workspace configurations:
-
-```bash
-python -m openclaw_enhance.cli render-workspace oe-orchestrator
-python -m openclaw_enhance.cli render-workspace oe-watchdog
+python -m openclaw_enhance.cli render-skill oe-spawn-coder
 ```
 
 ### Render Hooks
@@ -578,8 +267,8 @@ python -m openclaw_enhance.cli validate-feature --feature-class install-lifecycl
 # Validate CLI surface changes
 python -m openclaw_enhance.cli validate-feature --feature-class cli-surface --report-slug backfill-cli-surface
 
-# Validate routing or agent changes
-python -m openclaw_enhance.cli validate-feature --feature-class workspace-routing --report-slug backfill-routing-yield
+# Validate routing changes
+python -m openclaw_enhance.cli validate-feature --feature-class skill-routing --report-slug backfill-skill-routing
 
 # Validate watchdog or hook changes
 python -m openclaw_enhance.cli validate-feature --feature-class runtime-watchdog --report-slug backfill-watchdog-reminder
@@ -591,7 +280,7 @@ Reports are automatically saved to `docs/reports/`.
 
 ### 1. Let the Router Decide
 
-Don't manually choose between main and orchestrator. Let `oe-toolcall-router` decide based on task complexity.
+Don't manually choose skills. Let `oe-tag-router` decide based on task tags.
 
 ### 2. Provide Clear Task Descriptions
 
@@ -608,61 +297,15 @@ Check timeout state periodically for tasks > 30 minutes:
 watch -n 30 'cat ~/.openclaw/openclaw-enhance/state/runtime-state.json | jq .timeouts'
 ```
 
-### 4. Use Appropriate Workers
-
-Don't force a specific worker—let the orchestrator choose. But you can hint:
-
-- "Research..." → triggers searcher
-- "Find files..." → triggers syshelper  
-- "Write a script..." → triggers script_coder
-
-### 5. Review Artifacts
-
-Always check the `Artifacts` section in orchestrator responses for created/modified files.
-
-## Common Workflows
-
-### Adding a New Feature
-
-1. Describe feature to main session
-2. If complex, automatically routes to orchestrator
-3. Orchestrator dispatches workers:
-   - `syshelper`: Find relevant files
-   - `searcher`: Research implementation patterns
-   - `script_coder`: Implement changes
-4. Review artifacts and results
-5. Iterate if needed
-
-### Debugging an Issue
-
-1. Describe issue to main session
-2. Routes to orchestrator for investigation
-3. Orchestrator dispatches:
-   - `syshelper`: Find error locations
-   - `searcher`: Research solutions
-4. Get synthesized fix recommendations
-5. Apply fixes manually or via script_coder
-
-### Code Review
-
-1. Ask for code review
-2. Orchestrator dispatches:
-   - `syshelper`: Read code files
-   - `searcher`: Research best practices
-3. Get structured review with:
-   - Issues found
-   - Recommendations
-   - Reference materials
-
-## Troubleshooting Operations
+## Troubleshooting
 
 See [Troubleshooting](troubleshooting.md) for:
-- Worker routing issues
+- Routing issues
 - Timeout false positives
 - State corruption
 - Performance problems
 
 ## Version
 
-Operations Guide Version: 1.4.0
-Last Updated: 2026-04-05
+Operations Guide Version: 2.0.0
+Last Updated: 2026-04-09

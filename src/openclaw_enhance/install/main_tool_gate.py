@@ -18,13 +18,13 @@ TOOL_GATE_BLOCK = f"""{TOOL_GATE_MARKER}
 
 **Main 主会话只允许使用：**
 - `read` / `memory_search` — 只读访问
-- `sessions_spawn` — 派发任务给子 Agent（核心工具）
+- `sessions_spawn` — 派发任务给 Skill（核心工具）
 - `sessions_list` / `sessions_history` / `session_status` / `sessions_send` — 会话管理
 - `agents_list` — 查看可用 Agent
 - `message` — 回复用户
 
 **当用户要求任何需要修改文件、执行命令、搜索研究的任务时：**
-1. 必须使用 `sessions_spawn` 派发给 `oe-orchestrator`
+1. 必须使用 `sessions_spawn` 派发给对应的 Skill（oe-spawn-search, oe-spawn-coder, oe-spawn-ops 等）
 2. 绝对不要自己动手，即使任务看起来很简单
 3. 如果你调用 `edit`/`exec`/`write`/`web_search`/`web_fetch`，立刻停止，改用 `sessions_spawn`
 {TOOL_GATE_MARKER}"""

@@ -68,12 +68,6 @@ def test_runtime_registration_uses_supported_shape(
     assert internal_hooks["entries"]["oe-subagent-spawn-enrich"] == {"enabled": True}, (
         "oe-subagent-spawn-enrich hook entry should be enabled explicitly"
     )
-    assert "oe-main-routing-gate" in internal_hooks["entries"], (
-        "oe-main-routing-gate hook should be enabled under hooks.internal.entries"
-    )
-    assert internal_hooks["entries"]["oe-main-routing-gate"] == {"enabled": True}, (
-        "oe-main-routing-gate hook entry should be enabled explicitly"
-    )
 
     assert "load" in internal_hooks, "Top-level 'hooks.internal.load' should exist"
     assert "extraDirs" in internal_hooks["load"], (
@@ -119,47 +113,3 @@ def test_install_preserves_foreign_hook_entry_configuration(
 
     assert internal_hooks["entries"]["foreign-hook"] == foreign_entry
     assert "/foreign/hooks" in internal_hooks["load"]["extraDirs"]
-
-
-def test_runtime_registration_allows_main_to_spawn_oe_orchestrator(
-    mock_openclaw_home: Path,
-    isolated_user_home: Path,
-) -> None:
-    config_path = resolve_openclaw_config_path(mock_openclaw_home)
-    config_path.write_text(
-        json.dumps(
-            {
-                "agents": {
-                    "defaults": {
-                        "subagents": {
-                            "allowAgents": ["orchestrator"],
-                        }
-                    },
-                    "list": [
-                        {
-                            "id": "main",
-                            "subagents": {
-                                "allowAgents": ["orchestrator"],
-                            },
-                        }
-                    ],
-                }
-            }
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
-    result = install(mock_openclaw_home, user_home=isolated_user_home)
-    assert result.success
-
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    agents_obj = config["agents"]
-
-    defaults_subagents = agents_obj.get("defaults", {}).get("subagents", {})
-    assert "allowAgents" not in defaults_subagents
-
-    main_entry = next(a for a in agents_obj["list"] if a.get("id") == "main")
-    main_allow_agents = main_entry.get("subagents", {}).get("allowAgents", [])
-    assert "orchestrator" in main_allow_agents
-    assert "oe-orchestrator" in main_allow_agents
