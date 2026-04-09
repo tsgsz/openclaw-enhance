@@ -39,7 +39,7 @@ from openclaw_enhance.paths import (
     resolve_openclaw_config_path,
 )
 from openclaw_enhance.runtime.ownership import (
-    OWNED_AGENT_SPECS,
+    # v2: No OWNED_AGENT_SPECS (v1 artifact removed)
     OWNED_EXTENSION_ID,
     OWNED_HOOK_ENTRY_IDS,
     OWNED_NAMESPACE,
