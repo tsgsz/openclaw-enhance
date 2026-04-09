@@ -124,7 +124,7 @@ def install(
 def _inject_soul_to_main() -> None:
     """Inject SOUL content into main's SOUL.md file."""
     openclaw_home = Path.home() / ".openclaw"
-    soul_file = openclaw_home / "workspace" / "main" / "SOUL.md"
+    soul_file = openclaw_home / "workspace" / "SOUL.md"
 
     soul_content = """<!-- oe-soul-start -->
 ## Main Agent SOUL
@@ -164,7 +164,7 @@ You are the orchestration layer. Your rules:
 def _remove_soul_from_main() -> None:
     """Remove SOUL content from main's SOUL.md file."""
     openclaw_home = Path.home() / ".openclaw"
-    soul_file = openclaw_home / "workspace" / "main" / "SOUL.md"
+    soul_file = openclaw_home / "workspace" / "SOUL.md"
 
     if not soul_file.exists():
         click.echo(f"SOUL file does not exist: {soul_file}")
@@ -204,7 +204,7 @@ def _install_skills(target: str, skill_name: str | None, dry_run: bool) -> None:
     openclaw_home = Path.home() / ".openclaw"
 
     if target == "main":
-        skills_dir = openclaw_home / "workspace" / "main" / "skills"
+        skills_dir = openclaw_home / "workspace" / "skills"
     else:
         skills_dir = openclaw_home / "openclaw-enhance" / "skills"
 
