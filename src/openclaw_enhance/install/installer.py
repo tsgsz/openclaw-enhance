@@ -45,7 +45,6 @@ from openclaw_enhance.runtime.ownership import (
     OWNED_NAMESPACE,
 )
 from openclaw_enhance.runtime.support_matrix import SupportError, validate_environment
-from openclaw_enhance.workspaces import WORKSPACES_DIR, list_workspaces
 
 from . import monitor_service
 
@@ -191,44 +190,10 @@ def _sync_workspaces(
 ) -> list[ComponentInstall]:
     """Sync workspace configurations to managed directory.
 
-    Copies or symlinks workspace definitions from the package to the managed directory.
+    v2: Workspaces are no longer used - this function returns an empty list.
     """
-    components: list[ComponentInstall] = []
-
-    if not WORKSPACES_DIR.exists():
-        return components
-
-    workspaces_target = target_root / "workspaces"
-    workspaces_target.mkdir(parents=True, exist_ok=True)
-
-    for workspace_name in list_workspaces():
-        source_path = WORKSPACES_DIR / workspace_name
-        target_path = workspaces_target / workspace_name
-
-        if target_path.exists() or target_path.is_symlink():
-            if target_path.is_symlink():
-                target_path.unlink()
-            else:
-                shutil.rmtree(target_path)
-
-        if dev_mode:
-            # Development mode: create symlink
-            target_path.symlink_to(source_path.absolute())
-        else:
-            # Production mode: copy files
-            shutil.copytree(source_path, target_path)
-
-        component = ComponentInstall(
-            name=f"workspace:{workspace_name}",
-            version=VERSION,
-            install_time=datetime.utcnow(),
-            source_path=str(source_path.absolute()),
-            target_path=str(target_path.absolute()),
-            is_symlink=dev_mode,
-        )
-        components.append(component)
-
-    return components
+    # v2: No workspaces to sync - v1 workspaces archived to v1-archive/
+    return []
 
 
 def _sync_hooks(target_root: Path, dev_mode: bool = False) -> list[ComponentInstall]:
@@ -305,70 +270,6 @@ def _write_openclaw_config(config_path: Path, config: dict[str, Any]) -> str:
     return str(backup_path)
 
 
-def _ensure_allow_agent_id(
-    subagents_obj: dict[str, Any],
-    agent_id: str,
-) -> None:
-    allow_agents_obj = subagents_obj.get("allowAgents")
-    allow_agents: list[str] = []
-    if isinstance(allow_agents_obj, list):
-        allow_agents = [v for v in allow_agents_obj if isinstance(v, str)]
-
-    if agent_id not in allow_agents:
-        allow_agents.append(agent_id)
-
-    subagents_obj["allowAgents"] = allow_agents
-
-
-def _ensure_main_orchestrator_allowlist(agents_obj: dict[str, Any]) -> None:
-    defaults_obj = agents_obj.get("defaults")
-    if isinstance(defaults_obj, dict):
-        defaults_subagents = defaults_obj.get("subagents")
-        if isinstance(defaults_subagents, dict):
-            defaults_subagents.pop("allowAgents", None)
-
-    list_obj = agents_obj.get("list")
-    if isinstance(list_obj, list):
-        for entry in list_obj:
-            if not isinstance(entry, dict):
-                continue
-            if entry.get("id") != "main":
-                continue
-            subagents_obj = entry.get("subagents")
-            if not isinstance(subagents_obj, dict):
-                subagents_obj = {}
-                entry["subagents"] = subagents_obj
-            _ensure_allow_agent_id(subagents_obj, "oe-orchestrator")
-            break
-
-
-def _ensure_orchestrator_worker_allowlist(agents_obj: dict[str, Any]) -> None:
-    """Ensure oe-orchestrator can spawn all oe-* agents."""
-    list_obj = agents_obj.get("list")
-    if isinstance(list_obj, list):
-        all_oe_agents: list[str] = []
-        for entry in list_obj:
-            if not isinstance(entry, dict):
-                continue
-            entry_id = entry.get("id")
-            if isinstance(entry_id, str) and entry_id.startswith("oe-"):
-                all_oe_agents.append(entry_id)
-
-        for entry in list_obj:
-            if not isinstance(entry, dict):
-                continue
-            if entry.get("id") != "oe-orchestrator":
-                continue
-            subagents_obj = entry.get("subagents")
-            if not isinstance(subagents_obj, dict):
-                subagents_obj = {}
-                entry["subagents"] = subagents_obj
-            for agent_id in all_oe_agents:
-                if isinstance(agent_id, str) and agent_id != "oe-orchestrator":
-                    _ensure_allow_agent_id(subagents_obj, agent_id)
-            break
-
-
 def _normalize_acp_config(config: dict[str, Any]) -> None:
     acp_obj = config.get("acp")
     if not isinstance(acp_obj, dict):
@@ -425,60 +326,10 @@ def _register_agents_via_cli(
 ) -> list[ComponentInstall]:
     """Register owned agents using ``openclaw agents add`` CLI.
 
-    Workspaces must already be synced before calling this function.
-    ``openclaw agents add`` will not overwrite existing files in the workspace.
+    v2: No agents to register in v2 - returns empty list.
     """
-    existing_ids: set[str] = set()
-    check = _run_openclaw_cli(["agents", "list", "--json"], check=False)
-    if check.returncode == 0:
-        try:
-            stdout = check.stdout
-            json_text = stdout.split("\n")[0] if stdout.startswith("[") else stdout
-            for line in stdout.split("\n"):
-                if line.strip().startswith("["):
-                    json_text = line
-                    break
-            agents_data = json.loads(json_text)
-            existing_ids = {a["id"] for a in agents_data if isinstance(a, dict) and "id" in a}
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    components: list[ComponentInstall] = []
-    for agent_id, workspace_name in OWNED_AGENT_SPECS:
-        workspace_path = str((target_root / "workspaces" / workspace_name).absolute())
-        source_workspace = str((WORKSPACES_DIR / workspace_name).absolute())
-
-        if agent_id not in existing_ids:
-            result = _run_openclaw_cli(
-                [
-                    "agents",
-                    "add",
-                    agent_id,
-                    "--workspace",
-                    workspace_path,
-                    "--non-interactive",
-                ],
-                check=False,
-            )
-            if (
-                result.returncode != 0
-                and "already exists" not in result.stdout
-                and "already exists" not in result.stderr
-            ):
-                raise InstallError(f"Failed to add agent {agent_id}: {result.stderr}")
-
-        components.append(
-            ComponentInstall(
-                name=f"agent:{agent_id}",
-                version=VERSION,
-                install_time=datetime.utcnow(),
-                source_path=source_workspace,
-                target_path=workspace_path,
-                is_symlink=False,
-            )
-        )
-
-    return components
+    # v2: No agents to register - v1 agents are deprecated
+    return []
 
 
 # Extension source directory (relative to this file: src/openclaw_enhance/install/ -> extensions/)
@@ -578,9 +429,6 @@ def _register_runtime_surfaces(
         agents_obj = {}
         config["agents"] = agents_obj
 
-    _ensure_main_orchestrator_allowlist(agents_obj)
-    _ensure_orchestrator_worker_allowlist(agents_obj)
-
     hooks_obj = config.get("hooks")
     if not isinstance(hooks_obj, dict):
         hooks_obj = {}
@@ -625,6 +473,8 @@ def _register_runtime_surfaces(
         extra_dirs.append(managed_hooks_dir)
     load_obj["extraDirs"] = extra_dirs
 
+    _normalize_acp_config(config)
+
     try:
         backup_path = _write_openclaw_config(config_path, config)
     except OSError as exc:
@@ -651,70 +501,6 @@ def _register_runtime_surfaces(
                 "previous_enabled_present": previous_enabled_present,
                 "previous_enabled_value": previous_enabled_value,
             },
-        ),
-    ]
-
-
-AGENT_MODEL_OVERRIDES: dict[str, str | None] = {
-    "oe-orchestrator": None,
-    "oe-script_coder": "litellm-local/gpt-5.3-codex",
-    "oe-tool-recovery": "litellm-local/gpt-5.4",
-    "oe-syshelper": "minimax/MiniMax-M2.7",
-    "oe-searcher": "minimax/MiniMax-M2.5",
-    "oe-watchdog": "minimax/MiniMax-M2.1",
-}
-
-
-def _configure_agent_models(
-    manifest: InstallManifest,
-    openclaw_home: Path,
-    target_root: Path,
-) -> list[ComponentInstall]:
-    config_path = resolve_openclaw_config_path(openclaw_home)
-    config = _load_openclaw_config(config_path)
-
-    agents_obj = config.get("agents")
-    if not isinstance(agents_obj, dict):
-        agents_obj = {}
-        config["agents"] = agents_obj
-
-    list_obj = agents_obj.get("list")
-    if not isinstance(list_obj, list):
-        list_obj = []
-        agents_obj["list"] = list_obj
-
-    for agent_entry in list_obj:
-        if not isinstance(agent_entry, dict):
-            continue
-        agent_id = agent_entry.get("id")
-        if not agent_id or agent_id == "main":
-            continue
-
-        if agent_id in AGENT_MODEL_OVERRIDES:
-            model_id = AGENT_MODEL_OVERRIDES[agent_id]
-            if model_id:
-                agent_entry["model"] = model_id
-            elif "model" in agent_entry:
-                del agent_entry["model"]
-
-    _normalize_acp_config(config)
-
-    try:
-        backup_path = _write_openclaw_config(config_path, config)
-    except OSError as exc:
-        raise InstallError(f"Failed to write agent model config: {exc}") from exc
-
-    manifest.add_rollback_point(
-        description="Agent model configuration",
-        backup_paths={"config": backup_path},
-    )
-
-    return [
-        ComponentInstall(
-            name="agents:model-config",
-            version=VERSION,
-            install_time=datetime.utcnow(),
-            target_path=str(config_path.absolute()),
         ),
     ]
 
@@ -831,13 +617,9 @@ def install(
         manifest = load_manifest(target_root) or InstallManifest()
         manifest.openclaw_home = str(openclaw_home.absolute())
 
-        # Step 4: Sync workspaces
-        try:
-            workspace_components = _sync_workspaces(manifest, target_root, dev_mode=dev_mode)
-            all_components.extend(workspace_components)
-        except Exception as exc:
-            errors.append(f"Workspace sync failed: {exc}")
-            raise InstallError(f"Workspace sync failed: {exc}") from exc
+        # Step 4: Sync workspaces (v2: no workspaces to sync)
+        workspace_components = _sync_workspaces(manifest, target_root, dev_mode=dev_mode)
+        all_components.extend(workspace_components)
 
         try:
             config_path = resolve_openclaw_config_path(openclaw_home)
@@ -904,16 +686,6 @@ def install(
             raise InstallError(f"Runtime registration failed: {exc}") from exc
 
         try:
-            model_config_components = _configure_agent_models(
-                manifest,
-                openclaw_home,
-                target_root,
-            )
-            all_components.extend(model_config_components)
-        except Exception as exc:
-            errors.append(f"Agent model configuration failed: {exc}")
-
-        try:
             acp_model_config_component = _configure_acp_model_priority(target_root)
             all_components.append(acp_model_config_component)
         except Exception as exc:
@@ -921,9 +693,8 @@ def install(
 
         # Extension install MUST be after all _write_openclaw_config calls.
         # openclaw plugins install --link writes to openclaw.json directly;
-        # if _configure_agent_models (or any other function that does
-        # load→modify→write on openclaw.json) runs AFTER, it will overwrite
-        # the plugins.allow/entries that the CLI just added.
+        # if any function that does load→modify→write on openclaw.json runs AFTER,
+        # it will overwrite the plugins.allow/entries that the CLI just added.
         try:
             ext_component = _install_extension(openclaw_home=openclaw_home)
             if ext_component is not None:

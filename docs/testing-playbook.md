@@ -2,6 +2,13 @@
 
 This document defines the mandatory validation process for all changes to `openclaw-enhance`. No feature can be merged without a successful real-environment test report.
 
+## v2 Note
+
+**openclaw-enhance v2 采用纯 Skill 架构**：
+- **无工作区 (Workspaces)**：v1 的 agent 工作区已归档
+- **无 Agent 注册**：不再使用 `oe-orchestrator`、`oe-searcher` 等托管 Agent
+- **纯 Skill 路由**：所有路由逻辑通过 Skills 实现
+
 ## 1. Feature-Class Matrix
 
 Validation requirements are determined by the feature class of the change.
@@ -10,8 +17,8 @@ Validation requirements are determined by the feature class of the change.
 | :--- | :--- | :--- |
 | `install-lifecycle` | Changes to install/uninstall logic, path management, or config patching. | Full Lifecycle Bundle |
 | `cli-surface` | Changes to `openclaw-enhance` CLI commands or output formatting. | CLI Surface Bundle |
-| `workspace-routing` | Changes to `AGENTS.md`, `TOOLS.md`, or agent registration. | Routing & Agent Bundle |
-| `runtime-watchdog` | Changes to hooks, runtime monitoring, or watchdog logic. | Runtime Integration Bundle |
+| `skill-routing` | Changes to skills, routing logic, or sessions_spawn behavior. | Skill Routing Bundle |
+| `runtime-watchdog` | Changes to hooks, runtime monitoring, or timeout detection. | Runtime Integration Bundle |
 | `session-isolation` | Changes to session ownership, isolation, or sanitization. | Session Isolation Bundle |
 | `docs-test-only` | Changes only to documentation or unit/integration tests. | Docs Check Only (Exempt) |
 
@@ -27,7 +34,6 @@ Target: Default `~/.openclaw`
 3. **Monitor Services (macOS)**:
    - `launchctl print gui/$UID/ai.openclaw.enhance.monitor`
    - `launchctl print gui/$UID/ai.openclaw.session-cleanup`
-- *Pass*: The monitor LaunchAgent points at `python -m openclaw_enhance.monitor_runtime` with `RunAtLoad` and a 60-second interval, and the session-cleanup LaunchAgent points at `python -m openclaw_enhance.cleanup` with OE-managed arguments and no external workspace script dependency.
 4. **Verify Status**: `python -m openclaw_enhance.cli status`
     - *Pass*: `installed: true` in output.
 5. **Doctor Check**: `python -m openclaw_enhance.cli doctor`
@@ -42,40 +48,32 @@ Target: Default `~/.openclaw`
    - *Pass*: Valid JSON output containing `install_path`.
 3. **Doctor**: `python -m openclaw_enhance.cli doctor`
    - *Pass*: Exit code 0, "Doctor checks passed".
-4. **Render Workspace**: `python -m openclaw_enhance.cli render-workspace oe-orchestrator`
-   - *Pass*: Output contains "oe-orchestrator" and workspace content.
-5. **Render Skill**: `python -m openclaw_enhance.cli render-skill oe-toolcall-router`
+4. **Render Skill**: `python -m openclaw_enhance.cli render-skill oe-tag-router`
    - *Pass*: Output contains skill definition.
-6. **Render Hook**: `python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich`
+5. **Render Hook**: `python -m openclaw_enhance.cli render-hook oe-subagent-spawn-enrich`
    - *Pass*: Output contains hook logic.
-7. **Cleanup Sessions Dry Run**: `python -m openclaw_enhance.cli cleanup-sessions --dry-run --json`
-   - *Pass*: Valid JSON output containing `safe_to_remove`, `skipped_active`, `skipped_uncertain`, `removed`, and `dry_run`.
-8. **Docs Check**: `python -m openclaw_enhance.cli docs-check`
+6. **Cleanup Sessions Dry Run**: `python -m openclaw_enhance.cli cleanup-sessions --dry-run --json`
+   - *Pass*: Valid JSON output.
+7. **Docs Check**: `python -m openclaw_enhance.cli docs-check`
    - *Pass*: Exit code 0, "Docs check passed".
-9. **Validator Self-Surface**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
+8. **Validator Self-Surface**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
    - *Pass*: Exit code 0, produces a report with `Conclusion: EXEMPT`.
 
-### 2.3 Routing & Agent Bundle (`workspace-routing`)
+### 2.3 Skill Routing Bundle (`skill-routing`)
 
-#### Direct Orchestrator Runtime Surface (`backfill-routing-yield`)
-1. **Agent List**: `openclaw agents list`
-   - *Pass*: Output includes `oe-orchestrator`, `oe-searcher`, `oe-syshelper`, `oe-script_coder`, `oe-watchdog`, `oe-tool-recovery`.
-2. **Routing Surface Test**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
-   - *Pass*: Live agent output returns a real session id, exposes `sessions_yield` in the orchestrator tool surface, and `openclaw sessions --agent oe-orchestrator --json` provides a transcript path for that runtime session.
+#### Skill Discovery
+1. **Skills Available**: `ls ~/.openclaw/openclaw-enhance/skills/`
+   - *Pass*: Contains oe-tag-router, oe-spawn-search, oe-spawn-coder, oe-spawn-ops, etc.
 
-#### Orchestrator Child-Dispatch Proof (`orchestrator-spawn`)
-3. **Child-Dispatch Test**: `python -m openclaw_enhance.validation.live_probes orchestrator-spawn --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年东南亚 iGaming 行业现状"`
-   - *Pass*: `oe-orchestrator` is active, parent transcript contains `sessions_spawn` for a worker agent, probe resolves the child worker session, and emits `PROBE_ORCHESTRATOR_SPAWN_OK` marker with full parent/child transcript evidence.
-   - *Note*: This is the **strong proof** for the orchestrator's dispatcher-only contract.
+#### Routing Functionality
+2. **Tag Router Test**: `python -m openclaw_enhance.cli render-skill oe-tag-router`
+   - *Pass*: Output contains routing logic and sessions_spawn guidance.
 
-#### Recovery Runtime Surface (`backfill-recovery-worker`)
-4. **Recovery Specialist Test**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
-   - *Pass*: `oe-tool-recovery` is registered, live recovery session returns a session id and transcript path, and the runtime recovery identity is initialized.
-
-#### Main-to-Orchestrator Escalation Proof (`backfill-main-escalation`)
-5. **Main Session Escalation**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "搜索 2025 年整个东南亚 iGaming 行业现状，给出 2026 年判断，并先设计一个 20 页左右的 PPT 大纲（包含内容、数据和讲稿），保证数据真实可追溯。"`
-   - *Pass*: Heavy main-session request triggers `oe-orchestrator` spawn, main session transcript contains `sessions_spawn` tool call for `oe-orchestrator`, probe emits `PROBE_MAIN_ESCALATION_OK` marker with both main and orchestrator session evidence.
-   - *Note*: This proof is currently **PROVISIONAL** and depends on Task 8 runtime repair for a full PASS.
+#### Spawn Skills
+3. **Spawn Search**: `python -m openclaw_enhance.cli render-skill oe-spawn-search`
+   - *Pass*: Output contains spawn skill definition.
+4. **Spawn Coder**: `python -m openclaw_enhance.cli render-skill oe-spawn-coder`
+   - *Pass*: Output contains spawn skill definition.
 
 ### 2.4 Runtime Integration Bundle (`runtime-watchdog`)
 1. **Hook Verification**: `cat ~/.openclaw/openclaw.json | jq '.hooks.internal'`
@@ -90,7 +88,7 @@ Target: Default `~/.openclaw`
 1. **Ownership Binding Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test ownership-binding`
    - *Pass*: Probe verifies that `(channel_type, channel_conversation_id)` is correctly bound to a `session_id` in `runtime-state.json`.
 2. **Fail-Closed Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test fail-closed`
-   - *Pass*: Probe verifies that ambiguous or non-string session keys are rejected by `oe-runtime`.
+   - *Pass*: Probe verifies that ambiguous or non-string session keys are rejected.
 3. **Restart Epoch Test**: `python -m openclaw_enhance.cli governance restart-resume && python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test restart-epoch`
    - *Pass*: Probe verifies that `restart_epoch` is incremented and old session bindings are marked as stale.
 4. **Sanitization Test**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME" --test sanitization`
@@ -139,88 +137,18 @@ Reports must be saved to: `docs/reports/YYYY-MM-DD-<slug>-<feature-class>.md`
 - Manual removal of `~/.openclaw/openclaw-enhance` is permitted if `uninstall` fails.
 - Never modify `~/.openclaw/openclaw.json` manually; use the CLI.
 
-## 6. Current branch shipped set (Canonical Current-Branch Backfill)
-
-This section tracks the canonical backfill slugs for features already shipped in the current branch. Use these slugs with `validate-feature --report-slug <slug>` to generate standardized backfill reports.
+## 6. Current Branch Shipped Set
 
 | Feature Capability | Canonical Slug | Feature Class | Method Contract | Observable Proof |
 | :--- | :--- | :--- | :--- | :--- |
 | Core Installation | `backfill-core-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install` | `status` shows `installed: true`; files exist in `~/.openclaw/openclaw-enhance` |
-| Monitor Auto-Start (macOS) | `backfill-monitor-auto-start` | `install-lifecycle` | `python -m openclaw_enhance.cli install` + `launchctl print gui/$UID/ai.openclaw.enhance.monitor` | LaunchAgent is loaded and points at `python -m openclaw_enhance.monitor_runtime` |
-| Dev Mode (Symlinks) | `backfill-dev-install` | `install-lifecycle` | `python -m openclaw_enhance.cli install --dev` | `ls -la ~/.openclaw/openclaw-enhance/workspaces/` shows symlinks (starts with `l`) |
-| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `cleanup-sessions --dry-run --json`, `render-*`, `docs-check`, `validate-feature` | Valid JSON; doctor passes; cleanup dry-run reports buckets; rendered content matches; docs-check passes; validator self-surface ok |
-| Orchestrator Runtime Surface | `backfill-routing-yield` | `workspace-routing` | `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json` | **Weak Proof**: Live agent output exposes `sessions_yield`; session metadata exposes transcript path; runtime orchestrator identity is initialized |
-| Orchestrator Child-Dispatch | `orchestrator-spawn` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes orchestrator-spawn` | **Strong Proof**: Parent transcript contains `sessions_spawn` for worker; child session resolved; full parent/child transcript evidence captured |
-| Recovery Runtime Surface | `backfill-recovery-worker` | `workspace-routing` | `openclaw agents list` + `openclaw agent --agent oe-tool-recovery -m "..." --json` | `oe-tool-recovery` is registered; live recovery session returns a session id and transcript path; runtime recovery identity is initialized |
-| Main-to-Orchestrator Escalation | `backfill-main-escalation` | `workspace-routing` | `python -m openclaw_enhance.validation.live_probes main-escalation` | **PROVISIONAL**: Main session transcript contains `sessions_spawn` for `oe-orchestrator`; both session IDs are captured. |
-| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | `hooks.internal.entries.oe-subagent-spawn-enrich.enabled` is true and the hook is discoverable |
-| Session Isolation | `backfill-session-isolation` | `session-isolation` | `python -m openclaw_enhance.validation.live_probes session-isolation` | **Strong Proof**: Ownership binding, fail-closed, restart-epoch, and sanitization verified in real environment. |
+| Monitor Auto-Start (macOS) | `backfill-monitor-auto-start` | `install-lifecycle` | `python -m openclaw_enhance.cli install` + `launchctl print gui/$UID/ai.openclaw.enhance.monitor` | LaunchAgent is loaded |
+| CLI Surface Area | `backfill-cli-surface` | `cli-surface` | `status`, `status --json`, `doctor`, `cleanup-sessions --dry-run --json`, `render-*`, `docs-check` | Valid JSON; doctor passes |
+| Skill Routing | `backfill-skill-routing` | `skill-routing` | `ls ~/.openclaw/openclaw-enhance/skills/` + `render-skill oe-tag-router` | Skills present; routing logic visible |
+| Watchdog Hooks | `backfill-watchdog-reminder` | `runtime-watchdog` | `cat ~/.openclaw/openclaw.json` + `openclaw hooks list` | Hook enabled |
+| Session Isolation | `backfill-session-isolation` | `session-isolation` | `python -m openclaw_enhance.validation.live_probes session-isolation` | Ownership, fail-closed, restart-epoch, sanitization verified |
 
-### 6.1 Method Contracts & Expectations
+## Version
 
-#### `backfill-core-install`
-- **Command**: `python -m openclaw_enhance.cli uninstall && python -m openclaw_enhance.cli install`
-- **Expectation**: Exit code 0. "Installation successful" in stdout.
-- **Report**: Must include `doctor` output showing all checks passed.
-
-#### `backfill-dev-install`
-- **Command**: `python -m openclaw_enhance.cli install --dev`
-- **Expectation**: Exit code 0.
-- **Proof**: `ls -la ~/.openclaw/openclaw-enhance/workspaces/oe-orchestrator` shows it points back to `src/openclaw_enhance/workspaces/oe-orchestrator`.
-
-#### `backfill-cli-surface`
-- **Command**: `python -m openclaw_enhance.cli status && python -m openclaw_enhance.cli status --json`
-- **Expectation**: Valid JSON. `installed` is `true`.
-- **Command**: `python -m openclaw_enhance.cli doctor`
-- **Expectation**: Exit code 0. "Doctor checks passed".
-- **Command**: `python -m openclaw_enhance.cli cleanup-sessions --dry-run --json`
-- **Expectation**: Exit code 0. Valid JSON output with cleanup classification buckets and no mutation in dry-run mode.
-- **Command**: `python -m openclaw_enhance.cli render-workspace oe-orchestrator`
-- **Expectation**: Output contains "Workspace: oe-orchestrator".
-- **Command**: `python -m openclaw_enhance.cli render-skill oe-toolcall-router`
-- **Expectation**: Output contains "Toolcall Router" and "sessions_spawn".
-- **Command**: `python -m openclaw_enhance.cli docs-check`
-- **Expectation**: Exit code 0. "Docs check passed".
-- **Command**: `python -m openclaw_enhance.cli validate-feature --feature-class docs-test-only --report-slug self-surface-smoke`
-- **Expectation**: Exit code 0. Produces a report with `Conclusion: EXEMPT`.
-
-#### `backfill-routing-yield`
-- **Command**: `openclaw agent --agent oe-orchestrator -m "帮我规划一个复杂任务" --json`
-- **Expectation**: Exit code 0. Live output returns a real session id and the orchestrator tool surface includes `sessions_yield`.
-- **Proof**: `openclaw sessions --agent oe-orchestrator --json` provides a `transcriptPath` for the live session and the runtime workspace identity is initialized.
-- **Note**: This is a **weak proof** (runtime surface only).
-
-#### `orchestrator-spawn`
-- **Command**: `python -m openclaw_enhance.validation.live_probes orchestrator-spawn --openclaw-home "$OPENCLAW_HOME" --message "..."`
-- **Expectation**: Exit code 0. Probe identifies parent orchestrator session ID and child worker session ID.
-- **Proof**: `PROBE_ORCHESTRATOR_SPAWN_OK` marker in output. Confirms actual child dispatch via transcript evidence.
-- **Note**: This is the **strong proof** for the dispatcher-only contract.
-
-#### `backfill-recovery-worker`
-- **Command**: `openclaw agents list`
-- **Expectation**: `oe-tool-recovery` is listed.
-- **Command**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
-- **Expectation**: Exit code 0. Live output returns a real session id for the recovery workspace.
-- **Proof**: `openclaw sessions --agent oe-tool-recovery --json` provides a `transcriptPath` for the live session and the runtime recovery workspace identity is initialized.
-
-#### `backfill-recovery-worker`
-- **Command**: `openclaw agents list`
-- **Expectation**: `oe-tool-recovery` is listed.
-- **Command**: `openclaw agent --agent oe-tool-recovery -m "A tool call failed because the requested tool name was websearch. Respond with only the corrected method name to use instead." --json`
-- **Expectation**: Exit code 0. Live output returns a real session id for the recovery workspace.
-- **Proof**: `openclaw sessions --agent oe-tool-recovery --json` provides a `transcriptPath` for the live session and the runtime recovery workspace identity is initialized.
-
-#### `backfill-main-escalation`
-- **Command**: `python -m openclaw_enhance.validation.live_probes main-escalation --openclaw-home "$OPENCLAW_HOME" --message "..."`
-- **Expectation**: **PROVISIONAL**. Probe identifies main session ID and orchestrator session ID.
-- **Proof**: `PROBE_MAIN_ESCALATION_OK` marker in output. Note: Full transcript evidence depends on Task 8 repair.
-
-#### `backfill-watchdog-reminder`
-- **Command**: `python -m openclaw_enhance.validation.live_probes watchdog-reminder --openclaw-home "$OPENCLAW_HOME" --config-path "$OPENCLAW_CONFIG_PATH" --session-id strict-watchdog-probe`
-- **Expectation**: Verifies supported `hooks.internal` config (or workspace contract fallback) and live reminder delivery.
-- **Proof**: JSON output with `marker: PROBE_WATCHDOG_REMINDER_OK`, `proof: config_hook_plus_live_reminder` or `workspace_contract_plus_live_reminder`, and session_id evidence.
-
-#### `backfill-session-isolation`
-- **Command**: `python -m openclaw_enhance.validation.live_probes session-isolation --openclaw-home "$OPENCLAW_HOME"`
-- **Expectation**: Exit code 0. Probe verifies ownership binding, fail-closed behavior, restart epoch increment, and output sanitization.
-- **Proof**: JSON output with `marker: PROBE_SESSION_ISOLATION_OK` and evidence for all four guardrails.
+Testing Playbook Version: 2.0.0
+Last Updated: 2026-04-09

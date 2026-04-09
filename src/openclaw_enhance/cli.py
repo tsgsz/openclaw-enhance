@@ -471,29 +471,6 @@ def render_skill(skill_name: str) -> None:
         raise click.ClickException(str(e)) from e
 
 
-@cli.command("render-workspace")
-@click.argument("workspace_name")
-def render_workspace(workspace_name: str) -> None:
-    """Render a workspace configuration by name.
-
-    WORKSPACE_NAME: Name of the workspace to render (e.g., oe-orchestrator)
-    """
-    from openclaw_enhance.workspaces import list_workspaces, render_workspace
-
-    try:
-        rendered = render_workspace(workspace_name)
-        click.echo(rendered)
-    except ValueError as e:
-        workspaces = list_workspaces()
-        if workspaces:
-            available = ", ".join(workspaces)
-            raise click.ClickException(f"{e}. Available workspaces: {available}") from e
-        else:
-            raise click.ClickException(
-                f"{e}. No workspaces registered. See docs for how to set up a workspace."
-            ) from e
-
-
 # Registry of hook contracts for rendering
 HOOK_CONTRACTS: dict[str, str] = {
     "oe-subagent-spawn-enrich": """---
@@ -1066,15 +1043,7 @@ def docs_check() -> None:
     else:
         errors.append("Missing required file: docs/opencode-iteration-handbook.md")
 
-    from openclaw_enhance.agent_catalog import validate_workspace_manifests
-
-    # Skip workspace validation in v2 - no workspaces directory
-    workspaces_path = project_root / "workspaces"
-    if workspaces_path.exists():
-        manifest_errors = validate_workspace_manifests(project_root)
-        if manifest_errors:
-            errors.extend(manifest_errors)
-
+    # v2: No workspace manifests to validate - v1 workspaces archived
     if errors:
         for err in errors:
             click.echo(f"Error: {err}", err=True)

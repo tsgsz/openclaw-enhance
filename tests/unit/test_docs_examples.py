@@ -133,12 +133,11 @@ class TestDocumentationExamples:
 
         content = doc_path.read_text()
 
-        # Should mention all workers
-        assert "oe-searcher" in content
-        assert "oe-syshelper" in content
-        assert "oe-script_coder" in content
-        assert "oe-watchdog" in content
-        assert "oe-tool-recovery" in content
+        # Should mention v2 skills (no agents in v2)
+        assert "oe-tag-router" in content
+        assert "oe-spawn-search" in content
+        assert "oe-spawn-coder" in content
+        assert "oe-spawn-ops" in content
 
     def test_troubleshooting_doc_has_error_examples(self) -> None:
         """Ensure troubleshooting.md has error message examples."""
